@@ -1,0 +1,5 @@
+{
+  "title": "Machine Learning Basics",
+  "content": "Machine learning is a subset of artificial intelligence that focuses on building systems that learn from data. There are three main types of machine learning: supervised learning, unsupervised learning, and reinforcement learning.\n\nSupervised learning uses labeled data to train models. The algorithm learns to map inputs to outputs based on example input-output pairs. Common applications include image classification, spam detection, and predictive analytics.\n\nUnsupervised learning discovers hidden patterns in unlabeled data. Clustering and dimensionality reduction are common unsupervised learning techniques. These methods are useful for exploratory data analysis and feature learning.\n\nReinforcement learning involves training agents to make sequences of decisions. The agent learns by interacting with an environment and receiving rewards or penalties. This approach is particularly effective for game playing, robotics, and autonomous systems.",
+  "tags": "machine-learning, AI, data-science"
+}

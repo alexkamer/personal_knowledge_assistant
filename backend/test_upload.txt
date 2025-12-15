@@ -1,0 +1,11 @@
+This is a test document for testing the document upload API.
+
+It contains multiple paragraphs to verify that text extraction works correctly.
+
+Key points:
+- File upload functionality
+- Text extraction
+- Database storage
+- API response validation
+
+The document service should process this file and store both the file and its extracted content.

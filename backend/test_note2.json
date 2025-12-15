@@ -1,0 +1,5 @@
+{
+  "title": "Python Programming Best Practices",
+  "content": "Python is a versatile programming language known for its readability and simplicity. Following best practices helps create maintainable and efficient code.\n\nUse meaningful variable names that clearly describe their purpose. Avoid single-letter names except for loop counters. Follow PEP 8 style guidelines for consistent formatting.\n\nWrite docstrings for all functions, classes, and modules. Good documentation helps other developers understand your code. Use type hints to improve code clarity and enable better IDE support.\n\nHandle errors gracefully using try-except blocks. Don't use bare except clauses as they catch all exceptions. Log errors appropriately for debugging.\n\nWrite unit tests for your code. Test-driven development catches bugs early and ensures code reliability. Use pytest or unittest frameworks for testing.",
+  "tags": "python, programming, best-practices"
+}
