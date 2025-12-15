@@ -2,7 +2,7 @@
  * Message list component displaying chat messages with source citations.
  */
 import React from 'react';
-import { Bot, User, FileText, StickyNote } from 'lucide-react';
+import { Bot, User, FileText, StickyNote, Globe } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -113,9 +113,15 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
                       className="group inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all cursor-default"
                       title={`Distance: ${source.distance.toFixed(3)} | Chunk: ${source.chunk_index}`}
                     >
-                      <div className={`p-1 rounded ${source.source_type === 'note' ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'}`}>
+                      <div className={`p-1 rounded ${
+                        source.source_type === 'note' ? 'bg-yellow-50 text-yellow-600' :
+                        source.source_type === 'web' ? 'bg-green-50 text-green-600' :
+                        'bg-blue-50 text-blue-600'
+                      }`}>
                         {source.source_type === 'note' ? (
                           <StickyNote size={14} />
+                        ) : source.source_type === 'web' ? (
+                          <Globe size={14} />
                         ) : (
                           <FileText size={14} />
                         )}
@@ -125,7 +131,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
                           {source.source_title}
                         </span>
                         <span className="text-[10px] text-gray-500">
-                          {source.source_type === 'note' ? 'Note' : 'Document'} • Ref [{source.index}]
+                          {source.source_type === 'note' ? 'Note' : source.source_type === 'web' ? 'Web' : 'Document'} • Ref [{source.index}]
                         </span>
                       </div>
                     </div>

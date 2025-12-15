@@ -14,7 +14,7 @@ export interface Message {
 
 export interface SourceCitation {
   index: number;
-  source_type: 'note' | 'document';
+  source_type: 'note' | 'document' | 'web';
   source_id: string;
   source_title: string;
   chunk_index: number;
@@ -40,6 +40,7 @@ export interface ChatRequest {
   conversation_title?: string;
   model?: string;
   top_k?: number;
+  include_web_search?: boolean;
 }
 
 export interface ChatResponse {

@@ -13,6 +13,7 @@ from app.models.note import Note
 from app.models.document import Document
 from app.services.embedding_service import get_embedding_service
 from app.services.vector_service import get_vector_service
+from app.services.web_search_service import get_web_search_service
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +196,7 @@ class RAGService:
         query: str,
         top_k: int = None,
         max_tokens: int = None,
+        include_web_search: bool = False,
     ) -> tuple[str, List[dict]]:
         """
         Convenience method to search and assemble context in one call.
@@ -204,12 +206,47 @@ class RAGService:
             query: Search query
             top_k: Number of chunks to retrieve
             max_tokens: Maximum tokens for context
+            include_web_search: Whether to include web search results
 
         Returns:
             Tuple of (assembled context, source citations)
         """
+        # Get local chunks from knowledge base
         chunks = await self.search_relevant_chunks(db, query, top_k=top_k)
         context, citations = self.assemble_context(chunks, max_tokens=max_tokens)
+
+        # Add web search results if requested
+        if include_web_search:
+            try:
+                web_search_service = get_web_search_service()
+                web_results = await web_search_service.search(query, max_results=3)
+
+                if web_results:
+                    # Add web results to context
+                    web_context_parts = ["\n\n=== WEB SEARCH RESULTS ===\n"]
+                    web_citations = []
+
+                    for idx, result in enumerate(web_results, 1):
+                        web_context_parts.append(
+                            f"\n[Web Source {idx}] {result['title']}\n{result['body']}\n"
+                        )
+                        web_citations.append({
+                            "index": len(citations) + idx,
+                            "source_type": "web",
+                            "source_id": result['href'],
+                            "source_title": result['title'],
+                            "chunk_index": 0,
+                            "distance": 0.0,  # Web results don't have distance
+                        })
+
+                    context += "".join(web_context_parts)
+                    citations.extend(web_citations)
+                    logger.info(f"Added {len(web_results)} web search results to context")
+
+            except Exception as e:
+                logger.error(f"Failed to add web search results: {e}")
+                # Continue without web results if search fails
+
         return context, citations
 
 

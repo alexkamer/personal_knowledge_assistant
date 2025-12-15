@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.note import Note
 from app.schemas.note import NoteCreate, NoteUpdate
 from app.services.chunk_processing_service import get_chunk_processing_service
+from app.services.vector_service import get_vector_service
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +146,11 @@ class NoteService:
     @staticmethod
     async def delete_note(db: AsyncSession, note_id: str) -> bool:
         """
-        Delete a note.
+        Delete a note and all its associated chunks.
+
+        This will:
+        1. Delete chunk embeddings from ChromaDB
+        2. Delete the note from PostgreSQL (chunks cascade delete automatically)
 
         Args:
             db: Database session
@@ -160,6 +165,20 @@ class NoteService:
         if not note:
             return False
 
+        # Delete chunk embeddings from ChromaDB first
+        try:
+            vector_service = get_vector_service()
+            await vector_service.delete_chunks_by_source(
+                source_id=note_id,
+                source_type="note",
+            )
+            logger.info(f"Deleted vector embeddings for note {note_id}")
+        except Exception as e:
+            logger.error(f"Failed to delete vector embeddings for note {note_id}: {e}")
+            # Continue with deletion even if vector cleanup fails
+
+        # Delete note from PostgreSQL (chunks will cascade delete)
         await db.delete(note)
         await db.commit()
+        logger.info(f"Deleted note {note_id} and its chunks")
         return True

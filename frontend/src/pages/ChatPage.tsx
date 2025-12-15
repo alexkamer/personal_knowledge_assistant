@@ -2,7 +2,7 @@
  * Chat page for AI-powered Q&A using RAG.
  */
 import { useState } from 'react';
-import { MessageSquare, Plus, Trash2, AlertCircle, RotateCcw } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, AlertCircle, RotateCcw, Search, X, Globe } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import {
@@ -16,6 +16,8 @@ import type { Message } from '@/types/chat';
 export function ChatPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
 
   const { data: conversationsData } = useConversations();
   const { data: conversationData, isLoading: isLoadingConversation } = useConversation(
@@ -26,13 +28,24 @@ export function ChatPage() {
 
   const messages: Message[] = conversationData?.messages || [];
 
+  // Filter conversations based on search query
+  const filteredConversations = conversationsData?.conversations.filter((conv) =>
+    conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conv.summary?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
   const handleSendMessage = async (message: string) => {
     try {
       setErrorMessage(null);
+      // Get preferred model from localStorage
+      const preferredModel = localStorage.getItem('preferred_model') || undefined;
+
       const response = await sendMessage.mutateAsync({
         message,
         conversation_id: selectedConversationId || undefined,
         conversation_title: selectedConversationId ? undefined : `Chat: ${message.slice(0, 50)}`,
+        model: preferredModel,
+        include_web_search: webSearchEnabled,
       });
 
       // If this was a new conversation, select it
@@ -105,10 +118,33 @@ export function ChatPage() {
             <h2 className="font-semibold text-gray-900">Conversations</h2>
           </div>
 
+          {/* Search Input */}
+          <div className="px-4 py-3 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="flex-1 overflow-y-auto">
             {conversationsData && conversationsData.conversations.length > 0 ? (
-              <div className="divide-y divide-gray-200">
-                {conversationsData.conversations.map((conv) => (
+              filteredConversations.length > 0 ? (
+                <div className="divide-y divide-gray-200">
+                  {filteredConversations.map((conv) => (
                   <div
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv.id)}
@@ -144,6 +180,19 @@ export function ChatPage() {
                   </div>
                 ))}
               </div>
+              ) : (
+                <div className="p-8 text-center text-gray-500">
+                  <Search className="mx-auto mb-3 text-gray-400" size={32} />
+                  <p className="text-sm font-medium">No conversations found</p>
+                  <p className="text-xs mt-2">Try a different search term</p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="mt-4 text-xs text-blue-600 hover:text-blue-700"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )
             ) : (
               <div className="p-8 text-center text-gray-500">
                 <p className="text-sm">No conversations yet</p>
@@ -189,6 +238,21 @@ export function ChatPage() {
               </button>
             </div>
           )}
+
+          {/* Web Search Toggle */}
+          <div className="px-6 pb-2">
+            <button
+              onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                webSearchEnabled
+                  ? 'bg-green-50 text-green-700 border border-green-300'
+                  : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+              }`}
+            >
+              <Globe size={16} />
+              <span>{webSearchEnabled ? 'Web search enabled' : 'Search web for answers'}</span>
+            </button>
+          </div>
 
           <ChatInput
             onSend={handleSendMessage}

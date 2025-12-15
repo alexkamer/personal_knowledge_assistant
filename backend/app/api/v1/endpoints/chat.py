@@ -70,6 +70,7 @@ async def chat(
             db=db,
             query=request.message,
             top_k=request.top_k,
+            include_web_search=request.include_web_search,
         )
 
         # Get conversation history

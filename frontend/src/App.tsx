@@ -3,10 +3,11 @@
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
-import { FileText, MessageSquare, StickyNote } from 'lucide-react';
+import { FileText, MessageSquare, Settings, StickyNote } from 'lucide-react';
 import NotesPage from './pages/NotesPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { ChatPage } from './pages/ChatPage';
+import SettingsPage from './pages/SettingsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Create a client
@@ -19,7 +20,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type Page = 'notes' | 'documents' | 'chat';
+type Page = 'notes' | 'documents' | 'chat' | 'settings';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('chat');
@@ -76,6 +77,20 @@ function App() {
                   <FileText size={18} />
                   Documents
                 </button>
+                <button
+                  onClick={() => setCurrentPage('settings')}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-md transition-colors
+                    ${
+                      currentPage === 'settings'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }
+                  `}
+                >
+                  <Settings size={18} />
+                  Settings
+                </button>
               </nav>
             </div>
           </div>
@@ -103,6 +118,14 @@ function App() {
               onReset={() => setCurrentPage('documents')}
             >
               <DocumentsPage />
+            </ErrorBoundary>
+          )}
+          {currentPage === 'settings' && (
+            <ErrorBoundary
+              fallbackTitle="Settings Error"
+              onReset={() => setCurrentPage('settings')}
+            >
+              <SettingsPage />
             </ErrorBoundary>
           )}
         </main>
