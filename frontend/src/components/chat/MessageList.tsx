@@ -99,22 +99,35 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
 
             {/* Sources (only for assistant messages) */}
             {message.role === 'assistant' && message.sources && message.sources.length > 0 && (
-              <div className="mt-3 text-sm">
-                <p className="text-gray-600 font-medium mb-2">Sources:</p>
+              <div className="mt-4 text-sm">
+                <p className="text-gray-700 font-semibold mb-2.5 flex items-center gap-1.5">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                  Sources ({message.sources.length})
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {message.sources.map((source) => (
                     <div
                       key={`${source.source_id}-${source.chunk_index}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-md text-gray-700 border border-gray-200"
+                      className="group inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all cursor-default"
+                      title={`Distance: ${source.distance.toFixed(3)} | Chunk: ${source.chunk_index}`}
                     >
-                      {source.source_type === 'note' ? (
-                        <StickyNote size={14} />
-                      ) : (
-                        <FileText size={14} />
-                      )}
-                      <span className="text-xs font-medium">
-                        [{source.index}] {source.source_title}
-                      </span>
+                      <div className={`p-1 rounded ${source.source_type === 'note' ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'}`}>
+                        {source.source_type === 'note' ? (
+                          <StickyNote size={14} />
+                        ) : (
+                          <FileText size={14} />
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-gray-900">
+                          {source.source_title}
+                        </span>
+                        <span className="text-[10px] text-gray-500">
+                          {source.source_type === 'note' ? 'Note' : 'Document'} • Ref [{source.index}]
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>

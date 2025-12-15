@@ -2,7 +2,7 @@
  * Chat page for AI-powered Q&A using RAG.
  */
 import { useState } from 'react';
-import { MessageSquare, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, AlertCircle, RotateCcw } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import {
@@ -48,6 +48,14 @@ export function ChatPage() {
 
   const handleNewChat = () => {
     setSelectedConversationId(null);
+    setErrorMessage(null);
+  };
+
+  const handleClearChat = () => {
+    if (messages.length > 0 && window.confirm('Clear this conversation? This will start fresh but keep the conversation in history.')) {
+      setSelectedConversationId(null);
+      setErrorMessage(null);
+    }
   };
 
   const handleSelectConversation = (id: string) => {
@@ -168,6 +176,20 @@ export function ChatPage() {
             messages={messages}
             isLoading={sendMessage.isPending || isLoadingConversation}
           />
+
+          {/* Clear Chat Button - shows when there are messages */}
+          {messages.length > 0 && (
+            <div className="px-6 pb-2 flex justify-center">
+              <button
+                onClick={handleClearChat}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <RotateCcw size={14} />
+                Clear Chat
+              </button>
+            </div>
+          )}
+
           <ChatInput
             onSend={handleSendMessage}
             disabled={sendMessage.isPending}
