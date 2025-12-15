@@ -1,7 +1,7 @@
 /**
  * Documents page for uploading and managing documents.
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DocumentUpload } from '@/components/documents/DocumentUpload';
 import { DocumentsList } from '@/components/documents/DocumentsList';
 import { useDocument } from '@/hooks/useDocuments';

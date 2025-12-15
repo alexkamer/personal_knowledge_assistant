@@ -7,6 +7,7 @@ from typing import AsyncIterator, List, Optional
 import ollama
 
 from app.core.config import settings
+from app.core.exceptions import ModelNotFoundError, OllamaConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +73,16 @@ class LLMService:
                 return self._stream_response(model, messages)
             else:
                 return await self._generate_response(model, messages)
+        except ollama.ResponseError as e:
+            logger.error(f"Ollama response error: {e}")
+            if "model" in str(e).lower() and "not found" in str(e).lower():
+                raise ModelNotFoundError(model)
+            raise OllamaConnectionError(f"Ollama error: {str(e)}")
+        except ollama.RequestError as e:
+            logger.error(f"Ollama request error: {e}")
+            raise OllamaConnectionError("Cannot connect to Ollama. Is it running?")
         except Exception as e:
-            logger.error(f"Failed to generate answer: {e}")
+            logger.error(f"Unexpected error generating answer: {e}")
             raise
 
     async def _generate_response(self, model: str, messages: List[dict]) -> str:

@@ -2,7 +2,7 @@
  * List of notes component.
  */
 import { useNotes, useDeleteNote } from '../../hooks/useNotes';
-import { Trash2 } from 'lucide-react';
+import { Trash2, AlertCircle, RefreshCw } from 'lucide-react';
 import type { Note } from '../../types/note';
 
 interface NotesListProps {
@@ -11,7 +11,7 @@ interface NotesListProps {
 }
 
 function NotesList({ onSelectNote, selectedNoteId }: NotesListProps) {
-  const { data, isLoading, error } = useNotes();
+  const { data, isLoading, error, refetch } = useNotes();
   const deleteNote = useDeleteNote();
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -32,8 +32,21 @@ function NotesList({ onSelectNote, selectedNoteId }: NotesListProps) {
   if (error) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="text-center text-red-600">
-          Error loading notes: {error.message}
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center gap-2 text-red-600">
+            <AlertCircle size={20} />
+            <span className="font-medium">Failed to load notes</span>
+          </div>
+          <p className="text-sm text-gray-600 text-center">
+            {(error as any)?.response?.data?.detail || error.message || 'An unexpected error occurred'}
+          </p>
+          <button
+            onClick={() => refetch()}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <RefreshCw size={16} />
+            Retry
+          </button>
         </div>
       </div>
     );

@@ -2,7 +2,7 @@
  * Documents list component showing uploaded documents.
  */
 import React from 'react';
-import { FileText, Trash2, Calendar, HardDrive } from 'lucide-react';
+import { FileText, Trash2, Calendar, HardDrive, AlertCircle, RefreshCw } from 'lucide-react';
 import { useDocuments, useDeleteDocument } from '@/hooks/useDocuments';
 import type { Document } from '@/types/document';
 
@@ -12,7 +12,7 @@ interface DocumentsListProps {
 }
 
 export function DocumentsList({ onSelectDocument, selectedDocumentId }: DocumentsListProps) {
-  const { data, isLoading, error } = useDocuments();
+  const { data, isLoading, error, refetch } = useDocuments();
   const deleteDocument = useDeleteDocument();
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -54,9 +54,21 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
   if (error) {
     return (
       <div className="bg-white rounded-lg shadow-md p-8">
-        <div className="text-center text-red-600">
-          <p className="font-medium">Failed to load documents</p>
-          <p className="text-sm mt-2">Please try refreshing the page</p>
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center gap-2 text-red-600">
+            <AlertCircle size={20} />
+            <span className="font-medium">Failed to load documents</span>
+          </div>
+          <p className="text-sm text-gray-600 text-center">
+            {(error as any)?.response?.data?.detail || error.message || 'An unexpected error occurred'}
+          </p>
+          <button
+            onClick={() => refetch()}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <RefreshCw size={16} />
+            Retry
+          </button>
         </div>
       </div>
     );

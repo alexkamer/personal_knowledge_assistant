@@ -1,8 +1,8 @@
 /**
  * Chat page for AI-powered Q&A using RAG.
  */
-import React, { useState } from 'react';
-import { MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { MessageSquare, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import {
@@ -15,6 +15,7 @@ import type { Message } from '@/types/chat';
 
 export function ChatPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: conversationsData } = useConversations();
   const { data: conversationData, isLoading: isLoadingConversation } = useConversation(
@@ -27,6 +28,7 @@ export function ChatPage() {
 
   const handleSendMessage = async (message: string) => {
     try {
+      setErrorMessage(null);
       const response = await sendMessage.mutateAsync({
         message,
         conversation_id: selectedConversationId || undefined,
@@ -37,8 +39,10 @@ export function ChatPage() {
       if (!selectedConversationId) {
         setSelectedConversationId(response.conversation_id);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send message:', error);
+      const errorDetail = error?.response?.data?.detail || error?.message || 'Failed to send message';
+      setErrorMessage(errorDetail);
     }
   };
 
@@ -143,6 +147,23 @@ export function ChatPage() {
 
         {/* Chat Area */}
         <main className="flex-1 flex flex-col bg-gray-50">
+          {/* Error Banner */}
+          {errorMessage && (
+            <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-red-900">Error</h3>
+                <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-red-400 hover:text-red-600 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
           <MessageList
             messages={messages}
             isLoading={sendMessage.isPending || isLoadingConversation}

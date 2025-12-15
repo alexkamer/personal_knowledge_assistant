@@ -5,10 +5,16 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.exceptions import (
+    KnowledgeAssistantException,
+    general_exception_handler,
+    http_exception_handler,
+    knowledge_assistant_exception_handler,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -54,6 +60,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register exception handlers
+app.add_exception_handler(KnowledgeAssistantException, knowledge_assistant_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
 
 
 @app.get("/")

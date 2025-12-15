@@ -7,6 +7,7 @@ import { FileText, MessageSquare, StickyNote } from 'lucide-react';
 import NotesPage from './pages/NotesPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { ChatPage } from './pages/ChatPage';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -80,9 +81,30 @@ function App() {
           </div>
         </header>
         <main>
-          {currentPage === 'chat' && <ChatPage />}
-          {currentPage === 'notes' && <NotesPage />}
-          {currentPage === 'documents' && <DocumentsPage />}
+          {currentPage === 'chat' && (
+            <ErrorBoundary
+              fallbackTitle="Chat Error"
+              onReset={() => setCurrentPage('chat')}
+            >
+              <ChatPage />
+            </ErrorBoundary>
+          )}
+          {currentPage === 'notes' && (
+            <ErrorBoundary
+              fallbackTitle="Notes Error"
+              onReset={() => setCurrentPage('notes')}
+            >
+              <NotesPage />
+            </ErrorBoundary>
+          )}
+          {currentPage === 'documents' && (
+            <ErrorBoundary
+              fallbackTitle="Documents Error"
+              onReset={() => setCurrentPage('documents')}
+            >
+              <DocumentsPage />
+            </ErrorBoundary>
+          )}
         </main>
       </div>
     </QueryClientProvider>
