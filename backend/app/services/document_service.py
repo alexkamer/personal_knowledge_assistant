@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.document import Document
 from app.schemas.document import DocumentCreate
 from app.services.chunk_processing_service import get_chunk_processing_service
+from app.services.vector_service import get_vector_service
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,11 @@ class DocumentService:
     @staticmethod
     async def delete_document(db: AsyncSession, document_id: str) -> bool:
         """
-        Delete a document.
+        Delete a document and all its associated chunks.
+
+        This will:
+        1. Delete chunk embeddings from ChromaDB
+        2. Delete the document from PostgreSQL (chunks cascade delete automatically)
 
         Args:
             db: Database session
@@ -117,6 +122,20 @@ class DocumentService:
         if not document:
             return False
 
+        # Delete chunk embeddings from ChromaDB first
+        try:
+            vector_service = get_vector_service()
+            await vector_service.delete_chunks_by_source(
+                source_id=document_id,
+                source_type="document",
+            )
+            logger.info(f"Deleted vector embeddings for document {document_id}")
+        except Exception as e:
+            logger.error(f"Failed to delete vector embeddings for document {document_id}: {e}")
+            # Continue with deletion even if vector cleanup fails
+
+        # Delete document from PostgreSQL (chunks will cascade delete)
         await db.delete(document)
         await db.commit()
+        logger.info(f"Deleted document {document_id} and its chunks")
         return True
