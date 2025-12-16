@@ -19,6 +19,8 @@ from app.schemas.conversation import (
     ConversationUpdate,
     ConversationWithMessages,
     MessageResponse,
+    MessageFeedbackCreate,
+    MessageFeedbackResponse,
 )
 from app.services.conversation_service import ConversationService
 from app.services.llm_service import get_llm_service
@@ -271,9 +273,23 @@ async def get_conversation(
 
     messages = await ConversationService.get_conversation_messages(db, conversation_id)
 
+    # Eagerly load feedback for each message
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.models.conversation import Message
+
+    # Reload messages with feedback eagerly loaded
+    result = await db.execute(
+        select(Message)
+        .where(Message.conversation_id == conversation_id)
+        .options(selectinload(Message.feedback))
+        .order_by(Message.created_at)
+    )
+    messages_with_feedback = result.scalars().all()
+
     # Parse sources from retrieved_chunks
     message_responses = []
-    for msg in messages:
+    for msg in messages_with_feedback:
         sources = None
         if msg.retrieved_chunks:
             try:
@@ -336,3 +352,116 @@ async def delete_conversation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found",
         )
+
+
+@router.get("/chunks/{chunk_id}")
+async def get_chunk(
+    chunk_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Get chunk content and metadata by chunk ID.
+    """
+    from sqlalchemy import select
+    from app.models.chunk import Chunk
+    from app.models.note import Note
+    from app.models.document import Document
+
+    # Get the chunk
+    result = await db.execute(select(Chunk).where(Chunk.id == chunk_id))
+    chunk = result.scalar_one_or_none()
+
+    if not chunk:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chunk not found",
+        )
+
+    # Get source information
+    source_title = ""
+    source_type = ""
+    metadata = {}
+
+    if chunk.note_id:
+        result = await db.execute(select(Note).where(Note.id == chunk.note_id))
+        note = result.scalar_one_or_none()
+        if note:
+            source_title = note.title
+            source_type = "note"
+            metadata = {
+                "note_id": str(note.id),
+                "created_at": note.created_at.isoformat(),
+                "updated_at": note.updated_at.isoformat(),
+            }
+    elif chunk.document_id:
+        result = await db.execute(select(Document).where(Document.id == chunk.document_id))
+        document = result.scalar_one_or_none()
+        if document:
+            source_title = document.title
+            source_type = "document"
+            metadata = {
+                "document_id": str(document.id),
+                "file_name": document.file_name,
+                "file_type": document.file_type,
+                "file_size": document.file_size,
+                "created_at": document.created_at.isoformat(),
+            }
+
+    return {
+        "id": str(chunk.id),
+        "content": chunk.content,
+        "chunk_index": chunk.chunk_index,
+        "token_count": chunk.token_count,
+        "source_title": source_title,
+        "source_type": source_type,
+        "metadata": metadata,
+    }
+
+
+@router.post("/messages/{message_id}/feedback", response_model=MessageFeedbackResponse)
+async def submit_message_feedback(
+    message_id: str,
+    feedback: MessageFeedbackCreate,
+    db: AsyncSession = Depends(get_db),
+) -> MessageFeedbackResponse:
+    """
+    Submit feedback (thumbs up/down) for a message.
+    """
+    from sqlalchemy import select
+    from app.models.conversation import Message
+    from app.models.message_feedback import MessageFeedback
+
+    # Check if message exists
+    result = await db.execute(select(Message).where(Message.id == message_id))
+    message = result.scalar_one_or_none()
+
+    if not message:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Message not found",
+        )
+
+    # Check if feedback already exists
+    result = await db.execute(
+        select(MessageFeedback).where(MessageFeedback.message_id == message_id)
+    )
+    existing_feedback = result.scalar_one_or_none()
+
+    if existing_feedback:
+        # Update existing feedback
+        existing_feedback.is_positive = feedback.is_positive
+        existing_feedback.comment = feedback.comment
+        await db.commit()
+        await db.refresh(existing_feedback)
+        return MessageFeedbackResponse.model_validate(existing_feedback)
+    else:
+        # Create new feedback
+        new_feedback = MessageFeedback(
+            message_id=message_id,
+            is_positive=feedback.is_positive,
+            comment=feedback.comment,
+        )
+        db.add(new_feedback)
+        await db.commit()
+        await db.refresh(new_feedback)
+        return MessageFeedbackResponse.model_validate(new_feedback)

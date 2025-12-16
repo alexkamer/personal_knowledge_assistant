@@ -56,6 +56,12 @@ class Message(Base, UUIDMixin, TimestampMixin):
     conversation: Mapped["Conversation"] = relationship(
         "Conversation", back_populates="messages"
     )
+    feedback: Mapped[Optional["MessageFeedback"]] = relationship(
+        "MessageFeedback",
+        back_populates="message",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
     def __repr__(self) -> str:
         return f"<Message(id={self.id}, role='{self.role}', conversation_id={self.conversation_id})>"

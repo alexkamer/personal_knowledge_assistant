@@ -20,6 +20,26 @@ class MessageCreate(MessageBase):
     conversation_id: Optional[str] = Field(None, description="Conversation ID (creates new if not provided)")
 
 
+class MessageFeedbackCreate(BaseModel):
+    """Schema for creating message feedback."""
+
+    is_positive: bool = Field(..., description="True for thumbs up, False for thumbs down")
+    comment: Optional[str] = Field(None, description="Optional feedback comment")
+
+
+class MessageFeedbackResponse(BaseModel):
+    """Schema for message feedback response."""
+
+    id: str
+    message_id: str
+    is_positive: bool
+    comment: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class MessageResponse(MessageBase):
     """Schema for message response."""
 
@@ -28,6 +48,7 @@ class MessageResponse(MessageBase):
     created_at: datetime
     model_used: Optional[str] = None
     sources: Optional[List[dict]] = None  # Parsed from retrieved_chunks
+    feedback: Optional[MessageFeedbackResponse] = None
 
     class Config:
         from_attributes = True

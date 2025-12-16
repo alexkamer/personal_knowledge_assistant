@@ -9,6 +9,7 @@ import { DocumentsPage } from './pages/DocumentsPage';
 import { ChatPage } from './pages/ChatPage';
 import SettingsPage from './pages/SettingsPage';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -25,10 +26,10 @@ function Navigation() {
   const currentPath = location.pathname;
 
   return (
-    <header className="bg-white shadow-sm">
+    <header className="bg-white dark:bg-gray-900 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-4">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Personal Knowledge Assistant
           </h1>
           <nav className="flex gap-2">
@@ -39,7 +40,7 @@ function Navigation() {
                 ${
                   currentPath === '/chat'
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }
               `}
             >
@@ -53,7 +54,7 @@ function Navigation() {
                 ${
                   currentPath === '/notes'
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }
               `}
             >
@@ -67,7 +68,7 @@ function Navigation() {
                 ${
                   currentPath === '/documents'
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }
               `}
             >
@@ -81,7 +82,7 @@ function Navigation() {
                 ${
                   currentPath === '/settings'
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }
               `}
             >
@@ -98,48 +99,50 @@ function Navigation() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <div className="min-h-screen bg-gray-50">
-          <Navigation />
-          <main>
-            <Routes>
-              <Route path="/" element={<Navigate to="/chat" replace />} />
-              <Route
-                path="/chat"
-                element={
-                  <ErrorBoundary fallbackTitle="Chat Error">
-                    <ChatPage />
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="/notes"
-                element={
-                  <ErrorBoundary fallbackTitle="Notes Error">
-                    <NotesPage />
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="/documents"
-                element={
-                  <ErrorBoundary fallbackTitle="Documents Error">
-                    <DocumentsPage />
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ErrorBoundary fallbackTitle="Settings Error">
-                    <SettingsPage />
-                  </ErrorBoundary>
-                }
-              />
-            </Routes>
-          </main>
-        </div>
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+            <Navigation />
+            <main>
+              <Routes>
+                <Route path="/" element={<Navigate to="/chat" replace />} />
+                <Route
+                  path="/chat"
+                  element={
+                    <ErrorBoundary fallbackTitle="Chat Error">
+                      <ChatPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/notes"
+                  element={
+                    <ErrorBoundary fallbackTitle="Notes Error">
+                      <NotesPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/documents"
+                  element={
+                    <ErrorBoundary fallbackTitle="Documents Error">
+                      <DocumentsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ErrorBoundary fallbackTitle="Settings Error">
+                      <SettingsPage />
+                    </ErrorBoundary>
+                  }
+                />
+              </Routes>
+            </main>
+          </div>
+        </BrowserRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
