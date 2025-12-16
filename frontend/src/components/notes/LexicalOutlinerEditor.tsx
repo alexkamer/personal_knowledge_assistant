@@ -59,8 +59,12 @@ const theme = {
     h3: 'text-xl font-medium text-gray-700 mb-1',
   },
   list: {
-    ul: 'list-none',
-    listitem: 'ml-6 relative',
+    ul: 'list-disc ml-6',
+    ol: 'list-decimal ml-6',
+    listitem: 'ml-0 pl-2',
+    nested: {
+      listitem: 'list-none',
+    },
   },
   code: 'bg-gray-900 text-gray-100 font-mono text-sm p-4 rounded-lg my-2 block overflow-x-auto',
   codeHighlight: {
