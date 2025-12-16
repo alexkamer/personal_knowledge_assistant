@@ -52,7 +52,7 @@ function NotesPage() {
 
           {/* Notes List with header */}
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-            <div className="flex justify-between items-center mb-4 flex-shrink-0">
+            <div className="flex justify-between items-center mb-4 flex-shrink-0 px-1">
               <h2 className="text-xl font-semibold text-gray-800">Notes</h2>
               <button
                 onClick={handleCreateNew}
