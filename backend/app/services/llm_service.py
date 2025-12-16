@@ -217,12 +217,11 @@ QUESTION:
 
 Please provide a clear and helpful answer based on the context above."""
         else:
-            return f"""I have a question, but no relevant context was found in my knowledge base:
-
-QUESTION:
+            # No context - this is a general knowledge question
+            return f"""QUESTION:
 {query}
 
-Please let me know that you don't have relevant information to answer this question."""
+Please provide a clear and concise answer to this question using your general knowledge."""
 
     async def list_available_models(self) -> List[dict]:
         """

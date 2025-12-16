@@ -45,12 +45,26 @@ class RAGOrchestrator:
         analysis = self.query_analyzer.analyze(query)
         logger.info(f"Query analysis complete: {analysis}")
 
-        # Step 2: Determine retrieval parameters
+        # Step 2: Check if retrieval is needed
+        if not analysis.get("needs_retrieval", True):
+            logger.info("Query is general knowledge - skipping document retrieval")
+            # Return empty context and citations for general knowledge questions
+            metadata = {
+                "query_type": analysis["query_type"],
+                "complexity": analysis["complexity"],
+                "chunks_retrieved": 0,
+                "unique_sources": 0,
+                "web_search_used": False,
+                "retrieval_skipped": True,
+            }
+            return "", [], metadata
+
+        # Step 3: Determine retrieval parameters
         retrieval_params = analysis["retrieval_params"]
         top_k_initial = retrieval_params["initial_k"]
         top_k_final = retrieval_params["max_final_chunks"]
 
-        # Step 3: Retrieve and re-rank chunks
+        # Step 4: Retrieve and re-rank chunks
         chunks = await self.rag_service.search_relevant_chunks(
             db=db,
             query=query,
@@ -60,7 +74,7 @@ class RAGOrchestrator:
 
         logger.info(f"Retrieved {len(chunks)} initial chunks")
 
-        # Step 4: Re-rank chunks to get the best ones
+        # Step 5: Re-rank chunks to get the best ones
         if settings.rerank_enabled and chunks:
             logger.info(f"Re-ranking to top {top_k_final} chunks")
             chunks = self.rag_service.rerank_chunks(
@@ -69,20 +83,20 @@ class RAGOrchestrator:
                 top_k=top_k_final
             )
 
-        # Step 5: Assemble context with deduplication
+        # Step 6: Assemble context with deduplication
         context, citations = self.rag_service.assemble_context(
             chunks=chunks,
             max_tokens=settings.max_context_tokens
         )
 
-        # Step 6: Decide on web search
+        # Step 7: Decide on web search
         should_use_web = self._decide_web_search(
             chunks=chunks,
             analysis=analysis,
             force_web_search=force_web_search
         )
 
-        # Step 7: Add web search if needed
+        # Step 8: Add web search if needed
         if should_use_web:
             context, citations = await self._add_web_search(
                 query=query,

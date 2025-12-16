@@ -2,6 +2,7 @@
 Query analyzer service for understanding query intent and complexity.
 """
 import logging
+import re
 from enum import Enum
 from typing import Dict, Any
 
@@ -35,6 +36,24 @@ class QueryAnalyzer:
         self.comparative_keywords = ["compare", "difference between", "versus", "vs", "better than"]
         self.procedural_keywords = ["how to", "steps to", "tutorial", "guide", "instructions"]
 
+        # Indicators that suggest a query is general knowledge (doesn't need retrieval)
+        self.general_knowledge_indicators = [
+            # Math/calculation patterns
+            r"\b\d+\s*[\+\-\*\/×÷]\s*\d+",  # Basic arithmetic: 2+2, 5*8, etc.
+            r"\bcalculate\b",
+            r"\bsolve\b.*\bequation\b",
+
+            # Common general knowledge
+            r"\bcapital of\b",
+            r"\bpresident of\b",
+            r"\bpopulation of\b",
+            r"\blargest\b.*\bcity\b",
+            r"\bsmallest\b.*\bcountry\b",
+
+            # Very simple greetings/chat
+            r"^(hi|hello|hey|thanks|thank you)[\s\?!\.]*$",
+        ]
+
     def analyze(self, query: str) -> Dict[str, Any]:
         """
         Analyze a query to determine its type and complexity.
@@ -46,6 +65,9 @@ class QueryAnalyzer:
             Dictionary with analysis results
         """
         query_lower = query.lower()
+
+        # First check if this is a general knowledge question
+        needs_retrieval = self._needs_document_retrieval(query_lower)
 
         # Determine query type
         query_type = self._determine_type(query_lower)
@@ -61,13 +83,34 @@ class QueryAnalyzer:
             "complexity": complexity,
             "retrieval_params": retrieval_params,
             "needs_web_search": self._needs_web_search(query_lower, query_type),
+            "needs_retrieval": needs_retrieval,
         }
 
         logger.info(f"Query analysis: type={query_type}, complexity={complexity}, "
+                   f"needs_retrieval={needs_retrieval}, "
                    f"suggested_chunks={retrieval_params['top_k']}, "
                    f"needs_web={analysis['needs_web_search']}")
 
         return analysis
+
+    def _needs_document_retrieval(self, query_lower: str) -> bool:
+        """
+        Determine if the query needs document retrieval or can be answered with general knowledge.
+
+        Args:
+            query_lower: Lowercased query string
+
+        Returns:
+            True if document retrieval is needed, False for general knowledge questions
+        """
+        # Check for general knowledge indicators using regex patterns
+        for pattern in self.general_knowledge_indicators:
+            if re.search(pattern, query_lower, re.IGNORECASE):
+                logger.info(f"Query matches general knowledge pattern: {pattern}")
+                return False
+
+        # Default: assume retrieval is needed
+        return True
 
     def _determine_type(self, query_lower: str) -> QueryType:
         """Determine the type of query."""
