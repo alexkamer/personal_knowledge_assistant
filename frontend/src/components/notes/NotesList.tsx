@@ -1,9 +1,9 @@
 /**
  * List of notes component.
  */
-import { useState, useMemo } from 'react';
-import { useNotes, useDeleteNote } from '../../hooks/useNotes';
-import { Trash2, AlertCircle, RefreshCw, Search, FileText } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { useNotes, useDeleteNote, useUpdateNote } from '../../hooks/useNotes';
+import { MoreVertical, AlertCircle, RefreshCw, Search, FileText } from 'lucide-react';
 import type { Note } from '../../types/note';
 
 interface NotesListProps {
@@ -54,7 +54,13 @@ function extractPreviewText(content: string, maxLength: number = 150): string {
 function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProps) {
   const { data, isLoading, error, refetch } = useNotes(selectedTags);
   const deleteNote = useDeleteNote();
+  const updateNote = useUpdateNote();
   const [searchQuery, setSearchQuery] = useState('');
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const menuRef = useRef<HTMLDivElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   // Filter notes by search query
   const filteredNotes = useMemo(() => {
@@ -70,8 +76,72 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
     );
   }, [data?.notes, searchQuery]);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editingNoteId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingNoteId]);
+
+  const handleMenuToggle = (e: React.MouseEvent, noteId: string) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === noteId ? null : noteId);
+  };
+
+  const handleEdit = (e: React.MouseEvent, note: Note) => {
+    e.stopPropagation();
+    setEditingNoteId(note.id);
+    setEditTitle(note.title);
+    setOpenMenuId(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent, note: Note) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!editTitle.trim()) {
+      setEditTitle(note.title); // Reset to original
+      setEditingNoteId(null);
+      return;
+    }
+
+    try {
+      await updateNote.mutateAsync({
+        id: note.id,
+        data: {
+          title: editTitle.trim(),
+        },
+      });
+      setEditingNoteId(null);
+    } catch (error) {
+      console.error('Failed to update note title:', error);
+      setEditTitle(note.title); // Reset to original
+      setEditingNoteId(null);
+    }
+  };
+
+  const handleCancelEdit = (e: React.MouseEvent, originalTitle: string) => {
+    e.stopPropagation();
+    setEditTitle(originalTitle);
+    setEditingNoteId(null);
+  };
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Prevent selecting note when clicking delete
+    e.stopPropagation();
+    setOpenMenuId(null);
     if (window.confirm('Are you sure you want to delete this note?')) {
       await deleteNote.mutateAsync(id);
     }
@@ -154,9 +224,34 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
               >
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate mb-1">
-                      {note.title}
-                    </h3>
+                    {editingNoteId === note.id ? (
+                      <form onSubmit={(e) => handleSaveEdit(e, note)} className="mb-1">
+                        <input
+                          ref={editInputRef}
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          onBlur={(e) => {
+                            // Convert blur to form submission
+                            const form = e.currentTarget.form;
+                            if (form) {
+                              form.requestSubmit();
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              handleCancelEdit(e as any, note.title);
+                            }
+                          }}
+                          className="w-full px-2 py-1 text-lg font-semibold border-2 border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </form>
+                    ) : (
+                      <h3 className="text-lg font-semibold text-gray-900 truncate mb-1">
+                        {note.title}
+                      </h3>
+                    )}
                     <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
                       {extractPreviewText(note.content)}
                     </p>
@@ -180,14 +275,35 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
                       })}
                     </p>
                   </div>
-                  <button
-                    onClick={(e) => handleDelete(e, note.id)}
-                    className="flex-shrink-0 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors group"
-                    disabled={deleteNote.isPending}
-                    title="Delete note"
-                  >
-                    <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
-                  </button>
+
+                  {/* Three-dot menu */}
+                  <div className="relative flex-shrink-0" ref={openMenuId === note.id ? menuRef : null}>
+                    <button
+                      onClick={(e) => handleMenuToggle(e, note.id)}
+                      className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="More options"
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+
+                    {openMenuId === note.id && (
+                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <button
+                          onClick={(e) => handleEdit(e, note)}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(e, note.id)}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-b-lg transition-colors"
+                          disabled={deleteNote.isPending}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
