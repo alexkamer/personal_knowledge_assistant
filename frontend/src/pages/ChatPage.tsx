@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Plus, Trash2, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
+import { TokenUsage } from '@/components/chat/TokenUsage';
 import {
   useConversations,
   useConversation,
@@ -379,6 +380,13 @@ export function ChatPage() {
               <span>{webSearchEnabled ? '✓ Using web + documents' : 'Documents only (no web search)'}</span>
             </button>
           </div>
+
+          {/* Token Usage Indicator */}
+          {selectedConversationId && (
+            <div className="px-6 pb-3">
+              <TokenUsage conversationId={selectedConversationId} />
+            </div>
+          )}
 
           <ChatInput
             onSend={handleSendMessage}

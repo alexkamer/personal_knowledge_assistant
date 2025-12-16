@@ -141,4 +141,29 @@ export const chatService = {
   async deleteConversation(id: string): Promise<void> {
     await apiClient.delete(`/chat/conversations/${id}`);
   },
+
+  /**
+   * Get token usage statistics for a conversation.
+   */
+  async getTokenUsage(conversationId: string, model = 'qwen2.5:14b'): Promise<{
+    total_tokens: number;
+    limit: number;
+    usage_percent: number;
+    remaining: number;
+    is_warning: boolean;
+    is_critical: boolean;
+    messages_count: number;
+    message_tokens: Array<{
+      message_id: string;
+      role: string;
+      tokens: number;
+      created_at: string;
+    }>;
+  }> {
+    const response = await apiClient.get(
+      `/chat/conversations/${conversationId}/token-usage`,
+      { params: { model } }
+    );
+    return response.data;
+  },
 };
