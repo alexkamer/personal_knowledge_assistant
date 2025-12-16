@@ -3,7 +3,7 @@
  */
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, Plus, Trash2, AlertCircle, RotateCcw, Search, X, Globe } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import {
@@ -23,6 +23,7 @@ export function ChatPage() {
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [streamingSources, setStreamingSources] = useState<any[]>([]);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const queryClient = useQueryClient();
   const { data: conversationsData } = useConversations();
@@ -170,36 +171,39 @@ export function ChatPage() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar - Conversation List */}
-        <aside className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <h2 className="font-semibold text-gray-900">Conversations</h2>
-          </div>
-
-          {/* Search Input */}
-          <div className="px-4 py-3 border-b border-gray-200">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X size={18} />
-                </button>
-              )}
+        <aside className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'w-0' : 'w-80'
+        }`}>
+          <div className={`${isSidebarCollapsed ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 flex flex-col h-full`}>
+            <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0">
+              <h2 className="font-semibold text-gray-900">Conversations</h2>
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto">
+            {/* Search Input */}
+            <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0">
             {conversationsData && conversationsData.conversations.length > 0 ? (
               filteredConversations.length > 0 ? (
                 <div className="divide-y divide-gray-200">
@@ -258,8 +262,22 @@ export function ChatPage() {
                 <p className="text-xs mt-2">Start a new chat to begin</p>
               </div>
             )}
+            </div>
           </div>
         </aside>
+
+        {/* Collapse/Expand Button */}
+        <button
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white border border-gray-300 rounded-r-lg px-1 py-4 hover:bg-gray-50 transition-colors shadow-md z-10"
+          title={isSidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+        >
+          {isSidebarCollapsed ? (
+            <ChevronRight size={20} className="text-gray-600" />
+          ) : (
+            <ChevronLeft size={20} className="text-gray-600" />
+          )}
+        </button>
 
         {/* Chat Area */}
         <main className="flex-1 flex flex-col bg-gray-50">
