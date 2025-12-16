@@ -33,6 +33,7 @@ import { ImageNode } from './ImageNode';
 import { ImagePlugin } from './ImagePlugin';
 import { ImageResizePlugin } from './ImageResizePlugin';
 import { CodeHighlightPlugin } from './CodeHighlightPlugin';
+import { CodeActionPlugin } from './CodeActionPlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -243,6 +244,7 @@ export function LexicalOutlinerEditor({
           <ListPlugin />
           <KeyboardShortcutsPlugin />
           <CodeHighlightPlugin />
+          <CodeActionPlugin />
           <OnChangeSerializerPlugin onChange={onChange} />
           <InitialContentPlugin content={initialContent} />
           <LexicalSlashCommandPlugin />
