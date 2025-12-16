@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import type { Message, SourceCitation } from '@/types/chat';
 import { SourcePreviewModal } from './SourcePreviewModal';
+import { MetadataBadges } from './MetadataBadges';
 import { apiClient } from '@/services/api';
 import 'highlight.js/styles/github.css';
 
@@ -219,34 +220,52 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
                   )}
                 </button>
                 {expandedSources.has(message.id) && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col gap-2.5">
                   {message.sources.map((source) => (
                     <button
                       key={`${source.source_id}-${source.chunk_index}`}
                       onClick={() => handleSourceClick(source)}
-                      className="group inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer"
+                      className="group text-left p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer"
                       title={`Distance: ${source.distance.toFixed(3)} | Chunk: ${source.chunk_index} | Click to preview`}
                     >
-                      <div className={`p-1 rounded ${
-                        source.source_type === 'note' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' :
-                        source.source_type === 'web' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' :
-                        'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                      }`}>
-                        {source.source_type === 'note' ? (
-                          <StickyNote size={14} />
-                        ) : source.source_type === 'web' ? (
-                          <Globe size={14} />
-                        ) : (
-                          <FileText size={14} />
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                          {source.source_title}
-                        </span>
-                        <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                          {source.source_type === 'note' ? 'Note' : source.source_type === 'web' ? 'Web' : 'Document'} • Ref [{source.index}]
-                        </span>
+                      <div className="flex items-start gap-2.5">
+                        <div className={`p-1.5 rounded flex-shrink-0 ${
+                          source.source_type === 'note' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' :
+                          source.source_type === 'web' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' :
+                          'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                        }`}>
+                          {source.source_type === 'note' ? (
+                            <StickyNote size={14} />
+                          ) : source.source_type === 'web' ? (
+                            <Globe size={14} />
+                          ) : (
+                            <FileText size={14} />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-semibold text-gray-900 dark:text-white">
+                                {source.source_title}
+                              </div>
+                              {source.section_title && (
+                                <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5 truncate" title={source.section_title}>
+                                  📍 {source.section_title}
+                                </div>
+                              )}
+                              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                {source.source_type === 'note' ? 'Note' : source.source_type === 'web' ? 'Web' : 'Document'} • Ref [{source.index}]
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-2">
+                            <MetadataBadges
+                              contentType={source.content_type}
+                              hasCode={source.has_code}
+                              semanticDensity={source.semantic_density}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </button>
                   ))}

@@ -30,6 +30,11 @@ export interface SourceCitation {
   source_title: string;
   chunk_index: number;
   distance: number;
+  // Metadata fields from semantic chunking
+  content_type?: string;
+  section_title?: string;
+  has_code?: boolean;
+  semantic_density?: number;
 }
 
 export interface ChunkDetail {

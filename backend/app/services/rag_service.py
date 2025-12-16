@@ -32,6 +32,10 @@ class RetrievedChunk:
         source_id: str,
         source_title: str,
         chunk_index: int,
+        content_type: Optional[str] = None,
+        section_title: Optional[str] = None,
+        has_code: Optional[bool] = None,
+        semantic_density: Optional[float] = None,
     ):
         self.chunk_id = chunk_id
         self.content = content
@@ -40,10 +44,14 @@ class RetrievedChunk:
         self.source_id = source_id
         self.source_title = source_title
         self.chunk_index = chunk_index
+        self.content_type = content_type
+        self.section_title = section_title
+        self.has_code = has_code
+        self.semantic_density = semantic_density
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
-        return {
+        result = {
             "chunk_id": self.chunk_id,
             "content": self.content,
             "distance": self.distance,
@@ -52,6 +60,16 @@ class RetrievedChunk:
             "source_title": self.source_title,
             "chunk_index": self.chunk_index,
         }
+        # Include metadata fields if present
+        if self.content_type:
+            result["content_type"] = self.content_type
+        if self.section_title:
+            result["section_title"] = self.section_title
+        if self.has_code is not None:
+            result["has_code"] = self.has_code
+        if self.semantic_density is not None:
+            result["semantic_density"] = self.semantic_density
+        return result
 
 
 class RAGService:
@@ -213,6 +231,10 @@ class RAGService:
                 source_id=source_id,
                 source_title=source_title,
                 chunk_index=chunk.chunk_index,
+                content_type=chunk.content_type,
+                section_title=chunk.section_title,
+                has_code=bool(chunk.has_code) if chunk.has_code is not None else None,
+                semantic_density=chunk.semantic_density,
             )
             retrieved_chunks.append(retrieved_chunk)
 
@@ -314,6 +336,10 @@ class RAGService:
                 source_id=source_id,
                 source_title=source_title,
                 chunk_index=metadata["chunk_index"],
+                content_type=metadata.get("content_type"),
+                section_title=metadata.get("section_title"),
+                has_code=metadata.get("has_code"),
+                semantic_density=metadata.get("semantic_density"),
             )
             retrieved_chunks.append(retrieved_chunk)
 
@@ -395,14 +421,25 @@ class RAGService:
             context_parts.append(f"[Source {idx}: {chunk.source_title}]\n{chunk.content}\n")
 
             # Track all chunk citations (including duplicates from same document)
-            all_chunk_citations.append({
+            citation = {
                 "index": idx,
                 "source_type": chunk.source_type,
                 "source_id": chunk.source_id,
                 "source_title": chunk.source_title,
                 "chunk_index": chunk.chunk_index,
                 "distance": chunk.distance,
-            })
+            }
+            # Add metadata fields if available
+            if chunk.content_type:
+                citation["content_type"] = chunk.content_type
+            if chunk.section_title:
+                citation["section_title"] = chunk.section_title
+            if chunk.has_code is not None:
+                citation["has_code"] = chunk.has_code
+            if chunk.semantic_density is not None:
+                citation["semantic_density"] = chunk.semantic_density
+
+            all_chunk_citations.append(citation)
 
             total_tokens += chunk_tokens
 

@@ -127,19 +127,24 @@ class ChunkProcessingService:
 
         # Store embeddings in vector database
         chunk_ids = [str(chunk.id) for chunk in chunks]
-        metadatas = [
-            {
+        metadatas = []
+        for chunk in chunks:
+            metadata = {
                 "source_id": note_id,
                 "source_type": "note",
                 "chunk_index": chunk.chunk_index,
                 "token_count": chunk.token_count,
-                "content_type": chunk.content_type,
-                "section_title": chunk.section_title,
-                "has_code": chunk.has_code,
-                "semantic_density": chunk.semantic_density,
             }
-            for chunk in chunks
-        ]
+            # Only add optional fields if they have non-None values
+            if chunk.content_type is not None:
+                metadata["content_type"] = chunk.content_type
+            if chunk.section_title is not None:
+                metadata["section_title"] = chunk.section_title
+            if chunk.has_code is not None:
+                metadata["has_code"] = chunk.has_code
+            if chunk.semantic_density is not None:
+                metadata["semantic_density"] = chunk.semantic_density
+            metadatas.append(metadata)
 
         await self.vector_service.add_batch_embeddings(
             chunk_ids=chunk_ids,
@@ -234,19 +239,24 @@ class ChunkProcessingService:
 
         # Store embeddings in vector database
         chunk_ids = [str(chunk.id) for chunk in chunks]
-        metadatas = [
-            {
+        metadatas = []
+        for chunk in chunks:
+            metadata = {
                 "source_id": document_id,
                 "source_type": "document",
                 "chunk_index": chunk.chunk_index,
                 "token_count": chunk.token_count,
-                "content_type": chunk.content_type,
-                "section_title": chunk.section_title,
-                "has_code": chunk.has_code,
-                "semantic_density": chunk.semantic_density,
             }
-            for chunk in chunks
-        ]
+            # Only add optional fields if they have non-None values
+            if chunk.content_type is not None:
+                metadata["content_type"] = chunk.content_type
+            if chunk.section_title is not None:
+                metadata["section_title"] = chunk.section_title
+            if chunk.has_code is not None:
+                metadata["has_code"] = chunk.has_code
+            if chunk.semantic_density is not None:
+                metadata["semantic_density"] = chunk.semantic_density
+            metadatas.append(metadata)
 
         await self.vector_service.add_batch_embeddings(
             chunk_ids=chunk_ids,
