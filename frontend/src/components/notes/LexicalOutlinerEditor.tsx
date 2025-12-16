@@ -128,8 +128,16 @@ function InitialContentPlugin({ content }: { content?: string }) {
           root.append(paragraph);
         });
       }
+    } else {
+      // If no content, clear the editor
+      editor.update(() => {
+        const root = $getRoot();
+        root.clear();
+        const paragraph = $createParagraphNode();
+        root.append(paragraph);
+      });
     }
-  }, []); // Only run on mount
+  }, [content, editor]); // Update when content changes
 
   return null;
 }
