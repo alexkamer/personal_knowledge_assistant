@@ -14,6 +14,7 @@ from app.models.document import Document
 from app.services.embedding_service import get_embedding_service
 from app.services.vector_service import get_vector_service
 from app.services.web_search_service import get_web_search_service
+from app.services.reranking_service import get_reranking_service
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ class RAGService:
         """Initialize RAG service."""
         self.embedding_service = get_embedding_service()
         self.vector_service = get_vector_service()
+        self.reranking_service = get_reranking_service() if settings.rerank_enabled else None
 
     async def search_relevant_chunks(
         self,
@@ -143,6 +145,45 @@ class RAGService:
 
         return retrieved_chunks
 
+    def rerank_chunks(
+        self,
+        query: str,
+        chunks: List[RetrievedChunk],
+        top_k: int = None,
+    ) -> List[RetrievedChunk]:
+        """
+        Re-rank chunks using cross-encoder for improved relevance.
+
+        Args:
+            query: Original search query
+            chunks: List of retrieved chunks
+            top_k: Number of top chunks to keep (defaults to config)
+
+        Returns:
+            Re-ranked list of chunks (top k only)
+        """
+        if not chunks or not self.reranking_service:
+            return chunks
+
+        top_k = top_k or settings.max_final_chunks
+
+        # Extract text content for re-ranking
+        texts = [chunk.content for chunk in chunks]
+
+        # Get re-ranked indices and scores
+        reranked_results = self.reranking_service.rerank(query, texts, top_k=top_k)
+
+        # Build new list with re-ranked chunks
+        reranked_chunks = []
+        for original_idx, score in reranked_results:
+            chunk = chunks[original_idx]
+            # Update distance to reflect re-ranking score (higher is better, so invert)
+            chunk.distance = 1.0 - score  # Convert score to distance-like metric
+            reranked_chunks.append(chunk)
+
+        logger.info(f"Re-ranked {len(chunks)} chunks down to top {len(reranked_chunks)}")
+        return reranked_chunks
+
     def assemble_context(
         self,
         chunks: List[RetrievedChunk],
@@ -164,7 +205,7 @@ class RAGService:
             return "", []
 
         context_parts = []
-        citations = []
+        all_chunk_citations = []
         total_tokens = 0
 
         # Build context with source citations
@@ -179,8 +220,8 @@ class RAGService:
             # Add chunk with citation marker
             context_parts.append(f"[Source {idx}: {chunk.source_title}]\n{chunk.content}\n")
 
-            # Track citation
-            citations.append({
+            # Track all chunk citations (including duplicates from same document)
+            all_chunk_citations.append({
                 "index": idx,
                 "source_type": chunk.source_type,
                 "source_id": chunk.source_id,
@@ -191,8 +232,25 @@ class RAGService:
 
             total_tokens += chunk_tokens
 
+        # Deduplicate citations by source (keep best distance for each unique source)
+        unique_sources = {}
+        for citation in all_chunk_citations:
+            source_key = (citation["source_type"], citation["source_id"])
+            if source_key not in unique_sources:
+                unique_sources[source_key] = citation
+            else:
+                # Keep the one with better (lower) distance
+                if citation["distance"] < unique_sources[source_key]["distance"]:
+                    unique_sources[source_key] = citation
+
+        # Convert back to list and re-index
+        citations = []
+        for new_idx, citation in enumerate(unique_sources.values(), 1):
+            citation["index"] = new_idx
+            citations.append(citation)
+
         context = "\n".join(context_parts)
-        logger.info(f"Assembled context with {len(citations)} sources (~{total_tokens} tokens)")
+        logger.info(f"Assembled context with {len(all_chunk_citations)} chunks from {len(citations)} unique sources (~{total_tokens} tokens)")
 
         return context, citations
 
@@ -211,7 +269,7 @@ class RAGService:
         Args:
             db: Database session
             query: Search query
-            top_k: Number of chunks to retrieve
+            top_k: Number of chunks to retrieve (before re-ranking)
             max_tokens: Maximum tokens for context
             include_web_search: Whether to include web search results (default: True)
             exclude_notes: Whether to exclude notes from sources (default: True)
@@ -221,10 +279,32 @@ class RAGService:
         """
         # Get local chunks from knowledge base (documents only, no notes)
         chunks = await self.search_relevant_chunks(db, query, top_k=top_k, exclude_notes=exclude_notes)
+
+        # Re-rank chunks to get the best ones
+        if settings.rerank_enabled and chunks:
+            logger.info(f"Applying re-ranking to {len(chunks)} chunks")
+            chunks = self.rerank_chunks(query, chunks)
+            logger.info(f"After re-ranking: {len(chunks)} chunks (distances: {[f'{c.distance:.3f}' for c in chunks]})")
+
+        # Assemble context from re-ranked chunks
         context, citations = self.assemble_context(chunks, max_tokens=max_tokens)
 
-        # Add web search results if requested
-        if include_web_search:
+        # Determine if we should add web search based on confidence
+        should_add_web = include_web_search
+        if chunks and include_web_search:
+            # Check confidence of best match (lower distance = better match)
+            best_distance = chunks[0].distance
+            confidence_threshold = settings.web_search_confidence_threshold
+
+            # If best match is good enough (distance < threshold), skip web search
+            if best_distance < (1.0 - confidence_threshold):
+                logger.info(f"Best match confidence high ({1.0 - best_distance:.2f}), skipping web search")
+                should_add_web = False
+            else:
+                logger.info(f"Best match confidence low ({1.0 - best_distance:.2f}), adding web search")
+
+        # Add web search results if needed
+        if should_add_web:
             try:
                 web_search_service = get_web_search_service()
                 web_results = await web_search_service.search(query, max_results=3)

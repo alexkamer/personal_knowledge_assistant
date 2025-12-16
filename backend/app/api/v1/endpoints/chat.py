@@ -23,6 +23,7 @@ from app.schemas.conversation import (
 from app.services.conversation_service import ConversationService
 from app.services.llm_service import get_llm_service
 from app.services.rag_service import get_rag_service
+from app.services.rag_orchestrator import get_rag_orchestrator
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -160,17 +161,21 @@ async def chat_stream(
                 content=request.message,
             )
 
-            # Retrieve relevant context using RAG
-            rag_service = get_rag_service()
-            context, citations = await rag_service.retrieve_and_assemble(
+            # Retrieve relevant context using RAG Orchestrator (with intelligent query analysis)
+            orchestrator = get_rag_orchestrator()
+            context, citations, metadata = await orchestrator.process_query(
                 db=db,
                 query=request.message,
-                top_k=request.top_k,
-                include_web_search=request.include_web_search,
+                force_web_search=request.include_web_search if request.include_web_search is not None else None,
             )
 
-            # Send sources
-            yield f'data: {json.dumps({"type": "sources", "sources": citations})}\n\n'
+            # Send sources with metadata
+            sources_data = {
+                "type": "sources",
+                "sources": citations,
+                "metadata": metadata  # Include query type, complexity, etc.
+            }
+            yield f'data: {json.dumps(sources_data)}\n\n'
 
             # Get conversation history
             messages = await ConversationService.get_conversation_messages(
