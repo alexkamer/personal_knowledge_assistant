@@ -3,7 +3,7 @@ Conversation and Message models for chat history.
 """
 from typing import Optional
 
-from sqlalchemy import ForeignKey, String, Text, JSON
+from sqlalchemy import ForeignKey, Integer, String, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -52,6 +52,9 @@ class Message(Base, UUIDMixin, TimestampMixin):
     retrieved_chunks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     model_used: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     suggested_questions: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+
+    # Token tracking
+    token_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Relationships
     conversation: Mapped["Conversation"] = relationship(

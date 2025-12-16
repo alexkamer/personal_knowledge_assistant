@@ -26,6 +26,7 @@ from app.services.conversation_service import ConversationService
 from app.services.llm_service import get_llm_service
 from app.services.rag_service import get_rag_service
 from app.services.rag_orchestrator import get_rag_orchestrator
+from app.utils.token_counter import get_token_counter
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -67,6 +68,12 @@ async def chat(
             role="user",
             content=request.message,
         )
+
+        # Calculate and store token count for user message
+        token_counter = get_token_counter()
+        user_message.token_count = token_counter.count_tokens(request.message)
+        await db.commit()
+        await db.refresh(user_message)
 
         # Retrieve relevant context using RAG
         rag_service = get_rag_service()
@@ -114,11 +121,15 @@ async def chat(
             model=request.model,
         )
 
-        # Update the message with suggested questions
+        # Calculate and store token count for assistant message
+        assistant_message.token_count = token_counter.count_tokens(response_text)
+
+        # Update the message with suggested questions and token count
         if suggested_questions:
             assistant_message.suggested_questions = suggested_questions
-            await db.commit()
-            await db.refresh(assistant_message)
+
+        await db.commit()
+        await db.refresh(assistant_message)
 
         return ChatResponse(
             conversation_id=str(conversation.id),
@@ -177,6 +188,12 @@ async def chat_stream(
                 role="user",
                 content=request.message,
             )
+
+            # Calculate and store token count for user message
+            token_counter = get_token_counter()
+            user_message.token_count = token_counter.count_tokens(request.message)
+            await db.commit()
+            await db.refresh(user_message)
 
             # Retrieve relevant context using RAG Orchestrator (with intelligent query analysis)
             orchestrator = get_rag_orchestrator()
@@ -239,13 +256,18 @@ async def chat_stream(
                 model=request.model,
             )
 
-            # Update the message with suggested questions
+            # Calculate and store token count for assistant message
+            assistant_message.token_count = token_counter.count_tokens(complete_response)
+
+            # Update the message with suggested questions and token count
             if suggested_questions:
                 assistant_message.suggested_questions = suggested_questions
-                await db.commit()
-                await db.refresh(assistant_message)
 
-                # Send suggested questions to client
+            await db.commit()
+            await db.refresh(assistant_message)
+
+            # Send suggested questions to client
+            if suggested_questions:
                 yield f'data: {json.dumps({"type": "suggested_questions", "questions": suggested_questions})}\n\n'
 
             # Send completion event
@@ -497,3 +519,62 @@ async def submit_message_feedback(
         await db.commit()
         await db.refresh(new_feedback)
         return MessageFeedbackResponse.model_validate(new_feedback)
+
+
+@router.get("/conversations/{conversation_id}/token-usage")
+async def get_conversation_token_usage(
+    conversation_id: str,
+    model: str = Query(default="qwen2.5:14b", description="Model to calculate context limits for"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Get token usage statistics for a conversation.
+
+    Returns:
+        - total_tokens: Total tokens used in conversation
+        - messages_count: Number of messages
+        - limit: Model's context window limit
+        - usage_percent: Percentage of context used
+        - remaining: Tokens remaining
+        - is_warning: True if > 70% used
+        - is_critical: True if > 90% used
+        - message_tokens: List of token counts per message
+    """
+    # Get conversation messages
+    messages = await ConversationService.get_conversation_messages(db, conversation_id)
+
+    if not messages:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found or has no messages",
+        )
+
+    # Calculate token usage
+    token_counter = get_token_counter()
+
+    # Get individual message token counts
+    message_tokens = []
+    total_tokens = 0
+
+    for msg in messages:
+        # Use stored token count if available, otherwise calculate
+        tokens = msg.token_count if msg.token_count else token_counter.count_tokens(msg.content)
+        message_tokens.append({
+            "message_id": str(msg.id),
+            "role": msg.role,
+            "tokens": tokens,
+            "created_at": msg.created_at.isoformat(),
+        })
+        total_tokens += tokens
+
+    # Get usage statistics
+    usage_stats = token_counter.estimate_context_usage(
+        messages=[{"role": msg.role, "content": msg.content} for msg in messages],
+        model=model,
+    )
+
+    return {
+        **usage_stats,
+        "messages_count": len(messages),
+        "message_tokens": message_tokens,
+    }
