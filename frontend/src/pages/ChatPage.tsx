@@ -173,12 +173,19 @@ export function ChatPage() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar - Conversation List */}
-        <aside className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${
+        <aside className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out relative ${
           isSidebarCollapsed ? 'w-0' : 'w-80'
         }`}>
           <div className={`${isSidebarCollapsed ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 flex flex-col h-full`}>
-            <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0">
+            <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Conversations</h2>
+              <button
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                title="Hide sidebar"
+              >
+                <ChevronLeft size={20} />
+              </button>
             </div>
 
             {/* Search Input */}
@@ -264,20 +271,18 @@ export function ChatPage() {
             )}
             </div>
           </div>
-        </aside>
 
-        {/* Collapse/Expand Button */}
-        <button
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white border border-gray-300 rounded-r-lg px-1 py-4 hover:bg-gray-50 transition-colors shadow-md z-10"
-          title={isSidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-        >
-          {isSidebarCollapsed ? (
-            <ChevronRight size={20} className="text-gray-600" />
-          ) : (
-            <ChevronLeft size={20} className="text-gray-600" />
+          {/* Show Sidebar Button - Only visible when collapsed */}
+          {isSidebarCollapsed && (
+            <button
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="absolute top-3 left-2 p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors z-10"
+              title="Show sidebar"
+            >
+              <ChevronRight size={20} />
+            </button>
           )}
-        </button>
+        </aside>
 
         {/* Chat Area */}
         <main className="flex-1 flex flex-col bg-gray-50">
