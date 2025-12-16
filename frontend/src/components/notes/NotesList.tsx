@@ -8,10 +8,11 @@ import type { Note } from '../../types/note';
 interface NotesListProps {
   onSelectNote: (note: Note) => void;
   selectedNoteId?: string;
+  selectedTags?: string[];
 }
 
-function NotesList({ onSelectNote, selectedNoteId }: NotesListProps) {
-  const { data, isLoading, error, refetch } = useNotes();
+function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProps) {
+  const { data, isLoading, error, refetch } = useNotes(selectedTags);
   const deleteNote = useDeleteNote();
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -81,14 +82,14 @@ function NotesList({ onSelectNote, selectedNoteId }: NotesListProps) {
                 <p className="mt-1 text-sm text-gray-600 line-clamp-2">
                   {note.content}
                 </p>
-                {note.tags && (
+                {note.tags_rel && note.tags_rel.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {note.tags.split(',').map((tag, idx) => (
+                    {note.tags_rel.map((tag) => (
                       <span
-                        key={idx}
-                        className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
+                        key={tag.id}
+                        className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded"
                       >
-                        {tag.trim()}
+                        {tag.name}
                       </span>
                     ))}
                   </div>

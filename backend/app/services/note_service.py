@@ -7,11 +7,13 @@ from uuid import UUID
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.note import Note
 from app.schemas.note import NoteCreate, NoteUpdate
 from app.services.chunk_processing_service import get_chunk_processing_service
 from app.services.vector_service import get_vector_service
+from app.services.tag_service import TagService
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +36,16 @@ class NoteService:
         note = Note(
             title=note_data.title,
             content=note_data.content,
-            tags=note_data.tags,
         )
+
+        # Handle tags
+        if note_data.tag_names:
+            tags = await TagService.get_or_create_tags(db, note_data.tag_names)
+            note.tags_rel = tags
+
         db.add(note)
         await db.commit()
-        await db.refresh(note)
+        await db.refresh(note, ["tags_rel"])
 
         # Process note for chunking and embeddings
         try:
@@ -63,7 +70,11 @@ class NoteService:
         Returns:
             Note if found, None otherwise
         """
-        result = await db.execute(select(Note).where(Note.id == note_id))
+        result = await db.execute(
+            select(Note)
+            .where(Note.id == note_id)
+            .options(selectinload(Note.tags_rel))
+        )
         return result.scalar_one_or_none()
 
     @staticmethod
@@ -71,25 +82,62 @@ class NoteService:
         db: AsyncSession,
         skip: int = 0,
         limit: int = 100,
+        tag_names: Optional[list[str]] = None,
     ) -> tuple[list[Note], int]:
         """
-        List notes with pagination.
+        List notes with pagination and optional tag filtering.
 
         Args:
             db: Database session
             skip: Number of notes to skip
             limit: Maximum number of notes to return
+            tag_names: Optional list of tag names to filter by (AND logic)
 
         Returns:
             Tuple of (notes list, total count)
         """
-        # Get total count
-        count_result = await db.execute(select(func.count(Note.id)))
+        # Build base query
+        query = select(Note).options(selectinload(Note.tags_rel))
+
+        # Apply tag filtering if provided
+        if tag_names:
+            # Normalize tag names
+            normalized_names = [name.strip().lower() for name in tag_names if name.strip()]
+
+            if normalized_names:
+                # Join with tags and filter
+                from app.models.tag import Tag
+                from app.models.note_tag import NoteTag
+
+                for tag_name in normalized_names:
+                    # Create subquery for this tag
+                    tag_subquery = (
+                        select(NoteTag.note_id)
+                        .join(Tag, Tag.id == NoteTag.tag_id)
+                        .where(Tag.name == tag_name)
+                    )
+                    query = query.where(Note.id.in_(tag_subquery))
+
+        # Get total count with same filters
+        count_query = select(func.count(Note.id))
+        if tag_names and normalized_names:
+            from app.models.tag import Tag
+            from app.models.note_tag import NoteTag
+
+            for tag_name in normalized_names:
+                tag_subquery = (
+                    select(NoteTag.note_id)
+                    .join(Tag, Tag.id == NoteTag.tag_id)
+                    .where(Tag.name == tag_name)
+                )
+                count_query = count_query.where(Note.id.in_(tag_subquery))
+
+        count_result = await db.execute(count_query)
         total = count_result.scalar_one()
 
         # Get notes
         result = await db.execute(
-            select(Note)
+            query
             .order_by(Note.updated_at.desc())
             .offset(skip)
             .limit(limit)
@@ -115,7 +163,11 @@ class NoteService:
         Returns:
             Updated note if found, None otherwise
         """
-        result = await db.execute(select(Note).where(Note.id == note_id))
+        result = await db.execute(
+            select(Note)
+            .where(Note.id == note_id)
+            .options(selectinload(Note.tags_rel))
+        )
         note = result.scalar_one_or_none()
 
         if not note:
@@ -125,11 +177,19 @@ class NoteService:
         update_data = note_data.model_dump(exclude_unset=True)
         content_changed = "content" in update_data
 
+        # Handle tag updates separately
+        if "tag_names" in update_data:
+            tag_names = update_data.pop("tag_names")
+            if tag_names is not None:
+                # Replace all tags
+                tags = await TagService.get_or_create_tags(db, tag_names)
+                note.tags_rel = tags
+
         for field, value in update_data.items():
             setattr(note, field, value)
 
         await db.commit()
-        await db.refresh(note)
+        await db.refresh(note, ["tags_rel"])
 
         # Reprocess chunks if content changed
         if content_changed:

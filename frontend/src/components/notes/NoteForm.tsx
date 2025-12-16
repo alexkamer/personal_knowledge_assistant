@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useCreateNote, useUpdateNote } from '../../hooks/useNotes';
 import type { Note } from '../../types/note';
+import { TagInput } from '../tags/TagInput';
 
 interface NoteFormProps {
   note: Note | null;
@@ -14,7 +15,7 @@ interface NoteFormProps {
 function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [tags, setTags] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
 
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();
@@ -24,11 +25,11 @@ function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
     if (note) {
       setTitle(note.title);
       setContent(note.content);
-      setTags(note.tags || '');
+      setTags(note.tags_rel.map((tag) => tag.name));
     } else {
       setTitle('');
       setContent('');
-      setTags('');
+      setTags([]);
     }
   }, [note]);
 
@@ -48,7 +49,7 @@ function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
           data: {
             title: title.trim(),
             content: content.trim(),
-            tags: tags.trim() || undefined,
+            tag_names: tags,
           },
         });
       } else {
@@ -56,7 +57,7 @@ function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
         await createNote.mutateAsync({
           title: title.trim(),
           content: content.trim(),
-          tags: tags.trim() || undefined,
+          tag_names: tags,
         });
       }
       onSave();
@@ -107,20 +108,7 @@ function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
           />
         </div>
 
-        <div>
-          <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
-            Tags (comma-separated)
-          </label>
-          <input
-            type="text"
-            id="tags"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. work, ideas, todo"
-            disabled={isLoading}
-          />
-        </div>
+        <TagInput value={tags} onChange={setTags} disabled={isLoading} />
 
         <div className="flex gap-3 pt-4">
           <button

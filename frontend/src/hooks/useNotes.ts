@@ -8,12 +8,12 @@ import type { NoteCreate, NoteUpdate } from '../types/note';
 const NOTES_QUERY_KEY = ['notes'];
 
 /**
- * Hook to fetch all notes.
+ * Hook to fetch all notes with optional tag filtering.
  */
-export function useNotes() {
+export function useNotes(tags?: string[]) {
   return useQuery({
-    queryKey: NOTES_QUERY_KEY,
-    queryFn: () => noteService.getNotes(),
+    queryKey: [...NOTES_QUERY_KEY, { tags }],
+    queryFn: () => noteService.getNotes(0, 100, tags),
   });
 }
 

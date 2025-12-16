@@ -26,6 +26,11 @@ class Note(Base, UUIDMixin, TimestampMixin):
         back_populates="note",
         cascade="all, delete-orphan",
     )
+    tags_rel: Mapped[list["Tag"]] = relationship(
+        "Tag",
+        secondary="note_tags",
+        back_populates="notes",
+    )
 
     def __repr__(self) -> str:
         return f"<Note(id={self.id}, title='{self.title}')>"

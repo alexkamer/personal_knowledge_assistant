@@ -2,11 +2,13 @@
  * Note types matching backend schemas.
  */
 
+import { Tag } from './tag';
+
 export interface Note {
   id: string;
   title: string;
   content: string;
-  tags: string | null;
+  tags_rel: Tag[];
   created_at: string;
   updated_at: string;
 }
@@ -14,13 +16,13 @@ export interface Note {
 export interface NoteCreate {
   title: string;
   content: string;
-  tags?: string;
+  tag_names: string[];
 }
 
 export interface NoteUpdate {
   title?: string;
   content?: string;
-  tags?: string;
+  tag_names?: string[];
 }
 
 export interface NoteListResponse {

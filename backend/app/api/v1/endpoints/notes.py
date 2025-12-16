@@ -29,12 +29,29 @@ async def create_note(
 async def list_notes(
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    tags: Annotated[str | None, Query(description="Comma-separated tag names to filter by")] = None,
     db: AsyncSession = Depends(get_db),
 ) -> NoteListResponse:
     """
-    List all notes with pagination.
+    List all notes with pagination and optional tag filtering.
+
+    Args:
+        skip: Number of notes to skip
+        limit: Maximum number of notes to return
+        tags: Comma-separated tag names for filtering (AND logic)
+        db: Database session
+
+    Returns:
+        List of notes matching criteria
     """
-    notes, total = await NoteService.list_notes(db, skip=skip, limit=limit)
+    # Parse comma-separated tags
+    tag_names = None
+    if tags:
+        tag_names = [tag.strip() for tag in tags.split(",") if tag.strip()]
+
+    notes, total = await NoteService.list_notes(
+        db, skip=skip, limit=limit, tag_names=tag_names
+    )
     return NoteListResponse(
         notes=[NoteResponse.model_validate(note) for note in notes],
         total=total,

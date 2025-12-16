@@ -6,12 +6,14 @@ import type { Note, NoteCreate, NoteUpdate, NoteListResponse } from '../types/no
 
 export const noteService = {
   /**
-   * Get all notes.
+   * Get all notes with optional tag filtering.
    */
-  async getNotes(skip = 0, limit = 100): Promise<NoteListResponse> {
-    const response = await apiClient.get<NoteListResponse>('/notes/', {
-      params: { skip, limit },
-    });
+  async getNotes(skip = 0, limit = 100, tags?: string[]): Promise<NoteListResponse> {
+    const params: Record<string, any> = { skip, limit };
+    if (tags && tags.length > 0) {
+      params.tags = tags.join(',');
+    }
+    const response = await apiClient.get<NoteListResponse>('/notes/', { params });
     return response.data;
   },
 

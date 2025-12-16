@@ -4,11 +4,13 @@
 import { useState } from 'react';
 import NotesList from '../components/notes/NotesList';
 import NoteForm from '../components/notes/NoteForm';
+import { TagFilter } from '../components/tags/TagFilter';
 import type { Note } from '../types/note';
 
 function NotesPage() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const handleSelectNote = (note: Note) => {
     setSelectedNote(note);
@@ -31,9 +33,14 @@ function NotesPage() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Sidebar with filters */}
+      <div className="lg:col-span-1 space-y-4">
+        <TagFilter selectedTags={selectedTags} onTagsChange={setSelectedTags} />
+      </div>
+
       {/* Notes List */}
-      <div>
+      <div className="lg:col-span-1">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-800">Notes</h2>
           <button
@@ -43,11 +50,15 @@ function NotesPage() {
             New Note
           </button>
         </div>
-        <NotesList onSelectNote={handleSelectNote} selectedNoteId={selectedNote?.id} />
+        <NotesList
+          onSelectNote={handleSelectNote}
+          selectedNoteId={selectedNote?.id}
+          selectedTags={selectedTags}
+        />
       </div>
 
       {/* Note Form */}
-      <div>
+      <div className="lg:col-span-1">
         {(isCreating || selectedNote) && (
           <NoteForm
             note={selectedNote}
