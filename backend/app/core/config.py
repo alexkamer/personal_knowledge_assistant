@@ -68,6 +68,11 @@ class Settings(BaseSettings):
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     web_search_confidence_threshold: float = 0.7  # Only use web if best match < this
 
+    # File Upload Configuration
+    max_upload_size_mb: int = 50  # Maximum file size in MB
+    allowed_file_types: List[str] = ["txt", "md", "markdown", "pdf", "doc", "docx"]
+    upload_directory: str = "./uploads"
+
     # Security (for future authentication)
     secret_key: str = "dev-secret-key-change-in-production"
     access_token_expire_minutes: int = 30

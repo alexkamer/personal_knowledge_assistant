@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.schemas.document import (
     DocumentContentResponse,
     DocumentListResponse,
@@ -32,12 +33,34 @@ async def upload_document(
     Upload a document and extract its text content.
 
     Supports: TXT, MD, PDF, DOCX file types.
+    Maximum file size: 50MB (configurable via settings).
     """
     if not file.filename:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must have a filename",
         )
+
+    # Validate file type
+    file_extension = file.filename.split(".")[-1].lower() if "." in file.filename else ""
+    if file_extension not in settings.allowed_file_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File type '{file_extension}' not supported. Allowed types: {', '.join(settings.allowed_file_types)}",
+        )
+
+    # Check file size (read first to get actual size)
+    file_content = await file.read()
+    file_size_mb = len(file_content) / (1024 * 1024)
+
+    if file_size_mb > settings.max_upload_size_mb:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File size ({file_size_mb:.1f}MB) exceeds maximum allowed size ({settings.max_upload_size_mb}MB)",
+        )
+
+    # Reset file pointer for save_upload_file
+    await file.seek(0)
 
     # Save the uploaded file
     try:
