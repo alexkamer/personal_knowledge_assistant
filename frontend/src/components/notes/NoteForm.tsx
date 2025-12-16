@@ -7,14 +7,17 @@ import { useCreateNote, useUpdateNote } from '../../hooks/useNotes';
 import type { Note } from '../../types/note';
 import { TagInput } from '../tags/TagInput';
 import { LexicalOutlinerEditor } from './LexicalOutlinerEditor';
+import { BacklinksPanel } from './BacklinksPanel';
+import { RelatedNotesPanel } from './RelatedNotesPanel';
 
 interface NoteFormProps {
   note: Note | null;
   onSave: () => void;
   onCancel: () => void;
+  onNavigateToNote?: (noteId: string) => void;
 }
 
-function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
+function NoteForm({ note, onSave, onCancel, onNavigateToNote }: NoteFormProps) {
   const [content, setContent] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -161,6 +164,14 @@ function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
               ) : null}
             </div>
           </div>
+
+          {/* Backlinks Panel - only show when editing an existing note */}
+          {note && onNavigateToNote && (
+            <>
+              <BacklinksPanel noteId={note.id} onNavigate={onNavigateToNote} />
+              <RelatedNotesPanel noteId={note.id} onNavigate={onNavigateToNote} />
+            </>
+          )}
         </div>
       </div>
     </div>

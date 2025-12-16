@@ -7,7 +7,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.schemas.note import NoteCreate, NoteUpdate, NoteResponse, NoteListResponse
+from app.schemas.note import (
+    NoteCreate,
+    NoteUpdate,
+    NoteResponse,
+    NoteListResponse,
+    BacklinkResponse,
+    BacklinksListResponse,
+    RelatedNoteResponse,
+    RelatedNotesListResponse,
+)
 from app.services.note_service import NoteService
 
 router = APIRouter()
@@ -98,3 +107,67 @@ async def delete_note(
     deleted = await NoteService.delete_note(db, note_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Note not found")
+
+
+@router.get("/{note_id}/backlinks", response_model=BacklinksListResponse)
+async def get_note_backlinks(
+    note_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> BacklinksListResponse:
+    """
+    Get all notes that link to this note (backlinks).
+
+    Args:
+        note_id: Target note ID
+        db: Database session
+
+    Returns:
+        List of notes that contain wiki links to the target note
+    """
+    backlinks = await NoteService.get_backlinks(db, note_id)
+    return BacklinksListResponse(
+        backlinks=[BacklinkResponse.model_validate(note) for note in backlinks],
+        total=len(backlinks),
+    )
+
+
+@router.get("/{note_id}/related", response_model=RelatedNotesListResponse)
+async def get_related_notes(
+    note_id: str,
+    limit: int = 5,
+    db: AsyncSession = Depends(get_db),
+) -> RelatedNotesListResponse:
+    """
+    Get semantically related notes using vector similarity.
+
+    Finds notes with similar content based on embedding similarity,
+    helping users discover relevant connections beyond explicit wiki links.
+
+    Args:
+        note_id: Target note ID
+        limit: Maximum number of related notes to return (default: 5)
+        db: Database session
+
+    Returns:
+        List of related notes with similarity scores
+    """
+    related_notes_with_scores = await NoteService.get_related_notes(
+        db, note_id, limit=limit
+    )
+
+    # Convert to response format
+    related_notes = [
+        RelatedNoteResponse(
+            id=note.id,
+            title=note.title,
+            created_at=note.created_at,
+            updated_at=note.updated_at,
+            similarity_score=score,
+        )
+        for note, score in related_notes_with_scores
+    ]
+
+    return RelatedNotesListResponse(
+        related_notes=related_notes,
+        total=len(related_notes),
+    )

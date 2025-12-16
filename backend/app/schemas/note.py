@@ -52,3 +52,42 @@ class NoteListResponse(BaseModel):
 
     notes: list[NoteResponse]
     total: int
+
+
+class BacklinkResponse(BaseModel):
+    """Schema for a backlink (note that links to another note)."""
+
+    id: str
+    title: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class BacklinksListResponse(BaseModel):
+    """Schema for list of backlinks response."""
+
+    backlinks: list[BacklinkResponse]
+    total: int
+
+
+class RelatedNoteResponse(BaseModel):
+    """Schema for a related note with similarity score."""
+
+    id: str
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    similarity_score: float = Field(..., ge=0.0, le=1.0, description="Semantic similarity score (0-1)")
+
+    class Config:
+        from_attributes = True
+
+
+class RelatedNotesListResponse(BaseModel):
+    """Schema for list of related notes response."""
+
+    related_notes: list[RelatedNoteResponse]
+    total: int

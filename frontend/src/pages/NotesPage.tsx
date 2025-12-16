@@ -1,22 +1,32 @@
 /**
  * Notes page with list and form.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import NotesList from '../components/notes/NotesList';
 import NoteForm from '../components/notes/NoteForm';
 import { TagFilter } from '../components/tags/TagFilter';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Note } from '../types/note';
+import { useNotes } from '../hooks/useNotes';
 
 function NotesPage() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { data: notesData } = useNotes();
 
   const handleSelectNote = (note: Note) => {
     setSelectedNote(note);
     setIsCreating(false);
+  };
+
+  const handleNavigateToNoteById = (noteId: string) => {
+    const notes = notesData?.notes || [];
+    const targetNote = notes.find((n: Note) => n.id === noteId);
+    if (targetNote) {
+      handleSelectNote(targetNote);
+    }
   };
 
   const handleCreateNew = () => {
@@ -33,6 +43,28 @@ function NotesPage() {
     setSelectedNote(null);
     setIsCreating(false);
   };
+
+  // Listen for wiki link navigation events
+  useEffect(() => {
+    const handleWikiLinkNavigation = (event: Event) => {
+      const customEvent = event as CustomEvent<{ noteId: string; noteTitle: string }>;
+      const { noteId } = customEvent.detail;
+
+      // Find the note by ID and navigate to it
+      const notes = notesData?.notes || [];
+      const targetNote = notes.find((n: Note) => n.id === noteId);
+
+      if (targetNote) {
+        handleSelectNote(targetNote);
+      }
+    };
+
+    document.addEventListener('navigate-to-note', handleWikiLinkNavigation);
+
+    return () => {
+      document.removeEventListener('navigate-to-note', handleWikiLinkNavigation);
+    };
+  }, [notesData]);
 
   const hasNoteOpen = isCreating || selectedNote;
 
@@ -99,6 +131,7 @@ function NotesPage() {
             note={selectedNote}
             onSave={handleSaveComplete}
             onCancel={handleCancel}
+            onNavigateToNote={handleNavigateToNoteById}
           />
         ) : (
           <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-500 h-full flex items-center justify-center">

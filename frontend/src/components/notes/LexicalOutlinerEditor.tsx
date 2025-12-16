@@ -39,6 +39,9 @@ import { LinkPlugin } from './LinkPlugin';
 import { ClickableLinkPlugin } from './ClickableLinkPlugin';
 import { ListIndentPlugin } from './ListIndentPlugin';
 import { AutoListPlugin } from './AutoListPlugin';
+import { ToolbarPlugin } from './ToolbarPlugin';
+import { WikiLinkNode } from './WikiLinkNode';
+import { WikiLinkPlugin } from './WikiLinkPlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -53,6 +56,8 @@ const theme = {
     bold: 'font-bold',
     italic: 'italic',
     underline: 'underline',
+    strikethrough: 'line-through',
+    code: 'bg-gray-100 text-red-600 px-1.5 py-0.5 rounded font-mono text-sm',
   },
   link: 'text-blue-600 underline hover:text-blue-800 cursor-pointer',
   heading: {
@@ -125,7 +130,18 @@ function KeyboardShortcutsPlugin() {
           event.preventDefault();
           editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
           return true;
+        } else if (key === 'e') {
+          event.preventDefault();
+          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
+          return true;
         }
+      }
+
+      // Strikethrough with Cmd+Shift+X
+      if (isMod && shiftKey && key === 'X') {
+        event.preventDefault();
+        editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough');
+        return true;
       }
 
       return false;
@@ -231,6 +247,7 @@ export function LexicalOutlinerEditor({
       ImageNode,
       LinkNode,
       AutoLinkNode,
+      WikiLinkNode,
     ],
   };
 
@@ -266,6 +283,8 @@ export function LexicalOutlinerEditor({
           <ImageResizePlugin />
           <LinkPlugin />
           <ClickableLinkPlugin />
+          <ToolbarPlugin />
+          <WikiLinkPlugin />
         </div>
       </LexicalComposer>
     </div>
