@@ -66,6 +66,7 @@ class RAGService:
         query: str,
         top_k: int = None,
         source_type: Optional[str] = None,
+        exclude_notes: bool = True,
     ) -> List[RetrievedChunk]:
         """
         Search for relevant chunks using semantic similarity.
@@ -75,18 +76,23 @@ class RAGService:
             query: Search query
             top_k: Number of chunks to retrieve (defaults to config)
             source_type: Optional filter for 'note' or 'document'
+            exclude_notes: If True, excludes notes from search results (default: True)
 
         Returns:
             List of retrieved chunks with source information
         """
         top_k = top_k or settings.max_retrieval_chunks
 
+        # If excluding notes, force source_type to 'document'
+        if exclude_notes and source_type is None:
+            source_type = 'document'
+
         # Generate embedding for the query
         logger.info(f"Generating embedding for query: {query[:50]}...")
         query_embedding = self.embedding_service.embed_text(query)
 
         # Search in vector database
-        logger.info(f"Searching for top {top_k} similar chunks")
+        logger.info(f"Searching for top {top_k} similar chunks (source_type={source_type})")
         results = await self.vector_service.search_similar_chunks(
             query_embedding=query_embedding,
             n_results=top_k,
@@ -196,7 +202,8 @@ class RAGService:
         query: str,
         top_k: int = None,
         max_tokens: int = None,
-        include_web_search: bool = False,
+        include_web_search: bool = True,  # Changed default to True
+        exclude_notes: bool = True,  # Exclude notes by default
     ) -> tuple[str, List[dict]]:
         """
         Convenience method to search and assemble context in one call.
@@ -206,13 +213,14 @@ class RAGService:
             query: Search query
             top_k: Number of chunks to retrieve
             max_tokens: Maximum tokens for context
-            include_web_search: Whether to include web search results
+            include_web_search: Whether to include web search results (default: True)
+            exclude_notes: Whether to exclude notes from sources (default: True)
 
         Returns:
             Tuple of (assembled context, source citations)
         """
-        # Get local chunks from knowledge base
-        chunks = await self.search_relevant_chunks(db, query, top_k=top_k)
+        # Get local chunks from knowledge base (documents only, no notes)
+        chunks = await self.search_relevant_chunks(db, query, top_k=top_k, exclude_notes=exclude_notes)
         context, citations = self.assemble_context(chunks, max_tokens=max_tokens)
 
         # Add web search results if requested

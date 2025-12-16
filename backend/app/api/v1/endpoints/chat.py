@@ -6,6 +6,7 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -116,6 +117,114 @@ async def chat(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process chat request: {str(e)}",
         )
+
+
+@router.post("/stream")
+async def chat_stream(
+    request: ChatRequest,
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """
+    Send a message and get a streaming AI-powered response using RAG.
+
+    Returns Server-Sent Events (SSE) stream with chunks of the response.
+    """
+
+    async def generate_stream():
+        """Generator function for streaming response."""
+        try:
+            # Get or create conversation
+            if request.conversation_id:
+                conversation = await ConversationService.get_conversation(
+                    db, request.conversation_id
+                )
+                if not conversation:
+                    yield f'data: {json.dumps({"error": "Conversation not found"})}\n\n'
+                    return
+            else:
+                # Create new conversation
+                title = request.conversation_title or f"Chat about: {request.message[:50]}"
+                conversation_data = ConversationCreate(title=title)
+                conversation = await ConversationService.create_conversation(
+                    db, conversation_data
+                )
+
+            # Send conversation ID immediately
+            yield f'data: {json.dumps({"type": "conversation_id", "conversation_id": str(conversation.id)})}\n\n'
+
+            # Add user message
+            user_message = await ConversationService.add_message(
+                db=db,
+                conversation_id=str(conversation.id),
+                role="user",
+                content=request.message,
+            )
+
+            # Retrieve relevant context using RAG
+            rag_service = get_rag_service()
+            context, citations = await rag_service.retrieve_and_assemble(
+                db=db,
+                query=request.message,
+                top_k=request.top_k,
+                include_web_search=request.include_web_search,
+            )
+
+            # Send sources
+            yield f'data: {json.dumps({"type": "sources", "sources": citations})}\n\n'
+
+            # Get conversation history
+            messages = await ConversationService.get_conversation_messages(
+                db, str(conversation.id)
+            )
+            conversation_history = [
+                {"role": msg.role, "content": msg.content}
+                for msg in messages[:-1]  # Exclude the message we just added
+            ]
+
+            # Generate streaming response
+            llm_service = get_llm_service()
+            stream = await llm_service.generate_answer(
+                query=request.message,
+                context=context,
+                conversation_history=conversation_history,
+                model=request.model,
+                stream=True,
+            )
+
+            # Collect full response while streaming
+            full_response = []
+            async for chunk in stream:
+                if chunk:
+                    full_response.append(chunk)
+                    yield f'data: {json.dumps({"type": "chunk", "content": chunk})}\n\n'
+
+            # Save complete message to database
+            complete_response = "".join(full_response)
+            assistant_message = await ConversationService.add_message(
+                db=db,
+                conversation_id=str(conversation.id),
+                role="assistant",
+                content=complete_response,
+                retrieved_chunks=citations,
+                model_used=request.model or llm_service.primary_model,
+            )
+
+            # Send completion event
+            yield f'data: {json.dumps({"type": "done", "message_id": str(assistant_message.id)})}\n\n'
+
+        except Exception as e:
+            logger.error(f"Chat stream error: {e}", exc_info=True)
+            yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'
+
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
 
 
 @router.get("/conversations/", response_model=ConversationListResponse)

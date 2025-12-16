@@ -2,6 +2,7 @@
  * Chat page for AI-powered Q&A using RAG.
  */
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Plus, Trash2, AlertCircle, RotateCcw, Search, X, Globe } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
@@ -11,14 +12,19 @@ import {
   useSendMessage,
   useDeleteConversation,
 } from '@/hooks/useChat';
+import { chatService } from '@/services/chatService';
 import type { Message } from '@/types/chat';
 
 export function ChatPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
+  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(true); // Changed default to true
+  const [streamingMessage, setStreamingMessage] = useState<string>('');
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [streamingSources, setStreamingSources] = useState<any[]>([]);
 
+  const queryClient = useQueryClient();
   const { data: conversationsData } = useConversations();
   const { data: conversationData, isLoading: isLoadingConversation } = useConversation(
     selectedConversationId
@@ -27,6 +33,22 @@ export function ChatPage() {
   const deleteConversation = useDeleteConversation();
 
   const messages: Message[] = conversationData?.messages || [];
+
+  // Add streaming message to the messages if currently streaming
+  const displayMessages: Message[] = isStreaming
+    ? [
+        ...messages,
+        {
+          id: 'streaming',
+          conversation_id: selectedConversationId || '',
+          role: 'assistant' as const,
+          content: streamingMessage,
+          sources: streamingSources.length > 0 ? streamingSources : undefined,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ]
+    : messages;
 
   // Filter conversations based on search query
   const filteredConversations = conversationsData?.conversations.filter((conv) =>
@@ -37,25 +59,62 @@ export function ChatPage() {
   const handleSendMessage = async (message: string) => {
     try {
       setErrorMessage(null);
+      setIsStreaming(true);
+      setStreamingMessage('');
+      setStreamingSources([]);
+
       // Get preferred model from localStorage
       const preferredModel = localStorage.getItem('preferred_model') || undefined;
 
-      const response = await sendMessage.mutateAsync({
-        message,
-        conversation_id: selectedConversationId || undefined,
-        conversation_title: selectedConversationId ? undefined : `Chat: ${message.slice(0, 50)}`,
-        model: preferredModel,
-        include_web_search: webSearchEnabled,
-      });
+      let newConversationId = selectedConversationId;
 
-      // If this was a new conversation, select it
-      if (!selectedConversationId) {
-        setSelectedConversationId(response.conversation_id);
-      }
+      await chatService.sendMessageStream(
+        {
+          message,
+          conversation_id: selectedConversationId || undefined,
+          conversation_title: selectedConversationId ? undefined : `Chat: ${message.slice(0, 50)}`,
+          model: preferredModel,
+          include_web_search: webSearchEnabled,
+        },
+        // onChunk
+        (chunk) => {
+          setStreamingMessage((prev) => prev + chunk);
+        },
+        // onSources
+        (sources) => {
+          setStreamingSources(sources);
+        },
+        // onConversationId
+        (conversationId) => {
+          if (!newConversationId) {
+            newConversationId = conversationId;
+            setSelectedConversationId(conversationId);
+          }
+        },
+        // onDone
+        (messageId) => {
+          setIsStreaming(false);
+          setStreamingMessage('');
+          setStreamingSources([]);
+          // Invalidate queries to refresh the conversation
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+          queryClient.invalidateQueries({ queryKey: ['conversations', newConversationId] });
+        },
+        // onError
+        (error) => {
+          setIsStreaming(false);
+          setStreamingMessage('');
+          setStreamingSources([]);
+          setErrorMessage(error);
+        }
+      );
     } catch (error: any) {
       console.error('Failed to send message:', error);
-      const errorDetail = error?.response?.data?.detail || error?.message || 'Failed to send message';
+      const errorDetail = error?.message || 'Failed to send message';
       setErrorMessage(errorDetail);
+      setIsStreaming(false);
+      setStreamingMessage('');
+      setStreamingSources([]);
     }
   };
 
@@ -222,12 +281,12 @@ export function ChatPage() {
           )}
 
           <MessageList
-            messages={messages}
-            isLoading={sendMessage.isPending || isLoadingConversation}
+            messages={displayMessages}
+            isLoading={isLoadingConversation}
           />
 
           {/* Clear Chat Button - shows when there are messages */}
-          {messages.length > 0 && (
+          {displayMessages.length > 0 && (
             <div className="px-6 pb-2 flex justify-center">
               <button
                 onClick={handleClearChat}
@@ -250,13 +309,13 @@ export function ChatPage() {
               }`}
             >
               <Globe size={16} />
-              <span>{webSearchEnabled ? 'Web search enabled' : 'Search web for answers'}</span>
+              <span>{webSearchEnabled ? '✓ Using web + documents' : 'Documents only (no web search)'}</span>
             </button>
           </div>
 
           <ChatInput
             onSend={handleSendMessage}
-            disabled={sendMessage.isPending}
+            disabled={isStreaming}
           />
         </main>
       </div>
