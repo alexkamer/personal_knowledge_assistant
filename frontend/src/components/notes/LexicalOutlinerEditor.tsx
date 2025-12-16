@@ -112,19 +112,12 @@ function OnChangeSerializerPlugin({ onChange }: { onChange: (content: string) =>
   return <OnChangePlugin onChange={handleChange} />;
 }
 
-// Plugin to initialize content from JSON
+// Plugin to initialize content from JSON - runs once on mount
 function InitialContentPlugin({ content }: { content?: string }) {
   const [editor] = useLexicalComposerContext();
-  const initializedRef = useRef(false);
 
   useEffect(() => {
-    // Only initialize once when the component mounts
-    if (initializedRef.current) {
-      return;
-    }
-
-    initializedRef.current = true;
-
+    // Initialize content once when component mounts
     if (content) {
       try {
         const editorState = editor.parseEditorState(content);
@@ -140,7 +133,7 @@ function InitialContentPlugin({ content }: { content?: string }) {
         });
       }
     } else {
-      // If no content, clear the editor
+      // If no content, initialize with empty paragraph
       editor.update(() => {
         const root = $getRoot();
         root.clear();
@@ -148,7 +141,8 @@ function InitialContentPlugin({ content }: { content?: string }) {
         root.append(paragraph);
       });
     }
-  }, [content, editor]); // Keep dependencies but use ref to prevent re-runs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   return null;
 }

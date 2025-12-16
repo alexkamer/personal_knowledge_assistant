@@ -25,14 +25,22 @@ function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();
 
+  // Track the current note ID to detect note changes
+  const currentNoteIdRef = useRef<string | null>(null);
+
   // Load note data when editing
   useEffect(() => {
     if (note) {
-      noteIdRef.current = note.id;
-      setContent(note.content || '');
-      setTags(note.tags_rel.map((tag) => tag.name));
+      // Only update content if we're switching to a different note
+      if (currentNoteIdRef.current !== note.id) {
+        noteIdRef.current = note.id;
+        currentNoteIdRef.current = note.id;
+        setContent(note.content || '');
+        setTags(note.tags_rel.map((tag) => tag.name));
+      }
     } else {
       noteIdRef.current = null;
+      currentNoteIdRef.current = null;
       setContent('');
       setTags([]);
     }
@@ -123,7 +131,8 @@ function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
         {/* Lexical Editor - takes all available space */}
         <div className="flex-1 overflow-y-auto">
           <LexicalOutlinerEditor
-            initialContent={content}
+            key={note?.id || 'new'}
+            initialContent={note?.content || ''}
             onChange={setContent}
             placeholder="Start typing... Press Enter for new line, Tab to indent"
           />
