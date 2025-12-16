@@ -37,6 +37,7 @@ import { CodeHighlightPlugin } from './CodeHighlightPlugin';
 import { CodeActionPlugin } from './CodeActionPlugin';
 import { LinkPlugin } from './LinkPlugin';
 import { ClickableLinkPlugin } from './ClickableLinkPlugin';
+import { ListIndentPlugin } from './ListIndentPlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -252,6 +253,7 @@ export function LexicalOutlinerEditor({
           />
           <HistoryPlugin />
           <ListPlugin />
+          <ListIndentPlugin />
           <KeyboardShortcutsPlugin />
           <CodeHighlightPlugin />
           <CodeActionPlugin />
