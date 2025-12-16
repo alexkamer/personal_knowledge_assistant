@@ -1,10 +1,12 @@
 /**
- * Note create/edit form component.
+ * Note create/edit form component - Outliner-based like RemNote
+ * Auto-saves changes after 1 second of inactivity
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCreateNote, useUpdateNote } from '../../hooks/useNotes';
 import type { Note } from '../../types/note';
 import { TagInput } from '../tags/TagInput';
+import { LexicalOutlinerEditor } from './LexicalOutlinerEditor';
 
 interface NoteFormProps {
   note: Note | null;
@@ -13,9 +15,12 @@ interface NoteFormProps {
 }
 
 function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const noteIdRef = useRef<string | null>(null);
 
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();
@@ -23,113 +28,145 @@ function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
   // Load note data when editing
   useEffect(() => {
     if (note) {
-      setTitle(note.title);
-      setContent(note.content);
+      noteIdRef.current = note.id;
+      setContent(note.content || '');
       setTags(note.tags_rel.map((tag) => tag.name));
     } else {
-      setTitle('');
+      noteIdRef.current = null;
       setContent('');
       setTags([]);
     }
   }, [note]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Auto-save function
+  const saveNote = useCallback(async () => {
+    // Check if there's any content
+    if (!content || content.trim() === '' || content === '{}') {
+      return; // Don't save empty notes
+    }
 
-    if (!title.trim() || !content.trim()) {
-      alert('Title and content are required');
-      return;
+    // Generate title from content (extract first text)
+    let autoTitle = 'Untitled';
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed.root && parsed.root.children) {
+        // Extract first text from Lexical editor state
+        const firstChild = parsed.root.children[0];
+        if (firstChild && firstChild.children && firstChild.children[0]) {
+          const firstText = firstChild.children[0].text;
+          if (firstText) {
+            autoTitle = firstText.substring(0, 100);
+          }
+        }
+      }
+    } catch {
+      // If not JSON, use as-is
+      autoTitle = content.substring(0, 100);
     }
 
     try {
-      if (note) {
+      setIsSaving(true);
+      if (noteIdRef.current) {
         // Update existing note
         await updateNote.mutateAsync({
-          id: note.id,
+          id: noteIdRef.current,
           data: {
-            title: title.trim(),
-            content: content.trim(),
+            title: autoTitle.trim() || 'Untitled',
+            content: content,
             tag_names: tags,
           },
         });
       } else {
         // Create new note
-        await createNote.mutateAsync({
-          title: title.trim(),
-          content: content.trim(),
+        const newNote = await createNote.mutateAsync({
+          title: autoTitle.trim() || 'Untitled',
+          content: content,
           tag_names: tags,
         });
+        // Store the new note ID for subsequent updates
+        noteIdRef.current = newNote.id;
       }
-      onSave();
+      setLastSaved(new Date());
     } catch (error) {
       console.error('Error saving note:', error);
-      alert('Failed to save note');
+    } finally {
+      setIsSaving(false);
     }
-  };
+  }, [content, tags, createNote, updateNote]);
+
+  // Debounced auto-save effect
+  useEffect(() => {
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set new timeout for auto-save (1 second after last change)
+    saveTimeoutRef.current = setTimeout(() => {
+      saveNote();
+    }, 1000);
+
+    // Cleanup on unmount
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, tags]);
 
   const isLoading = createNote.isPending || updateNote.isPending;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        {note ? 'Edit Note' : 'Create Note'}
-      </h2>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-            Title
-          </label>
-          <input
-            type="text"
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter note title"
-            required
-            disabled={isLoading}
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden h-full flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Lexical Editor - takes all available space */}
+        <div className="flex-1 overflow-y-auto">
+          <LexicalOutlinerEditor
+            initialContent={content}
+            onChange={setContent}
+            placeholder="Start typing... Press Enter for new line, Tab to indent"
           />
         </div>
 
-        <div>
-          <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
-            Content
-          </label>
-          <textarea
-            id="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={10}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter note content"
-            required
-            disabled={isLoading}
-          />
-        </div>
+        {/* Bottom toolbar with tags and auto-save indicator */}
+        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 space-y-3">
+          {/* Tags and Save Status */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <TagInput value={tags} onChange={setTags} disabled={false} />
+            </div>
 
-        <TagInput value={tags} onChange={setTags} disabled={isLoading} />
-
-        <div className="flex gap-3 pt-4">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Saving...' : 'Save Note'}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isLoading}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
+            {/* Auto-save indicator */}
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              {isSaving ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Saving...</span>
+                </>
+              ) : lastSaved ? (
+                <span>Saved {formatTimeSince(lastSaved)}</span>
+              ) : null}
+            </div>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   );
+}
+
+// Helper function to format time since last save
+function formatTimeSince(date: Date): string {
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+  if (seconds < 10) return 'just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
 }
 
 export default NoteForm;
