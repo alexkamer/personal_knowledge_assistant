@@ -8,11 +8,12 @@ import {
   $getSelection,
   $isRangeSelection,
   $createTextNode,
+  $setSelection,
   COMMAND_PRIORITY_LOW,
   KEY_MODIFIER_COMMAND,
   RangeSelection,
 } from 'lexical';
-import { $isLinkNode, TOGGLE_LINK_COMMAND, $createLinkNode } from '@lexical/link';
+import { $isLinkNode, TOGGLE_LINK_COMMAND, $createLinkNode, toggleLink } from '@lexical/link';
 import { ExternalLink } from 'lucide-react';
 
 export function LinkPlugin(): JSX.Element | null {
@@ -33,17 +34,23 @@ export function LinkPlugin(): JSX.Element | null {
         if (event.key === 'k') {
           event.preventDefault();
 
-          editor.getEditorState().read(() => {
+          editor.update(() => {
             const selection = $getSelection();
             if (!$isRangeSelection(selection)) return;
 
-            // Save the selection
-            savedSelectionRef.current = selection.clone();
-
-            // Get selected text
+            // Save the selection by storing the text and whether we have a selection
             const text = selection.getTextContent();
-            setSelectedText(text);
-            setLinkText(text);
+
+            // If there's selected text, we'll need to restore it
+            if (text) {
+              savedSelectionRef.current = selection.clone();
+              setSelectedText(text);
+              setLinkText(text);
+            } else {
+              savedSelectionRef.current = null;
+              setSelectedText('');
+              setLinkText('');
+            }
 
             // Check if we're editing an existing link
             const node = selection.anchor.getNode();
@@ -71,14 +78,12 @@ export function LinkPlugin(): JSX.Element | null {
     if (!linkUrl) return;
 
     editor.update(() => {
-      // Restore the saved selection
       if (savedSelectionRef.current && selectedText) {
-        // Re-select the text
-        savedSelectionRef.current.dirty = true;
-        editor.getEditorState()._selection = savedSelectionRef.current;
+        // Restore the saved selection directly using $setSelection
+        $setSelection(savedSelectionRef.current);
 
-        // Apply the link
-        editor.dispatchCommand(TOGGLE_LINK_COMMAND, linkUrl);
+        // Use toggleLink directly instead of dispatching command
+        toggleLink(linkUrl);
       } else {
         // If no selection, insert link with provided text
         const selection = $getSelection();
