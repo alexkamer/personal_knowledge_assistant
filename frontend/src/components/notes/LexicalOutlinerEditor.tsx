@@ -105,7 +105,14 @@ function OnChangeSerializerPlugin({ onChange }: { onChange: (content: string) =>
   const handleChange = (editorState: EditorState, editor: LexicalEditor) => {
     editorState.read(() => {
       const json = editorState.toJSON();
-      onChange(JSON.stringify(json));
+      const jsonString = JSON.stringify(json);
+
+      // Debug: log if there are images
+      if (jsonString.includes('"type":"image"')) {
+        console.log('Saving content with images, size:', jsonString.length);
+      }
+
+      onChange(jsonString);
     });
   };
 
@@ -119,10 +126,16 @@ function InitialContentPlugin({ content }: { content?: string }) {
   useEffect(() => {
     // Initialize content once when component mounts
     if (content) {
+      // Debug: log if loading images
+      if (content.includes('"type":"image"')) {
+        console.log('Loading note with images, content size:', content.length);
+      }
+
       try {
         const editorState = editor.parseEditorState(content);
         editor.setEditorState(editorState);
       } catch (error) {
+        console.error('Error parsing editor state:', error);
         // If not valid JSON, treat as plain text
         editor.update(() => {
           const root = $getRoot();
