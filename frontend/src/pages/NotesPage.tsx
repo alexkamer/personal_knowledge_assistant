@@ -37,10 +37,10 @@ function NotesPage() {
   const hasNoteOpen = isCreating || selectedNote;
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-8rem)]">
+    <div className="flex gap-6 h-[calc(100vh-8rem)] relative">
       {/* Sidebar - Collapsible */}
       <div
-        className={`flex-shrink-0 flex flex-col space-y-4 transition-all duration-300 ease-in-out h-full ${
+        className={`flex-shrink-0 flex flex-col space-y-4 transition-all duration-300 ease-in-out h-full relative ${
           isSidebarCollapsed ? 'w-0' : 'w-80'
         }`}
       >
@@ -54,12 +54,21 @@ function NotesPage() {
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
               <h2 className="text-xl font-semibold text-gray-800 pl-3">Notes</h2>
-              <button
-                onClick={handleCreateNew}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                New Note
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCreateNew}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  New Note
+                </button>
+                <button
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                  title="Hide sidebar"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
               <NotesList
@@ -70,20 +79,18 @@ function NotesPage() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Collapse/Expand Button */}
-      <button
-        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white border border-gray-300 rounded-r-lg px-1 py-4 hover:bg-gray-50 transition-colors shadow-md z-10"
-        title={isSidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-      >
-        {isSidebarCollapsed ? (
-          <ChevronRight size={20} className="text-gray-600" />
-        ) : (
-          <ChevronLeft size={20} className="text-gray-600" />
+        {/* Show Sidebar Button - Only visible when collapsed */}
+        {isSidebarCollapsed && (
+          <button
+            onClick={() => setIsSidebarCollapsed(false)}
+            className="absolute top-3 left-2 p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors z-10"
+            title="Show sidebar"
+          >
+            <ChevronRight size={20} />
+          </button>
         )}
-      </button>
+      </div>
 
       {/* Main Content Area - Note editor or empty state */}
       <div className="flex-1 overflow-auto">

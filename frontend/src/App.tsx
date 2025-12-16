@@ -2,7 +2,7 @@
  * Main App component.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { FileText, MessageSquare, Settings, StickyNote } from 'lucide-react';
 import NotesPage from './pages/NotesPage';
 import { DocumentsPage } from './pages/DocumentsPage';
@@ -20,116 +20,126 @@ const queryClient = new QueryClient({
   },
 });
 
-type Page = 'notes' | 'documents' | 'chat' | 'settings';
-
-function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('chat');
+function Navigation() {
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between py-4">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Personal Knowledge Assistant
-              </h1>
-              <nav className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage('chat')}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-md transition-colors
-                    ${
-                      currentPage === 'chat'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }
-                  `}
-                >
-                  <MessageSquare size={18} />
-                  Chat
-                </button>
-                <button
-                  onClick={() => setCurrentPage('notes')}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-md transition-colors
-                    ${
-                      currentPage === 'notes'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }
-                  `}
-                >
-                  <StickyNote size={18} />
-                  Notes
-                </button>
-                <button
-                  onClick={() => setCurrentPage('documents')}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-md transition-colors
-                    ${
-                      currentPage === 'documents'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }
-                  `}
-                >
-                  <FileText size={18} />
-                  Documents
-                </button>
-                <button
-                  onClick={() => setCurrentPage('settings')}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-md transition-colors
-                    ${
-                      currentPage === 'settings'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }
-                  `}
-                >
-                  <Settings size={18} />
-                  Settings
-                </button>
-              </nav>
-            </div>
-          </div>
-        </header>
-        <main>
-          {currentPage === 'chat' && (
-            <ErrorBoundary
-              fallbackTitle="Chat Error"
-              onReset={() => setCurrentPage('chat')}
+    <header className="bg-white shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between py-4">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Personal Knowledge Assistant
+          </h1>
+          <nav className="flex gap-2">
+            <Link
+              to="/chat"
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-md transition-colors
+                ${
+                  currentPath === '/chat'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }
+              `}
             >
-              <ChatPage />
-            </ErrorBoundary>
-          )}
-          {currentPage === 'notes' && (
-            <ErrorBoundary
-              fallbackTitle="Notes Error"
-              onReset={() => setCurrentPage('notes')}
+              <MessageSquare size={18} />
+              Chat
+            </Link>
+            <Link
+              to="/notes"
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-md transition-colors
+                ${
+                  currentPath === '/notes'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }
+              `}
             >
-              <NotesPage />
-            </ErrorBoundary>
-          )}
-          {currentPage === 'documents' && (
-            <ErrorBoundary
-              fallbackTitle="Documents Error"
-              onReset={() => setCurrentPage('documents')}
+              <StickyNote size={18} />
+              Notes
+            </Link>
+            <Link
+              to="/documents"
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-md transition-colors
+                ${
+                  currentPath === '/documents'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }
+              `}
             >
-              <DocumentsPage />
-            </ErrorBoundary>
-          )}
-          {currentPage === 'settings' && (
-            <ErrorBoundary
-              fallbackTitle="Settings Error"
-              onReset={() => setCurrentPage('settings')}
+              <FileText size={18} />
+              Documents
+            </Link>
+            <Link
+              to="/settings"
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-md transition-colors
+                ${
+                  currentPath === '/settings'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }
+              `}
             >
-              <SettingsPage />
-            </ErrorBoundary>
-          )}
-        </main>
+              <Settings size={18} />
+              Settings
+            </Link>
+          </nav>
+        </div>
       </div>
+    </header>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <div className="min-h-screen bg-gray-50">
+          <Navigation />
+          <main>
+            <Routes>
+              <Route path="/" element={<Navigate to="/chat" replace />} />
+              <Route
+                path="/chat"
+                element={
+                  <ErrorBoundary fallbackTitle="Chat Error">
+                    <ChatPage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/notes"
+                element={
+                  <ErrorBoundary fallbackTitle="Notes Error">
+                    <NotesPage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/documents"
+                element={
+                  <ErrorBoundary fallbackTitle="Documents Error">
+                    <DocumentsPage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ErrorBoundary fallbackTitle="Settings Error">
+                    <SettingsPage />
+                  </ErrorBoundary>
+                }
+              />
+            </Routes>
+          </main>
+        </div>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
