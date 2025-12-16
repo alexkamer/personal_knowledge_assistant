@@ -30,6 +30,7 @@ import { $getSelection, $isRangeSelection } from 'lexical';
 import { LexicalSlashCommandPlugin } from './LexicalSlashCommandPlugin';
 import { ImageNode } from './ImageNode';
 import { ImagePlugin } from './ImagePlugin';
+import { ImageResizePlugin } from './ImageResizePlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -201,6 +202,7 @@ export function LexicalOutlinerEditor({
           <InitialContentPlugin content={initialContent} />
           <LexicalSlashCommandPlugin />
           <ImagePlugin />
+          <ImageResizePlugin />
         </div>
       </LexicalComposer>
     </div>

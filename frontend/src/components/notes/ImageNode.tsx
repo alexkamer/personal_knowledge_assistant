@@ -33,17 +33,24 @@ function ImageComponent({
   altText,
   width,
   height,
+  nodeKey,
+  onResize,
 }: {
   src: string;
   altText: string;
   width?: number;
   height?: number;
+  nodeKey: NodeKey;
+  onResize: (width: number, height: number) => void;
 }): JSX.Element {
   const imgRef = React.useRef<HTMLImageElement>(null);
   const [dimensions, setDimensions] = React.useState({
     width: width || 400,
     height: height || 300,
   });
+  const [isResizing, setIsResizing] = React.useState(false);
+  const [startPos, setStartPos] = React.useState({ x: 0, y: 0 });
+  const [startSize, setStartSize] = React.useState({ width: 400, height: 300 });
 
   React.useEffect(() => {
     // Set initial size based on actual image dimensions if not already set
@@ -73,20 +80,87 @@ function ImageComponent({
     }
   }, [src, width, height]);
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setStartPos({ x: e.clientX, y: e.clientY });
+    setStartSize({ width: dimensions.width, height: dimensions.height });
+  };
+
+  React.useEffect(() => {
+    if (!isResizing) return;
+
+    let currentSize = dimensions;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startPos.x;
+      const newWidth = Math.max(100, Math.min(800, startSize.width + deltaX));
+      const ratio = startSize.height / startSize.width;
+      const newSize = { width: newWidth, height: newWidth * ratio };
+      currentSize = newSize;
+      setDimensions(newSize);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      // Notify parent to update the node
+      onResize(currentSize.width, currentSize.height);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, startPos, startSize, onResize]);
+
   return (
-    <img
-      ref={imgRef}
-      src={src}
-      alt={altText}
+    <div
       style={{
-        maxWidth: '100%',
-        height: 'auto',
-        display: 'block',
+        position: 'relative',
+        display: 'inline-block',
         margin: '1rem 0',
-        borderRadius: '0.375rem',
-        width: dimensions.width ? `${dimensions.width}px` : 'auto',
+        cursor: isResizing ? 'ew-resize' : 'default',
       }}
-    />
+    >
+      <img
+        ref={imgRef}
+        src={src}
+        alt={altText}
+        style={{
+          width: `${dimensions.width}px`,
+          height: `${dimensions.height}px`,
+          display: 'block',
+          borderRadius: '0.375rem',
+          userSelect: 'none',
+        }}
+        draggable={false}
+      />
+      <div
+        onMouseDown={handleMouseDown}
+        style={{
+          position: 'absolute',
+          right: '-4px',
+          top: '0',
+          bottom: '0',
+          width: '8px',
+          cursor: 'ew-resize',
+          backgroundColor: isResizing ? 'rgba(59, 130, 246, 0.5)' : 'transparent',
+          borderRadius: '0.25rem',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.3)';
+        }}
+        onMouseLeave={(e) => {
+          if (!isResizing) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
+      />
+    </div>
   );
 }
 
@@ -176,6 +250,14 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
         altText={this.__altText}
         width={this.__width}
         height={this.__height}
+        nodeKey={this.__key}
+        onResize={(width, height) => {
+          // Dispatch custom event that the plugin will listen to
+          const event = new CustomEvent('lexical-resize-image', {
+            detail: { nodeKey: this.__key, width, height },
+          });
+          window.dispatchEvent(event);
+        }}
       />
     );
   }

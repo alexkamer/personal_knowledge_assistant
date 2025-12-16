@@ -17,7 +17,13 @@ import {
 } from 'lexical';
 import { $setBlocksType } from '@lexical/selection';
 import { $createHeadingNode } from '@lexical/rich-text';
-import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3 } from 'lucide-react';
+import {
+  INSERT_UNORDERED_LIST_COMMAND,
+  INSERT_ORDERED_LIST_COMMAND,
+  REMOVE_LIST_COMMAND,
+  $isListNode,
+} from '@lexical/list';
+import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered } from 'lucide-react';
 
 interface Command {
   id: string;
@@ -48,6 +54,20 @@ const COMMANDS: Command[] = [
     icon: Heading3,
     description: 'Small heading',
     keywords: ['h3', 'heading'],
+  },
+  {
+    id: 'bulletList',
+    label: 'Bullet List',
+    icon: List,
+    description: 'Create a bulleted list',
+    keywords: ['bullet', 'list', 'ul', 'unordered'],
+  },
+  {
+    id: 'numberedList',
+    label: 'Numbered List',
+    icon: ListOrdered,
+    description: 'Create a numbered list',
+    keywords: ['number', 'list', 'ol', 'ordered'],
   },
 ];
 
@@ -116,6 +136,10 @@ export function LexicalSlashCommandPlugin() {
             // Ensure cursor stays at the end of the heading
             parent.selectEnd();
           }
+        } else if (command.id === 'bulletList') {
+          editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+        } else if (command.id === 'numberedList') {
+          editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
         }
       });
 
