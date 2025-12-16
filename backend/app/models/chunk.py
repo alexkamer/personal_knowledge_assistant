@@ -4,7 +4,7 @@ Chunk model for text chunks from notes and documents.
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import Float, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -42,6 +42,13 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
 
     # Metadata
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Semantic metadata (enriched chunking)
+    content_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    heading_hierarchy: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    section_title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, index=True)
+    has_code: Mapped[Optional[bool]] = mapped_column(Integer, nullable=True, default=False)
+    semantic_density: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Relationships
     note: Mapped[Optional["Note"]] = relationship("Note", back_populates="chunks")

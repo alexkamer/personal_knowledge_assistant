@@ -12,6 +12,7 @@ from app.models.chunk import Chunk
 from app.services.embedding_service import get_embedding_service
 from app.services.vector_service import get_vector_service
 from app.utils.text_chunker import TextChunker
+from app.utils.semantic_chunker import SemanticChunker
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +20,27 @@ logger = logging.getLogger(__name__)
 class ChunkProcessingService:
     """Service for processing text into chunks and embeddings."""
 
-    def __init__(self):
-        """Initialize the chunk processing service."""
-        self.chunker = TextChunker(
-            chunk_size=settings.chunk_size,
-            chunk_overlap=settings.chunk_overlap,
-        )
+    def __init__(self, use_semantic: bool = True):
+        """
+        Initialize the chunk processing service.
+
+        Args:
+            use_semantic: Whether to use semantic chunker (default True)
+        """
+        self.use_semantic = use_semantic
+
+        if use_semantic:
+            self.semantic_chunker = SemanticChunker(
+                min_chunk_size=256,
+                max_chunk_size=768,
+            )
+        else:
+            # Fallback to basic chunker
+            self.basic_chunker = TextChunker(
+                chunk_size=settings.chunk_size,
+                chunk_overlap=settings.chunk_overlap,
+            )
+
         self.embedding_service = get_embedding_service()
         self.vector_service = get_vector_service()
 
@@ -50,26 +66,55 @@ class ChunkProcessingService:
         # Delete existing chunks for this note
         await self._delete_existing_chunks(db, note_id, "note")
 
-        # Chunk the text
-        chunk_texts = self.chunker.split_text(content)
-        if not chunk_texts:
-            logger.warning(f"No chunks generated for note {note_id}")
-            return []
+        # Chunk the text using appropriate chunker
+        if self.use_semantic:
+            semantic_chunks = self.semantic_chunker.split_text(content)
+            if not semantic_chunks:
+                logger.warning(f"No chunks generated for note {note_id}")
+                return []
+        else:
+            chunk_texts = self.basic_chunker.split_text(content)
+            if not chunk_texts:
+                logger.warning(f"No chunks generated for note {note_id}")
+                return []
+            # Convert to semantic chunks format for consistency
+            semantic_chunks = [
+                type('obj', (object,), {
+                    'content': text,
+                    'metadata': type('obj', (object,), {
+                        'content_type': 'narrative',
+                        'heading_hierarchy': [],
+                        'section_title': None,
+                        'has_code': False,
+                        'token_count': self.basic_chunker.count_tokens(text),
+                        'semantic_density': 0.5,
+                    })()
+                })()
+                for text in chunk_texts
+            ]
 
-        logger.info(f"Generated {len(chunk_texts)} chunks for note {note_id}")
+        logger.info(f"Generated {len(semantic_chunks)} chunks for note {note_id}")
+
+        # Extract texts for embedding
+        chunk_texts = [sc.content for sc in semantic_chunks]
 
         # Generate embeddings
         embeddings = self.embedding_service.embed_batch(chunk_texts)
 
         # Create chunk records in database
         chunks = []
-        for idx, (chunk_text, embedding) in enumerate(zip(chunk_texts, embeddings)):
+        for idx, (semantic_chunk, embedding) in enumerate(zip(semantic_chunks, embeddings)):
             chunk = Chunk(
                 note_id=note_id,
                 document_id=None,
-                content=chunk_text,
+                content=semantic_chunk.content,
                 chunk_index=idx,
-                token_count=self.chunker.count_tokens(chunk_text),
+                token_count=semantic_chunk.metadata.token_count,
+                content_type=semantic_chunk.metadata.content_type,
+                heading_hierarchy={"hierarchy": semantic_chunk.metadata.heading_hierarchy},
+                section_title=semantic_chunk.metadata.section_title,
+                has_code=semantic_chunk.metadata.has_code,
+                semantic_density=semantic_chunk.metadata.semantic_density,
             )
             db.add(chunk)
             chunks.append(chunk)
@@ -88,6 +133,10 @@ class ChunkProcessingService:
                 "source_type": "note",
                 "chunk_index": chunk.chunk_index,
                 "token_count": chunk.token_count,
+                "content_type": chunk.content_type,
+                "section_title": chunk.section_title,
+                "has_code": chunk.has_code,
+                "semantic_density": chunk.semantic_density,
             }
             for chunk in chunks
         ]
@@ -124,26 +173,55 @@ class ChunkProcessingService:
         # Delete existing chunks for this document
         await self._delete_existing_chunks(db, document_id, "document")
 
-        # Chunk the text
-        chunk_texts = self.chunker.split_text(content)
-        if not chunk_texts:
-            logger.warning(f"No chunks generated for document {document_id}")
-            return []
+        # Chunk the text using appropriate chunker
+        if self.use_semantic:
+            semantic_chunks = self.semantic_chunker.split_text(content)
+            if not semantic_chunks:
+                logger.warning(f"No chunks generated for document {document_id}")
+                return []
+        else:
+            chunk_texts = self.basic_chunker.split_text(content)
+            if not chunk_texts:
+                logger.warning(f"No chunks generated for document {document_id}")
+                return []
+            # Convert to semantic chunks format for consistency
+            semantic_chunks = [
+                type('obj', (object,), {
+                    'content': text,
+                    'metadata': type('obj', (object,), {
+                        'content_type': 'narrative',
+                        'heading_hierarchy': [],
+                        'section_title': None,
+                        'has_code': False,
+                        'token_count': self.basic_chunker.count_tokens(text),
+                        'semantic_density': 0.5,
+                    })()
+                })()
+                for text in chunk_texts
+            ]
 
-        logger.info(f"Generated {len(chunk_texts)} chunks for document {document_id}")
+        logger.info(f"Generated {len(semantic_chunks)} chunks for document {document_id}")
+
+        # Extract texts for embedding
+        chunk_texts = [sc.content for sc in semantic_chunks]
 
         # Generate embeddings
         embeddings = self.embedding_service.embed_batch(chunk_texts)
 
         # Create chunk records in database
         chunks = []
-        for idx, (chunk_text, embedding) in enumerate(zip(chunk_texts, embeddings)):
+        for idx, (semantic_chunk, embedding) in enumerate(zip(semantic_chunks, embeddings)):
             chunk = Chunk(
                 note_id=None,
                 document_id=document_id,
-                content=chunk_text,
+                content=semantic_chunk.content,
                 chunk_index=idx,
-                token_count=self.chunker.count_tokens(chunk_text),
+                token_count=semantic_chunk.metadata.token_count,
+                content_type=semantic_chunk.metadata.content_type,
+                heading_hierarchy={"hierarchy": semantic_chunk.metadata.heading_hierarchy},
+                section_title=semantic_chunk.metadata.section_title,
+                has_code=semantic_chunk.metadata.has_code,
+                semantic_density=semantic_chunk.metadata.semantic_density,
             )
             db.add(chunk)
             chunks.append(chunk)
@@ -162,6 +240,10 @@ class ChunkProcessingService:
                 "source_type": "document",
                 "chunk_index": chunk.chunk_index,
                 "token_count": chunk.token_count,
+                "content_type": chunk.content_type,
+                "section_title": chunk.section_title,
+                "has_code": chunk.has_code,
+                "semantic_density": chunk.semantic_density,
             }
             for chunk in chunks
         ]
