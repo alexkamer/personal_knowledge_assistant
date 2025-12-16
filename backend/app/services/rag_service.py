@@ -200,6 +200,26 @@ class RAGService:
         )
         chunks_by_id = {str(chunk.id): chunk for chunk in result.scalars().all()}
 
+        # Batch fetch source titles to avoid N+1 queries
+        note_ids = [chunk.note_id for chunk in chunks_by_id.values() if chunk.note_id]
+        doc_ids = [chunk.document_id for chunk in chunks_by_id.values() if chunk.document_id]
+
+        # Single query for all note titles
+        note_title_map = {}
+        if note_ids:
+            result = await db.execute(
+                select(Note.id, Note.title).where(Note.id.in_(note_ids))
+            )
+            note_title_map = {str(note_id): title for note_id, title in result}
+
+        # Single query for all document titles
+        doc_title_map = {}
+        if doc_ids:
+            result = await db.execute(
+                select(Document.id, Document.filename).where(Document.id.in_(doc_ids))
+            )
+            doc_title_map = {str(doc_id): filename for doc_id, filename in result}
+
         # Build RetrievedChunk objects maintaining fused order
         retrieved_chunks = []
         for chunk_id, fused_score in fused_results:
@@ -207,19 +227,13 @@ class RAGService:
             if not chunk:
                 continue
 
-            # Get source title
+            # Get source title from preloaded maps
             if chunk.note_id:
-                result = await db.execute(
-                    select(Note.title).where(Note.id == chunk.note_id)
-                )
-                source_title = result.scalar_one_or_none() or "Unknown Note"
+                source_title = note_title_map.get(str(chunk.note_id), "Unknown Note")
                 source_type_str = "note"
                 source_id = chunk.note_id
             else:
-                result = await db.execute(
-                    select(Document.filename).where(Document.id == chunk.document_id)
-                )
-                source_title = result.scalar_one_or_none() or "Unknown Document"
+                source_title = doc_title_map.get(str(chunk.document_id), "Unknown Document")
                 source_type_str = "document"
                 source_id = chunk.document_id
 
@@ -309,24 +323,38 @@ class RAGService:
 
         logger.info(f"Found {len(chunk_ids)} relevant chunks")
 
-        # Fetch source titles from database
+        # Batch fetch source titles to avoid N+1 queries
+        note_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "note"]
+        doc_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "document"]
+
+        # Single query for all note titles
+        note_title_map = {}
+        if note_ids:
+            result = await db.execute(
+                select(Note.id, Note.title).where(Note.id.in_(note_ids))
+            )
+            note_title_map = {str(note_id): title for note_id, title in result}
+
+        # Single query for all document titles
+        doc_title_map = {}
+        if doc_ids:
+            result = await db.execute(
+                select(Document.id, Document.filename).where(Document.id.in_(doc_ids))
+            )
+            doc_title_map = {str(doc_id): filename for doc_id, filename in result}
+
+        # Fetch source titles from preloaded maps
         retrieved_chunks = []
         for idx, chunk_id in enumerate(chunk_ids):
             metadata = metadatas[idx]
             source_type = metadata["source_type"]
             source_id = metadata["source_id"]
 
-            # Get source title
+            # Get source title from preloaded maps
             if source_type == "note":
-                result = await db.execute(
-                    select(Note.title).where(Note.id == source_id)
-                )
-                source_title = result.scalar_one_or_none() or "Unknown Note"
+                source_title = note_title_map.get(str(source_id), "Unknown Note")
             else:
-                result = await db.execute(
-                    select(Document.filename).where(Document.id == source_id)
-                )
-                source_title = result.scalar_one_or_none() or "Unknown Document"
+                source_title = doc_title_map.get(str(source_id), "Unknown Document")
 
             retrieved_chunk = RetrievedChunk(
                 chunk_id=chunk_id,
