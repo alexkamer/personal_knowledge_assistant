@@ -16,9 +16,10 @@ interface MessageListProps {
   isLoading?: boolean;
   onRegenerateMessage?: (messageId: string) => void;
   onFeedbackSubmitted?: () => void;
+  onQuestionClick?: (question: string) => void;
 }
 
-export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedbackSubmitted }: MessageListProps) {
+export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedbackSubmitted, onQuestionClick }: MessageListProps) {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [copiedMessageId, setCopiedMessageId] = React.useState<string | null>(null);
   const [selectedSource, setSelectedSource] = React.useState<SourceCitation | null>(null);
@@ -253,6 +254,26 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
                 )}
               </div>
             )}
+
+              {/* Suggested Questions (only for assistant messages) */}
+              {message.role === 'assistant' && message.suggested_questions && message.suggested_questions.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                    Suggested follow-up questions:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {message.suggested_questions.map((question, index) => (
+                      <button
+                        key={index}
+                        onClick={() => onQuestionClick?.(question)}
+                        className="text-left px-3 py-2 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               </div>
 
               {/* Timestamp and model info */}

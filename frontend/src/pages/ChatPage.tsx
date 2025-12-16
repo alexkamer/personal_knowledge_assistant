@@ -24,6 +24,7 @@ export function ChatPage() {
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [streamingSources, setStreamingSources] = useState<any[]>([]);
+  const [streamingSuggestedQuestions, setStreamingSuggestedQuestions] = useState<string[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const queryClient = useQueryClient();
@@ -47,6 +48,7 @@ export function ChatPage() {
           role: 'assistant' as const,
           content: streamingMessage,
           sources: streamingSources.length > 0 ? streamingSources : undefined,
+          suggested_questions: streamingSuggestedQuestions.length > 0 ? streamingSuggestedQuestions : undefined,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -65,6 +67,7 @@ export function ChatPage() {
       setIsStreaming(true);
       setStreamingMessage('');
       setStreamingSources([]);
+      setStreamingSuggestedQuestions([]);
 
       // Get preferred model from localStorage
       const preferredModel = localStorage.getItem('preferred_model') || undefined;
@@ -99,6 +102,7 @@ export function ChatPage() {
           setIsStreaming(false);
           setStreamingMessage('');
           setStreamingSources([]);
+          setStreamingSuggestedQuestions([]);
           // Invalidate queries to refresh the conversation
           queryClient.invalidateQueries({ queryKey: ['conversations'] });
           queryClient.invalidateQueries({ queryKey: ['conversations', newConversationId] });
@@ -108,7 +112,12 @@ export function ChatPage() {
           setIsStreaming(false);
           setStreamingMessage('');
           setStreamingSources([]);
+          setStreamingSuggestedQuestions([]);
           setErrorMessage(error);
+        },
+        // onSuggestedQuestions
+        (questions) => {
+          setStreamingSuggestedQuestions(questions);
         }
       );
     } catch (error: any) {
@@ -118,6 +127,7 @@ export function ChatPage() {
       setIsStreaming(false);
       setStreamingMessage('');
       setStreamingSources([]);
+      setStreamingSuggestedQuestions([]);
     }
   };
 
@@ -339,6 +349,7 @@ export function ChatPage() {
               // Refresh conversation to get updated feedback
               queryClient.invalidateQueries({ queryKey: ['conversations', selectedConversationId] });
             }}
+            onQuestionClick={handleSendMessage}
           />
 
           {/* Clear Chat Button - shows when there are messages */}

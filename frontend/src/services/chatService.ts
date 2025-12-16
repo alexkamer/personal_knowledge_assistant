@@ -30,7 +30,8 @@ export const chatService = {
     onSources: (sources: any[]) => void,
     onConversationId: (conversationId: string) => void,
     onDone: (messageId: string) => void,
-    onError: (error: string) => void
+    onError: (error: string) => void,
+    onSuggestedQuestions?: (questions: string[]) => void
   ): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/chat/stream`, {
       method: 'POST',
@@ -76,6 +77,11 @@ export const chatService = {
                   break;
                 case 'chunk':
                   onChunk(data.content);
+                  break;
+                case 'suggested_questions':
+                  if (onSuggestedQuestions && data.questions) {
+                    onSuggestedQuestions(data.questions);
+                  }
                   break;
                 case 'done':
                   onDone(data.message_id);
