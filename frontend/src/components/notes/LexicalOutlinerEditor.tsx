@@ -28,6 +28,8 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { $setBlocksType } from '@lexical/selection';
 import { $getSelection, $isRangeSelection } from 'lexical';
 import { LexicalSlashCommandPlugin } from './LexicalSlashCommandPlugin';
+import { ImageNode } from './ImageNode';
+import { ImagePlugin } from './ImagePlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -162,6 +164,7 @@ export function LexicalOutlinerEditor({
       ParagraphNode,
       TextNode,
       LineBreakNode,
+      ImageNode,
     ],
   };
 
@@ -189,6 +192,7 @@ export function LexicalOutlinerEditor({
           <OnChangeSerializerPlugin onChange={onChange} />
           <InitialContentPlugin content={initialContent} />
           <LexicalSlashCommandPlugin />
+          <ImagePlugin />
         </div>
       </LexicalComposer>
     </div>

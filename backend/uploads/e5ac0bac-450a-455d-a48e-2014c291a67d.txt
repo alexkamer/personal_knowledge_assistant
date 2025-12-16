@@ -1,0 +1,46 @@
+Retrieval-Augmented Generation (RAG) Overview
+
+What is RAG?
+Retrieval-Augmented Generation is a technique that combines information retrieval with text generation to produce more accurate and factual responses. Instead of relying solely on the knowledge encoded in a language model's parameters, RAG systems retrieve relevant information from external knowledge bases and use that information to generate responses.
+
+Key Components:
+1. Retrieval System: Uses embeddings and vector similarity search to find relevant documents
+2. Generation System: An LLM that synthesizes the retrieved information into coherent responses
+3. Knowledge Base: A collection of documents, typically stored with vector embeddings
+
+How RAG Works:
+1. Query Processing: User question is converted to embeddings
+2. Retrieval: Similar documents are retrieved using vector similarity search
+3. Context Assembly: Retrieved documents are formatted as context
+4. Generation: LLM generates response based on the retrieved context
+5. Citation: Sources are tracked and provided to the user
+
+Benefits of RAG:
+- Reduces hallucinations by grounding responses in real documents
+- Allows models to access up-to-date information
+- Provides source attribution for fact-checking
+- Works with smaller models since knowledge is externalized
+- Can be updated without retraining the model
+
+Common Vector Databases:
+- ChromaDB (local, easy to use)
+- Pinecone (managed cloud service)
+- Weaviate (open source, production-ready)
+- Qdrant (high-performance, Rust-based)
+
+Chunking Strategies:
+- Fixed-size chunks with overlap (common: 512 tokens, 50 token overlap)
+- Semantic chunking (split on paragraph/section boundaries)
+- Recursive splitting (paragraphs → sentences → tokens)
+
+Embedding Models:
+- Sentence-transformers (local, fast, good quality)
+- OpenAI text-embedding-ada-002 (cloud-based)
+- Cohere embeddings (specialized for RAG)
+
+Challenges:
+- Chunk size optimization
+- Retrieval quality vs quantity
+- Context window limitations
+- Latency in retrieval and generation
+- Cost of embeddings and LLM calls
