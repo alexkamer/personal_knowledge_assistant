@@ -27,6 +27,7 @@ export function ChatPage() {
   const [streamingSources, setStreamingSources] = useState<any[]>([]);
   const [streamingSuggestedQuestions, setStreamingSuggestedQuestions] = useState<string[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeAgent, setActiveAgent] = useState<{name: string; display_name: string; description: string} | null>(null);
 
   const queryClient = useQueryClient();
   const { theme, toggleTheme } = useTheme();
@@ -69,6 +70,7 @@ export function ChatPage() {
       setStreamingMessage('');
       setStreamingSources([]);
       setStreamingSuggestedQuestions([]);
+      setActiveAgent(null);
 
       // Get preferred model from localStorage
       const preferredModel = localStorage.getItem('preferred_model') || undefined;
@@ -119,6 +121,10 @@ export function ChatPage() {
         // onSuggestedQuestions
         (questions) => {
           setStreamingSuggestedQuestions(questions);
+        },
+        // onAgent
+        (agent) => {
+          setActiveAgent(agent);
         }
       );
     } catch (error: any) {
@@ -267,13 +273,20 @@ export function ChatPage() {
                         <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {conv.title}
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {new Date(conv.updated_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(conv.updated_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </p>
+                          {conv.message_count !== undefined && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              • {conv.message_count} {conv.message_count === 1 ? 'message' : 'messages'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={(e) => {
@@ -380,6 +393,17 @@ export function ChatPage() {
               <span>{webSearchEnabled ? '✓ Using web + documents' : 'Documents only (no web search)'}</span>
             </button>
           </div>
+
+          {/* Active Agent Indicator */}
+          {activeAgent && (
+            <div className="px-6 pb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md text-sm border border-blue-200 dark:border-blue-800">
+                <span className="font-medium">{activeAgent.display_name}</span>
+                <span className="text-blue-500 dark:text-blue-400">•</span>
+                <span className="text-xs text-blue-600 dark:text-blue-400">{activeAgent.description}</span>
+              </div>
+            </div>
+          )}
 
           {/* Token Usage Indicator */}
           {selectedConversationId && (

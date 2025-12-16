@@ -27,6 +27,7 @@ class RAGOrchestrator:
         db: AsyncSession,
         query: str,
         force_web_search: bool = None,
+        top_k: int = None,
     ) -> Tuple[str, List[dict], Dict[str, Any]]:
         """
         Process a query through the intelligent RAG pipeline.
@@ -35,6 +36,7 @@ class RAGOrchestrator:
             db: Database session
             query: User's question
             force_web_search: Force web search on/off (overrides analysis)
+            top_k: Override for number of chunks to retrieve (for agent config)
 
         Returns:
             Tuple of (context, citations, metadata)
@@ -59,10 +61,17 @@ class RAGOrchestrator:
             }
             return "", [], metadata
 
-        # Step 3: Determine retrieval parameters
+        # Step 3: Determine retrieval parameters (use override if provided)
         retrieval_params = analysis["retrieval_params"]
-        top_k_initial = retrieval_params["initial_k"]
-        top_k_final = retrieval_params["max_final_chunks"]
+        if top_k is not None:
+            # Agent override - use simple 1:1 ratio
+            top_k_initial = top_k
+            top_k_final = top_k
+            logger.info(f"Using agent override: top_k={top_k}")
+        else:
+            # Use query analyzer's recommendations
+            top_k_initial = retrieval_params["initial_k"]
+            top_k_final = retrieval_params["max_final_chunks"]
 
         # Step 4: Retrieve and re-rank chunks
         chunks = await self.rag_service.search_relevant_chunks(

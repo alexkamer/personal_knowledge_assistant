@@ -63,9 +63,9 @@ class ConversationService:
         db: AsyncSession,
         skip: int = 0,
         limit: int = 100,
-    ) -> tuple[list[Conversation], int]:
+    ) -> tuple[list[tuple[Conversation, int]], int]:
         """
-        List conversations with pagination.
+        List conversations with pagination, including message counts.
 
         Args:
             db: Database session
@@ -73,22 +73,25 @@ class ConversationService:
             limit: Maximum number of conversations to return
 
         Returns:
-            Tuple of (conversations list, total count)
+            Tuple of (list of (conversation, message_count) tuples, total count)
         """
         # Get total count
         count_result = await db.execute(select(func.count(Conversation.id)))
         total = count_result.scalar_one()
 
-        # Get conversations
+        # Get conversations with message counts
         result = await db.execute(
-            select(Conversation)
+            select(Conversation, func.count(Message.id).label("message_count"))
+            .outerjoin(Message, Conversation.id == Message.conversation_id)
+            .group_by(Conversation.id)
             .order_by(Conversation.updated_at.desc())
             .offset(skip)
             .limit(limit)
         )
-        conversations = list(result.scalars().all())
 
-        return conversations, total
+        conversations_with_counts = [(row[0], row[1]) for row in result.all()]
+
+        return conversations_with_counts, total
 
     @staticmethod
     async def update_conversation(

@@ -12,7 +12,21 @@ import { apiClient } from './api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
+export interface Agent {
+  name: string;
+  display_name: string;
+  description: string;
+}
+
 export const chatService = {
+  /**
+   * Get list of available agents.
+   */
+  async getAgents(): Promise<Agent[]> {
+    const response = await apiClient.get<Agent[]>('/chat/agents');
+    return response.data;
+  },
+
   /**
    * Send a message and get AI response.
    */
@@ -31,7 +45,8 @@ export const chatService = {
     onConversationId: (conversationId: string) => void,
     onDone: (messageId: string) => void,
     onError: (error: string) => void,
-    onSuggestedQuestions?: (questions: string[]) => void
+    onSuggestedQuestions?: (questions: string[]) => void,
+    onAgent?: (agent: Agent) => void
   ): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/chat/stream`, {
       method: 'POST',
@@ -71,6 +86,11 @@ export const chatService = {
               switch (data.type) {
                 case 'conversation_id':
                   onConversationId(data.conversation_id);
+                  break;
+                case 'agent':
+                  if (onAgent && data.agent) {
+                    onAgent(data.agent);
+                  }
                   break;
                 case 'sources':
                   onSources(data.sources);

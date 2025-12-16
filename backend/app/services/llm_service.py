@@ -28,6 +28,8 @@ class LLMService:
         conversation_history: Optional[List[dict]] = None,
         model: Optional[str] = None,
         stream: bool = False,
+        temperature: Optional[float] = None,
+        system_prompt: Optional[str] = None,
     ) -> str | AsyncIterator[str]:
         """
         Generate an answer using RAG context and conversation history.
@@ -38,14 +40,17 @@ class LLMService:
             conversation_history: Previous messages in conversation
             model: Model to use (defaults to primary)
             stream: Whether to stream the response
+            temperature: Temperature override for generation
+            system_prompt: Custom system prompt override
 
         Returns:
             Generated answer as string or async iterator if streaming
         """
         model = model or self.primary_model
+        temperature = temperature if temperature is not None else 0.7
 
-        # Build the system prompt
-        system_prompt = self._build_system_prompt()
+        # Build the system prompt (use custom if provided)
+        system_prompt = system_prompt or self._build_system_prompt()
 
         # Build the conversation messages
         messages = []
@@ -70,9 +75,9 @@ class LLMService:
 
         try:
             if stream:
-                return self._stream_response(model, messages)
+                return self._stream_response(model, messages, temperature)
             else:
-                return await self._generate_response(model, messages)
+                return await self._generate_response(model, messages, temperature)
         except ollama.ResponseError as e:
             logger.error(f"Ollama response error: {e}")
             if "model" in str(e).lower() and "not found" in str(e).lower():
@@ -85,13 +90,13 @@ class LLMService:
             logger.error(f"Unexpected error generating answer: {e}")
             raise
 
-    async def _generate_response(self, model: str, messages: List[dict]) -> str:
+    async def _generate_response(self, model: str, messages: List[dict], temperature: float) -> str:
         """Generate a complete response (non-streaming)."""
         response = await self.client.chat(
             model=model,
             messages=messages,
             options={
-                "temperature": 0.7,
+                "temperature": temperature,
                 "top_p": 0.9,
             },
         )
@@ -121,24 +126,18 @@ class LLMService:
         """
         model = model or self.primary_model
 
-        prompt = f"""Based on this conversation, generate 3-4 relevant follow-up questions that would help the user explore this topic further.
+        prompt = f"""Generate 3-4 natural follow-up questions for this conversation.
 
-USER QUESTION:
-{query}
+USER: {query}
+ASSISTANT: {answer}
 
-ASSISTANT ANSWER:
-{answer}
+Requirements:
+- Questions must be directly related to what was just discussed
+- Keep questions short and conversational
+- Focus on practical next steps or clarifications
+- Avoid generic questions that don't fit the context
 
-CONTEXT AVAILABLE:
-{context[:500]}...
-
-Generate 3-4 short, clear follow-up questions (one per line) that:
-1. Explore related concepts or details not covered
-2. Go deeper into specific aspects mentioned
-3. Connect to practical applications or examples
-4. Are natural next steps in learning about this topic
-
-Output ONLY the questions, one per line, without numbering or bullet points."""
+Output ONLY the questions, one per line, no numbering."""
 
         try:
             response = await self.client.chat(
@@ -174,6 +173,7 @@ Output ONLY the questions, one per line, without numbering or bullet points."""
         self,
         model: str,
         messages: List[dict],
+        temperature: float,
     ) -> AsyncIterator[str]:
         """Stream response chunks as they're generated."""
         async for chunk in await self.client.chat(
@@ -181,7 +181,7 @@ Output ONLY the questions, one per line, without numbering or bullet points."""
             messages=messages,
             stream=True,
             options={
-                "temperature": 0.7,
+                "temperature": temperature,
                 "top_p": 0.9,
             },
         ):
@@ -192,36 +192,29 @@ Output ONLY the questions, one per line, without numbering or bullet points."""
         """Build the system prompt for the LLM."""
         return """You are a helpful AI assistant for a personal knowledge management system.
 
-Your role is to answer questions based on the user's notes and documents. You have access to relevant context retrieved from their knowledge base.
+Answer questions using conversation history and the user's documents.
 
-Guidelines:
-- Answer questions accurately based on the provided context
-- If the context doesn't contain enough information, say so clearly
-- Cite sources when using specific information from the context
-- Be concise but thorough in your explanations
-- If asked about something not in the context, acknowledge the limitation
-- Maintain a helpful and professional tone
+Key rules:
+- Check conversation history FIRST for context (e.g., "that", "it", pronouns, follow-ups)
+- Answer directly without meta-commentary about your process
+- Be conversational and concise - avoid robotic phrases like "I'll do my best", "Based on the provided context", "Additionally, reviewing"
+- Only mention documents if they're actually relevant to the answer
+- If knowledge base context is irrelevant, ignore it completely - don't explain why you're ignoring it
+- Cite sources naturally when using specific info (e.g., "Your note on X mentions...")
+- If you don't know something, just say "I don't have information about that"
 
-When referencing information, mention the source (e.g., "According to your note on Machine Learning...")"""
+CRITICAL: Users want answers, not explanations of how you're thinking. Be natural and direct."""
 
     def _build_user_message(self, query: str, context: str) -> str:
         """Build the user message with context."""
         if context:
-            return f"""Based on the following context from my knowledge base, please answer my question:
+            return f"""{query}
 
-CONTEXT:
-{context}
-
-QUESTION:
-{query}
-
-Please provide a clear and helpful answer based on the context above."""
+[Available context from knowledge base:]
+{context}"""
         else:
-            # No context - this is a general knowledge question
-            return f"""QUESTION:
-{query}
-
-Please provide a clear and concise answer to this question using your general knowledge."""
+            # No context - this is a general knowledge question or conversation continuation
+            return query
 
     async def list_available_models(self) -> List[dict]:
         """

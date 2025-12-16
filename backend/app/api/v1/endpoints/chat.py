@@ -3,6 +3,7 @@ Chat endpoints for RAG-powered question answering.
 """
 import json
 import logging
+import re
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -26,10 +27,47 @@ from app.services.conversation_service import ConversationService
 from app.services.llm_service import get_llm_service
 from app.services.rag_service import get_rag_service
 from app.services.rag_orchestrator import get_rag_orchestrator
+from app.services.agent_service import get_agent_service
 from app.utils.token_counter import get_token_counter
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _is_conversational_query(query: str) -> bool:
+    """
+    Detect if a query is conversational (referencing previous context)
+    rather than a new information request.
+
+    Args:
+        query: User's query text
+
+    Returns:
+        True if query appears to be conversational, False otherwise
+    """
+    query_lower = query.lower().strip()
+
+    # Very short queries are likely conversational
+    if len(query_lower.split()) <= 3:
+        # Check for conversational patterns
+        conversational_patterns = [
+            r'\bthat\b',
+            r'\bit\b',
+            r'\bthis\b',
+            r'\bthese\b',
+            r'\bthose\b',
+            r'^(and|but|so|also|then|now|plus|minus|add|subtract|multiply|divide)',
+            r'\b(more|tell me more|continue|go on|what about|how about)\b',
+            r'^(what|where|when|who|why|how).*\b(it|that|this|they|them)\b',
+            r'\bmy\s+(name|age|job|profession)\b',
+            r'(what|who).*\b(am i|is my|are my)\b',
+        ]
+
+        for pattern in conversational_patterns:
+            if re.search(pattern, query_lower):
+                return True
+
+    return False
 
 
 @router.post("/", response_model=ChatResponse, status_code=status.HTTP_200_OK)
@@ -75,14 +113,22 @@ async def chat(
         await db.commit()
         await db.refresh(user_message)
 
-        # Retrieve relevant context using RAG
-        rag_service = get_rag_service()
-        context, citations = await rag_service.retrieve_and_assemble(
-            db=db,
-            query=request.message,
-            top_k=request.top_k,
-            include_web_search=request.include_web_search,
-        )
+        # Check if this is a conversational follow-up query
+        is_conversational = _is_conversational_query(request.message)
+
+        # Retrieve relevant context using RAG (skip for conversational queries)
+        context = ""
+        citations = []
+        if not is_conversational:
+            rag_service = get_rag_service()
+            context, citations = await rag_service.retrieve_and_assemble(
+                db=db,
+                query=request.message,
+                top_k=request.top_k,
+                include_web_search=request.include_web_search,
+            )
+        else:
+            logger.info("Detected conversational query, skipping RAG retrieval")
 
         # Get conversation history
         messages = await ConversationService.get_conversation_messages(
@@ -162,6 +208,11 @@ async def chat_stream(
     async def generate_stream():
         """Generator function for streaming response."""
         try:
+            # Parse agent mention from message
+            agent_service = get_agent_service()
+            agent_name, clean_message = agent_service.parse_agent_mention(request.message)
+            agent_config = agent_service.get_agent(agent_name)
+
             # Get or create conversation
             if request.conversation_id:
                 conversation = await ConversationService.get_conversation(
@@ -172,7 +223,7 @@ async def chat_stream(
                     return
             else:
                 # Create new conversation
-                title = request.conversation_title or f"Chat about: {request.message[:50]}"
+                title = request.conversation_title or f"Chat about: {clean_message[:50]}"
                 conversation_data = ConversationCreate(title=title)
                 conversation = await ConversationService.create_conversation(
                     db, conversation_data
@@ -181,12 +232,15 @@ async def chat_stream(
             # Send conversation ID immediately
             yield f'data: {json.dumps({"type": "conversation_id", "conversation_id": str(conversation.id)})}\n\n'
 
-            # Add user message
+            # Send agent info
+            yield f'data: {json.dumps({"type": "agent", "agent": {"name": agent_config.name, "display_name": agent_config.display_name, "description": agent_config.description}})}\n\n'
+
+            # Add user message (with original message including @ mention)
             user_message = await ConversationService.add_message(
                 db=db,
                 conversation_id=str(conversation.id),
                 role="user",
-                content=request.message,
+                content=request.message,  # Keep original with @ mention
             )
 
             # Calculate and store token count for user message
@@ -195,13 +249,28 @@ async def chat_stream(
             await db.commit()
             await db.refresh(user_message)
 
-            # Retrieve relevant context using RAG Orchestrator (with intelligent query analysis)
-            orchestrator = get_rag_orchestrator()
-            context, citations, metadata = await orchestrator.process_query(
-                db=db,
-                query=request.message,
-                force_web_search=request.include_web_search if request.include_web_search is not None else None,
-            )
+            # Check if this is a conversational follow-up query
+            is_conversational = _is_conversational_query(clean_message)
+
+            # Retrieve relevant context using RAG Orchestrator (skip for conversational queries)
+            context = ""
+            citations = []
+            metadata = {}
+            if not is_conversational and agent_config.use_rag:
+                orchestrator = get_rag_orchestrator()
+                context, citations, metadata = await orchestrator.process_query(
+                    db=db,
+                    query=clean_message,  # Use clean message without @ mention
+                    force_web_search=request.include_web_search if request.include_web_search is not None else None,
+                    top_k=agent_config.rag_top_k,  # Use agent's RAG settings
+                )
+            else:
+                if is_conversational:
+                    logger.info("Detected conversational query, skipping RAG retrieval")
+                    metadata = {"query_type": "conversational"}
+                else:
+                    logger.info(f"Agent {agent_config.name} has RAG disabled")
+                    metadata = {"query_type": "no_rag"}
 
             # Send sources with metadata
             sources_data = {
@@ -211,23 +280,25 @@ async def chat_stream(
             }
             yield f'data: {json.dumps(sources_data)}\n\n'
 
-            # Get conversation history
+            # Get conversation history (limit based on agent config)
             messages = await ConversationService.get_conversation_messages(
                 db, str(conversation.id)
             )
             conversation_history = [
                 {"role": msg.role, "content": msg.content}
                 for msg in messages[:-1]  # Exclude the message we just added
-            ]
+            ][-agent_config.max_conversation_history:]  # Limit based on agent
 
-            # Generate streaming response
+            # Generate streaming response using agent config
             llm_service = get_llm_service()
             stream = await llm_service.generate_answer(
-                query=request.message,
+                query=clean_message,  # Use clean message without @ mention
                 context=context,
                 conversation_history=conversation_history,
-                model=request.model,
+                model=request.model or agent_config.model,  # Use agent's model if not specified
                 stream=True,
+                temperature=agent_config.temperature,  # Use agent's temperature
+                system_prompt=agent_config.system_prompt,  # Use agent's system prompt
             )
 
             # Collect full response while streaming
@@ -295,16 +366,20 @@ async def list_conversations(
     db: AsyncSession = Depends(get_db),
 ) -> ConversationListResponse:
     """
-    List all conversations with pagination.
+    List all conversations with pagination, including message counts.
     """
-    conversations, total = await ConversationService.list_conversations(
+    conversations_with_counts, total = await ConversationService.list_conversations(
         db, skip=skip, limit=limit
     )
 
+    conversation_responses = []
+    for conv, message_count in conversations_with_counts:
+        conv_response = ConversationResponse.model_validate(conv)
+        conv_response.message_count = message_count
+        conversation_responses.append(conv_response)
+
     return ConversationListResponse(
-        conversations=[
-            ConversationResponse.model_validate(conv) for conv in conversations
-        ],
+        conversations=conversation_responses,
         total=total,
     )
 
@@ -519,6 +594,15 @@ async def submit_message_feedback(
         await db.commit()
         await db.refresh(new_feedback)
         return MessageFeedbackResponse.model_validate(new_feedback)
+
+
+@router.get("/agents")
+async def list_agents() -> list[dict]:
+    """
+    List available AI agents with their configurations.
+    """
+    agent_service = get_agent_service()
+    return agent_service.list_available_agents()
 
 
 @router.get("/conversations/{conversation_id}/token-usage")
