@@ -23,8 +23,9 @@ import {
   REMOVE_LIST_COMMAND,
   $isListNode,
 } from '@lexical/list';
-import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Code } from 'lucide-react';
+import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Code, Link as LinkIcon } from 'lucide-react';
 import { $createCodeNode } from '@lexical/code';
+import { $createLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
 
 interface Command {
   id: string;

@@ -25,6 +25,8 @@ import { HeadingNode, QuoteNode, $createHeadingNode } from '@lexical/rich-text';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { CodeNode, CodeHighlightNode } from '@lexical/code';
+import { LinkNode, AutoLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
+import { LexicalClickableLinkPlugin } from '@lexical/react/LexicalClickableLinkPlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $setBlocksType } from '@lexical/selection';
 import { $getSelection, $isRangeSelection } from 'lexical';
@@ -34,6 +36,7 @@ import { ImagePlugin } from './ImagePlugin';
 import { ImageResizePlugin } from './ImageResizePlugin';
 import { CodeHighlightPlugin } from './CodeHighlightPlugin';
 import { CodeActionPlugin } from './CodeActionPlugin';
+import { LinkPlugin } from './LinkPlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -49,6 +52,7 @@ const theme = {
     italic: 'italic',
     underline: 'underline',
   },
+  link: 'text-blue-600 underline hover:text-blue-800 cursor-pointer',
   heading: {
     h1: 'text-3xl font-bold text-gray-900 mb-2',
     h2: 'text-2xl font-semibold text-gray-800 mb-2',
@@ -219,6 +223,8 @@ export function LexicalOutlinerEditor({
       TextNode,
       LineBreakNode,
       ImageNode,
+      LinkNode,
+      AutoLinkNode,
     ],
   };
 
@@ -250,6 +256,8 @@ export function LexicalOutlinerEditor({
           <LexicalSlashCommandPlugin />
           <ImagePlugin />
           <ImageResizePlugin />
+          <LinkPlugin />
+          <LexicalClickableLinkPlugin />
         </div>
       </LexicalComposer>
     </div>
