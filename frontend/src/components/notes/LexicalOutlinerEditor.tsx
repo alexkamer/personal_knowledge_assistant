@@ -2,7 +2,7 @@
  * Lexical-based outliner editor - RemNote-style WYSIWYG
  * True rich text editing with no raw markdown visible
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
@@ -114,8 +114,16 @@ function OnChangeSerializerPlugin({ onChange }: { onChange: (content: string) =>
 // Plugin to initialize content from JSON
 function InitialContentPlugin({ content }: { content?: string }) {
   const [editor] = useLexicalComposerContext();
+  const initializedRef = useRef(false);
 
   useEffect(() => {
+    // Only initialize once when the component mounts
+    if (initializedRef.current) {
+      return;
+    }
+
+    initializedRef.current = true;
+
     if (content) {
       try {
         const editorState = editor.parseEditorState(content);
@@ -139,7 +147,7 @@ function InitialContentPlugin({ content }: { content?: string }) {
         root.append(paragraph);
       });
     }
-  }, [content, editor]); // Update when content changes
+  }, [content, editor]); // Keep dependencies but use ref to prevent re-runs
 
   return null;
 }
