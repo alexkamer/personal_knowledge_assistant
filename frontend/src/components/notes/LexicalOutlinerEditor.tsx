@@ -26,7 +26,6 @@ import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { CodeNode, CodeHighlightNode } from '@lexical/code';
 import { LinkNode, AutoLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
-import { LexicalClickableLinkPlugin } from '@lexical/react/LexicalClickableLinkPlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $setBlocksType } from '@lexical/selection';
 import { $getSelection, $isRangeSelection } from 'lexical';
@@ -37,6 +36,7 @@ import { ImageResizePlugin } from './ImageResizePlugin';
 import { CodeHighlightPlugin } from './CodeHighlightPlugin';
 import { CodeActionPlugin } from './CodeActionPlugin';
 import { LinkPlugin } from './LinkPlugin';
+import { ClickableLinkPlugin } from './ClickableLinkPlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -257,7 +257,7 @@ export function LexicalOutlinerEditor({
           <ImagePlugin />
           <ImageResizePlugin />
           <LinkPlugin />
-          <LexicalClickableLinkPlugin />
+          <ClickableLinkPlugin />
         </div>
       </LexicalComposer>
     </div>
