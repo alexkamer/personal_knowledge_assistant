@@ -1,20 +1,24 @@
 /**
  * Chat page for AI-powered Q&A using RAG.
  */
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, Plus, Trash2, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun } from 'lucide-react';
+import { MessageSquare, Plus, MoreVertical, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { TokenUsage } from '@/components/chat/TokenUsage';
+import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 import {
   useConversations,
   useConversation,
   useSendMessage,
   useDeleteConversation,
+  useUpdateConversation,
 } from '@/hooks/useChat';
 import { chatService } from '@/services/chatService';
 import { useTheme } from '@/contexts/ThemeContext';
+import { downloadConversationAsMarkdown } from '@/utils/exportMarkdown';
+import { useKeyboardShortcuts, type KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
 import type { Message } from '@/types/chat';
 
 export function ChatPage() {
@@ -28,6 +32,14 @@ export function ChatPage() {
   const [streamingSuggestedQuestions, setStreamingSuggestedQuestions] = useState<string[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeAgent, setActiveAgent] = useState<{name: string; display_name: string; description: string} | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
   const { theme, toggleTheme } = useTheme();
@@ -37,6 +49,7 @@ export function ChatPage() {
   );
   const sendMessage = useSendMessage();
   const deleteConversation = useDeleteConversation();
+  const updateConversation = useUpdateConversation();
 
   const messages: Message[] = conversationData?.messages || [];
 
@@ -62,6 +75,26 @@ export function ChatPage() {
     conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.summary?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editingConversationId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingConversationId]);
 
   const handleSendMessage = async (message: string) => {
     try {
@@ -154,7 +187,83 @@ export function ChatPage() {
     setSelectedConversationId(id);
   };
 
-  const handleDeleteConversation = async (id: string) => {
+  const handleMenuToggle = (e: React.MouseEvent, conversationId: string) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === conversationId ? null : conversationId);
+  };
+
+  const handleEditConversation = (e: React.MouseEvent, conversation: { id: string; title: string }) => {
+    e.stopPropagation();
+    setEditingConversationId(conversation.id);
+    setEditTitle(conversation.title);
+    setOpenMenuId(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent, originalTitle: string, conversationId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!editTitle.trim()) {
+      setEditTitle(originalTitle); // Reset to original
+      setEditingConversationId(null);
+      return;
+    }
+
+    try {
+      await updateConversation.mutateAsync({
+        id: conversationId,
+        data: {
+          title: editTitle.trim(),
+        },
+      });
+      setEditingConversationId(null);
+    } catch (error) {
+      console.error('Failed to update conversation title:', error);
+      setEditTitle(originalTitle); // Reset to original
+      setEditingConversationId(null);
+    }
+  };
+
+  const handleCancelEdit = (e: React.MouseEvent, originalTitle: string) => {
+    e.stopPropagation();
+    setEditTitle(originalTitle);
+    setEditingConversationId(null);
+  };
+
+  const handleTogglePin = async (e: React.MouseEvent, conversationId: string, isPinned: boolean) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+
+    try {
+      await updateConversation.mutateAsync({
+        id: conversationId,
+        data: {
+          is_pinned: !isPinned,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+      setErrorMessage('Failed to pin/unpin conversation');
+    }
+  };
+
+  const handleExportConversation = async (e: React.MouseEvent, conversationId: string) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+
+    try {
+      // Fetch the full conversation with messages
+      const conversation = await chatService.getConversation(conversationId);
+      downloadConversationAsMarkdown(conversation);
+    } catch (error) {
+      console.error('Failed to export conversation:', error);
+      setErrorMessage('Failed to export conversation');
+    }
+  };
+
+  const handleDeleteConversation = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
     if (window.confirm('Are you sure you want to delete this conversation?')) {
       try {
         await deleteConversation.mutateAsync(id);
@@ -183,6 +292,59 @@ export function ChatPage() {
     // Resend the user message
     await handleSendMessage(userMessage.content);
   };
+
+  // Define keyboard shortcuts
+  const shortcuts: KeyboardShortcut[] = [
+    {
+      key: 'k',
+      ctrl: true,
+      handler: () => {
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      },
+      description: 'Focus search',
+      category: 'Navigation',
+    },
+    {
+      key: 'n',
+      ctrl: true,
+      handler: () => {
+        handleNewChat();
+      },
+      description: 'New chat',
+      category: 'Actions',
+    },
+    {
+      key: 'b',
+      ctrl: true,
+      handler: () => {
+        setIsSidebarCollapsed(!isSidebarCollapsed);
+      },
+      description: 'Toggle sidebar',
+      category: 'Navigation',
+    },
+    {
+      key: 'Escape',
+      handler: () => {
+        setOpenMenuId(null);
+        setShowShortcutsModal(false);
+      },
+      description: 'Close menus/modals',
+      category: 'General',
+    },
+    {
+      key: '?',
+      shift: true,
+      handler: () => {
+        setShowShortcutsModal(true);
+      },
+      description: 'Show keyboard shortcuts',
+      category: 'Help',
+    },
+  ];
+
+  // Register keyboard shortcuts
+  useKeyboardShortcuts(shortcuts);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
@@ -238,6 +400,7 @@ export function ChatPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                 <input
+                  ref={searchInputRef}
                   type="text"
                   placeholder="Search conversations..."
                   value={searchQuery}
@@ -268,11 +431,37 @@ export function ChatPage() {
                       ${selectedConversationId === conv.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600' : ''}
                     `}
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {conv.title}
-                        </h3>
+                        {editingConversationId === conv.id ? (
+                          <form onSubmit={(e) => handleSaveEdit(e, conv.title, conv.id)} className="mb-1">
+                            <input
+                              ref={editInputRef}
+                              type="text"
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              onBlur={(e) => {
+                                // Convert blur to form submission
+                                const form = e.currentTarget.form;
+                                if (form) {
+                                  form.requestSubmit();
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                  handleCancelEdit(e as any, conv.title);
+                                }
+                              }}
+                              className="w-full px-2 py-1 text-sm font-medium border-2 border-blue-500 dark:border-blue-400 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </form>
+                        ) : (
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+                            {conv.is_pinned && <Pin size={12} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />}
+                            <span className="truncate">{conv.title}</span>
+                          </h3>
+                        )}
                         <div className="flex items-center gap-2 mt-1">
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {new Date(conv.updated_at).toLocaleDateString('en-US', {
@@ -288,16 +477,49 @@ export function ChatPage() {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteConversation(conv.id);
-                        }}
-                        className="ml-2 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                        aria-label="Delete conversation"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+
+                      {/* Three-dot menu */}
+                      <div className="relative flex-shrink-0" ref={openMenuId === conv.id ? menuRef : null}>
+                        <button
+                          onClick={(e) => handleMenuToggle(e, conv.id)}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          title="More options"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+
+                        {openMenuId === conv.id && (
+                          <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                            <button
+                              onClick={(e) => handleTogglePin(e, conv.id, conv.is_pinned)}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg transition-colors flex items-center gap-2"
+                            >
+                              {conv.is_pinned ? <PinOff size={14} /> : <Pin size={14} />}
+                              {conv.is_pinned ? 'Unpin' : 'Pin'}
+                            </button>
+                            <button
+                              onClick={(e) => handleEditConversation(e, conv)}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => handleExportConversation(e, conv.id)}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                            >
+                              <Download size={14} />
+                              Export as MD
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteConversation(e, conv.id)}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-lg transition-colors"
+                              disabled={deleteConversation.isPending}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -418,6 +640,13 @@ export function ChatPage() {
           />
         </main>
       </div>
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
+        shortcuts={shortcuts}
+      />
     </div>
   );
 }

@@ -72,6 +72,7 @@ class ConversationUpdate(BaseModel):
 
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     summary: Optional[str] = None
+    is_pinned: Optional[bool] = None
 
 
 class ConversationResponse(ConversationBase):
@@ -79,6 +80,7 @@ class ConversationResponse(ConversationBase):
 
     id: str
     summary: Optional[str] = None
+    is_pinned: bool = False
     created_at: datetime
     updated_at: datetime
     message_count: Optional[int] = None

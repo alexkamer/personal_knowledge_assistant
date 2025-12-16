@@ -80,11 +80,12 @@ class ConversationService:
         total = count_result.scalar_one()
 
         # Get conversations with message counts
+        # Sort by: pinned first (DESC), then by updated_at (DESC)
         result = await db.execute(
             select(Conversation, func.count(Message.id).label("message_count"))
             .outerjoin(Message, Conversation.id == Message.conversation_id)
             .group_by(Conversation.id)
-            .order_by(Conversation.updated_at.desc())
+            .order_by(Conversation.is_pinned.desc(), Conversation.updated_at.desc())
             .offset(skip)
             .limit(limit)
         )

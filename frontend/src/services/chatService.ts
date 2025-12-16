@@ -4,6 +4,7 @@
 import type {
   ChatRequest,
   ChatResponse,
+  ChunkDetail,
   Conversation,
   ConversationListResponse,
   ConversationWithMessages,
@@ -184,6 +185,14 @@ export const chatService = {
       `/chat/conversations/${conversationId}/token-usage`,
       { params: { model } }
     );
+    return response.data;
+  },
+
+  /**
+   * Get detailed information about a specific chunk.
+   */
+  async getChunkDetail(chunkId: string): Promise<ChunkDetail> {
+    const response = await apiClient.get<ChunkDetail>(`/chunks/${chunkId}`);
     return response.data;
   },
 };

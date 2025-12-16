@@ -3,14 +3,11 @@
  */
 import React from 'react';
 import { Bot, User, FileText, StickyNote, Globe, Copy, RotateCw, Check, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
 import type { Message, SourceCitation } from '@/types/chat';
 import { SourcePreviewModal } from './SourcePreviewModal';
 import { MetadataBadges } from './MetadataBadges';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { apiClient } from '@/services/api';
-import 'highlight.js/styles/github.css';
 
 interface MessageListProps {
   messages: Message[];
@@ -116,27 +113,7 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
                   {message.content}
                 </div>
               ) : (
-                <div className="prose prose-sm max-w-none prose-slate dark:prose-invert">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeHighlight]}
-                    components={{
-                      code: ({ node, inline, className, children, ...props }: any) => {
-                        return inline ? (
-                          <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
-                            {children}
-                          </code>
-                        ) : (
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        );
-                      },
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
+                <MarkdownRenderer content={message.content} />
               )}
 
               {/* Action buttons for assistant messages */}
