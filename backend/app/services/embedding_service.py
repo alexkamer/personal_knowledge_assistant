@@ -1,7 +1,9 @@
 """
 Embedding service using sentence-transformers for text vectorization.
 """
+import hashlib
 import logging
+from functools import lru_cache
 from typing import List
 
 from sentence_transformers import SentenceTransformer
@@ -41,9 +43,27 @@ class EmbeddingService:
             raise RuntimeError("Embedding model not initialized")
         return self.model.get_sentence_embedding_dimension()
 
+    @staticmethod
+    def _hash_text(text: str) -> str:
+        """Create a hash of text for cache key."""
+        return hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+    @lru_cache(maxsize=1000)
+    def _embed_text_cached(self, text_hash: str, text: str) -> tuple:
+        """
+        Cached embedding generation with text hash as key.
+
+        Returns tuple for hashability in lru_cache.
+        """
+        if not self.model:
+            raise RuntimeError("Embedding model not initialized")
+
+        embedding = self.model.encode(text, convert_to_numpy=True)
+        return tuple(embedding.tolist())
+
     def embed_text(self, text: str) -> List[float]:
         """
-        Generate embedding for a single text.
+        Generate embedding for a single text with caching.
 
         Args:
             text: Text to embed
@@ -58,8 +78,10 @@ class EmbeddingService:
             raise ValueError("Cannot embed empty text")
 
         try:
-            embedding = self.model.encode(text, convert_to_numpy=True)
-            return embedding.tolist()
+            # Use cache for repeated queries
+            text_hash = self._hash_text(text)
+            cached_embedding = self._embed_text_cached(text_hash, text)
+            return list(cached_embedding)
         except Exception as e:
             logger.error(f"Failed to generate embedding: {e}")
             raise
