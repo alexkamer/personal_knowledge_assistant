@@ -23,7 +23,8 @@ import {
   REMOVE_LIST_COMMAND,
   $isListNode,
 } from '@lexical/list';
-import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered } from 'lucide-react';
+import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Code } from 'lucide-react';
+import { $createCodeNode } from '@lexical/code';
 
 interface Command {
   id: string;
@@ -68,6 +69,13 @@ const COMMANDS: Command[] = [
     icon: ListOrdered,
     description: 'Create a numbered list',
     keywords: ['number', 'list', 'ol', 'ordered'],
+  },
+  {
+    id: 'code',
+    label: 'Code Block',
+    icon: Code,
+    description: 'Insert a code block with syntax highlighting',
+    keywords: ['code', 'snippet', 'programming', 'syntax'],
   },
 ];
 
@@ -140,6 +148,8 @@ export function LexicalSlashCommandPlugin() {
           editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
         } else if (command.id === 'numberedList') {
           editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+        } else if (command.id === 'code') {
+          $setBlocksType(selection, () => $createCodeNode());
         }
       });
 

@@ -24,6 +24,7 @@ import {
 import { HeadingNode, QuoteNode, $createHeadingNode } from '@lexical/rich-text';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { CodeNode, CodeHighlightNode } from '@lexical/code';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $setBlocksType } from '@lexical/selection';
 import { $getSelection, $isRangeSelection } from 'lexical';
@@ -31,6 +32,7 @@ import { LexicalSlashCommandPlugin } from './LexicalSlashCommandPlugin';
 import { ImageNode } from './ImageNode';
 import { ImagePlugin } from './ImagePlugin';
 import { ImageResizePlugin } from './ImageResizePlugin';
+import { CodeHighlightPlugin } from './CodeHighlightPlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -54,6 +56,39 @@ const theme = {
   list: {
     ul: 'list-none',
     listitem: 'ml-6 relative',
+  },
+  code: 'bg-gray-900 text-gray-100 font-mono text-sm p-4 rounded-lg my-2 block overflow-x-auto',
+  codeHighlight: {
+    atrule: 'text-purple-400',
+    attr: 'text-blue-400',
+    boolean: 'text-purple-400',
+    builtin: 'text-yellow-400',
+    cdata: 'text-gray-400',
+    char: 'text-green-400',
+    class: 'text-yellow-400',
+    'class-name': 'text-yellow-400',
+    comment: 'text-gray-500',
+    constant: 'text-purple-400',
+    deleted: 'text-red-400',
+    doctype: 'text-gray-400',
+    entity: 'text-yellow-400',
+    function: 'text-blue-400',
+    important: 'text-red-400',
+    inserted: 'text-green-400',
+    keyword: 'text-purple-400',
+    namespace: 'text-yellow-400',
+    number: 'text-orange-400',
+    operator: 'text-gray-300',
+    prolog: 'text-gray-400',
+    property: 'text-blue-400',
+    punctuation: 'text-gray-400',
+    regex: 'text-green-400',
+    selector: 'text-green-400',
+    string: 'text-green-400',
+    symbol: 'text-purple-400',
+    tag: 'text-red-400',
+    url: 'text-blue-400',
+    variable: 'text-blue-400',
   },
 };
 
@@ -177,6 +212,8 @@ export function LexicalOutlinerEditor({
       QuoteNode,
       ListNode,
       ListItemNode,
+      CodeNode,
+      CodeHighlightNode,
       ParagraphNode,
       TextNode,
       LineBreakNode,
@@ -205,6 +242,7 @@ export function LexicalOutlinerEditor({
           <HistoryPlugin />
           <ListPlugin />
           <KeyboardShortcutsPlugin />
+          <CodeHighlightPlugin />
           <OnChangeSerializerPlugin onChange={onChange} />
           <InitialContentPlugin content={initialContent} />
           <LexicalSlashCommandPlugin />
