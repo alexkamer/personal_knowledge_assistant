@@ -4,7 +4,7 @@ Web search service using DuckDuckGo.
 import logging
 from typing import List, Dict
 
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 
 logger = logging.getLogger(__name__)
 
