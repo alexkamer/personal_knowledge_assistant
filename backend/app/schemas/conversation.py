@@ -49,6 +49,7 @@ class MessageResponse(MessageBase):
     model_used: Optional[str] = None
     sources: Optional[List[dict]] = None  # Parsed from retrieved_chunks
     feedback: Optional[MessageFeedbackResponse] = None
+    suggested_questions: Optional[List[str]] = None
 
     class Config:
         from_attributes = True
@@ -118,3 +119,4 @@ class ChatResponse(BaseModel):
     response: str
     sources: List[dict]
     model_used: str
+    suggested_questions: Optional[List[str]] = None

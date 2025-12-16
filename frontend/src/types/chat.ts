@@ -19,6 +19,7 @@ export interface Message {
   model_used?: string;
   sources?: SourceCitation[];
   feedback?: MessageFeedback;
+  suggested_questions?: string[];
 }
 
 export interface SourceCitation {
@@ -69,6 +70,7 @@ export interface ChatResponse {
   response: string;
   sources: SourceCitation[];
   model_used: string;
+  suggested_questions?: string[];
 }
 
 export interface ConversationListResponse {

@@ -106,12 +106,27 @@ async def chat(
             model_used=request.model or llm_service.primary_model,
         )
 
+        # Generate suggested follow-up questions
+        suggested_questions = await llm_service.generate_follow_up_questions(
+            query=request.message,
+            answer=response_text,
+            context=context,
+            model=request.model,
+        )
+
+        # Update the message with suggested questions
+        if suggested_questions:
+            assistant_message.suggested_questions = suggested_questions
+            await db.commit()
+            await db.refresh(assistant_message)
+
         return ChatResponse(
             conversation_id=str(conversation.id),
             message_id=str(assistant_message.id),
             response=response_text,
             sources=citations,
             model_used=assistant_message.model_used or "",
+            suggested_questions=suggested_questions if suggested_questions else None,
         )
 
     except Exception as e:
@@ -215,6 +230,23 @@ async def chat_stream(
                 retrieved_chunks=citations,
                 model_used=request.model or llm_service.primary_model,
             )
+
+            # Generate suggested follow-up questions
+            suggested_questions = await llm_service.generate_follow_up_questions(
+                query=request.message,
+                answer=complete_response,
+                context=context,
+                model=request.model,
+            )
+
+            # Update the message with suggested questions
+            if suggested_questions:
+                assistant_message.suggested_questions = suggested_questions
+                await db.commit()
+                await db.refresh(assistant_message)
+
+                # Send suggested questions to client
+                yield f'data: {json.dumps({"type": "suggested_questions", "questions": suggested_questions})}\n\n'
 
             # Send completion event
             yield f'data: {json.dumps({"type": "done", "message_id": str(assistant_message.id)})}\n\n'

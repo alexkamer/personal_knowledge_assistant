@@ -100,6 +100,76 @@ class LLMService:
         logger.info(f"Generated answer: {len(answer)} characters")
         return answer
 
+    async def generate_follow_up_questions(
+        self,
+        query: str,
+        answer: str,
+        context: str,
+        model: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Generate 3-4 relevant follow-up questions based on the conversation.
+
+        Args:
+            query: The user's original question
+            answer: The assistant's answer
+            context: The context used to generate the answer
+            model: Model to use (defaults to primary)
+
+        Returns:
+            List of 3-4 suggested follow-up questions
+        """
+        model = model or self.primary_model
+
+        prompt = f"""Based on this conversation, generate 3-4 relevant follow-up questions that would help the user explore this topic further.
+
+USER QUESTION:
+{query}
+
+ASSISTANT ANSWER:
+{answer}
+
+CONTEXT AVAILABLE:
+{context[:500]}...
+
+Generate 3-4 short, clear follow-up questions (one per line) that:
+1. Explore related concepts or details not covered
+2. Go deeper into specific aspects mentioned
+3. Connect to practical applications or examples
+4. Are natural next steps in learning about this topic
+
+Output ONLY the questions, one per line, without numbering or bullet points."""
+
+        try:
+            response = await self.client.chat(
+                model=model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                options={
+                    "temperature": 0.8,  # Slightly higher for creativity
+                    "top_p": 0.9,
+                },
+            )
+
+            # Parse the response into individual questions
+            questions_text = response["message"]["content"].strip()
+            questions = [
+                q.strip()
+                for q in questions_text.split("\n")
+                if q.strip() and len(q.strip()) > 10
+            ]
+
+            # Limit to 4 questions max
+            questions = questions[:4]
+
+            logger.info(f"Generated {len(questions)} follow-up questions")
+            return questions
+
+        except Exception as e:
+            logger.error(f"Failed to generate follow-up questions: {e}")
+            return []  # Return empty list on failure
+
     async def _stream_response(
         self,
         model: str,

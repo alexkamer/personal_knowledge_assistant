@@ -2,7 +2,7 @@
  * Message list component displaying chat messages with source citations.
  */
 import React from 'react';
-import { Bot, User, FileText, StickyNote, Globe, Copy, RotateCw, Check, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Bot, User, FileText, StickyNote, Globe, Copy, RotateCw, Check, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -23,6 +23,7 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
   const [copiedMessageId, setCopiedMessageId] = React.useState<string | null>(null);
   const [selectedSource, setSelectedSource] = React.useState<SourceCitation | null>(null);
   const [feedbackLoading, setFeedbackLoading] = React.useState<string | null>(null);
+  const [expandedSources, setExpandedSources] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,6 +55,18 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
     } finally {
       setFeedbackLoading(null);
     }
+  };
+
+  const toggleSources = (messageId: string) => {
+    setExpandedSources(prev => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
   };
 
   if (messages.length === 0 && !isLoading) {
@@ -190,13 +203,22 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
               {/* Sources (only for assistant messages) */}
               {message.role === 'assistant' && message.sources && message.sources.length > 0 && (
                 <div className="mt-4 text-sm">
-                <p className="text-gray-700 dark:text-gray-300 font-semibold mb-2.5 flex items-center gap-1.5">
+                <button
+                  onClick={() => toggleSources(message.id)}
+                  className="text-gray-700 dark:text-gray-300 font-semibold mb-2.5 flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                   </svg>
                   Sources ({message.sources.length})
-                </p>
-                <div className="flex flex-wrap gap-2">
+                  {expandedSources.has(message.id) ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </button>
+                {expandedSources.has(message.id) && (
+                  <div className="flex flex-wrap gap-2">
                   {message.sources.map((source) => (
                     <button
                       key={`${source.source_id}-${source.chunk_index}`}
@@ -228,6 +250,7 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
                     </button>
                   ))}
                 </div>
+                )}
               </div>
             )}
               </div>
