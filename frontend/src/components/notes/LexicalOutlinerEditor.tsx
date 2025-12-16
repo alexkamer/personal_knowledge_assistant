@@ -38,6 +38,7 @@ import { CodeActionPlugin } from './CodeActionPlugin';
 import { LinkPlugin } from './LinkPlugin';
 import { ClickableLinkPlugin } from './ClickableLinkPlugin';
 import { ListIndentPlugin } from './ListIndentPlugin';
+import { AutoListPlugin } from './AutoListPlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -254,6 +255,7 @@ export function LexicalOutlinerEditor({
           <HistoryPlugin />
           <ListPlugin />
           <ListIndentPlugin />
+          <AutoListPlugin />
           <KeyboardShortcutsPlugin />
           <CodeHighlightPlugin />
           <CodeActionPlugin />
