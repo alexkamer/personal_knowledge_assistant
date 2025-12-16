@@ -15,6 +15,7 @@ from app.services.embedding_service import get_embedding_service
 from app.services.vector_service import get_vector_service
 from app.services.web_search_service import get_web_search_service
 from app.services.reranking_service import get_reranking_service
+from app.services.hybrid_search_service import get_hybrid_search_service
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +57,167 @@ class RetrievedChunk:
 class RAGService:
     """Service for retrieval-augmented generation operations."""
 
-    def __init__(self):
-        """Initialize RAG service."""
+    def __init__(self, use_hybrid_search: bool = True):
+        """
+        Initialize RAG service.
+
+        Args:
+            use_hybrid_search: Whether to use hybrid search (semantic + BM25) (default: True)
+        """
         self.embedding_service = get_embedding_service()
         self.vector_service = get_vector_service()
         self.reranking_service = get_reranking_service() if settings.rerank_enabled else None
+        self.hybrid_search_service = get_hybrid_search_service() if use_hybrid_search else None
+        self.use_hybrid_search = use_hybrid_search
+
+    def _infer_filters_from_query(self, query: str) -> dict:
+        """
+        Infer metadata filters from query keywords.
+
+        Args:
+            query: User's search query
+
+        Returns:
+            Dictionary with inferred filters (content_type, has_code, etc.)
+        """
+        query_lower = query.lower()
+        filters = {}
+
+        # Detect code-related queries
+        code_keywords = ['code', 'function', 'class', 'method', 'implementation', 'snippet', 'example code', 'programming']
+        if any(keyword in query_lower for keyword in code_keywords):
+            filters['has_code'] = True
+            logger.info("Detected code-related query, filtering for has_code=True")
+
+        # Detect content type preferences
+        if 'list' in query_lower or 'bullet' in query_lower or 'steps' in query_lower:
+            filters['content_type'] = 'list'
+            logger.info("Detected list-related query, filtering for content_type='list'")
+        elif 'table' in query_lower or 'data' in query_lower:
+            filters['content_type'] = 'table'
+            logger.info("Detected table-related query, filtering for content_type='table'")
+
+        return filters
+
+    async def search_relevant_chunks_hybrid(
+        self,
+        db: AsyncSession,
+        query: str,
+        top_k: int = None,
+        source_type: Optional[str] = None,
+        exclude_notes: bool = True,
+        content_type: Optional[str] = None,
+        has_code: Optional[bool] = None,
+        section_title: Optional[str] = None,
+    ) -> List[RetrievedChunk]:
+        """
+        Search using hybrid approach: semantic (vector) + keyword (BM25) + rank fusion.
+
+        Args:
+            db: Database session
+            query: Search query
+            top_k: Number of chunks to retrieve (defaults to config)
+            source_type: Optional filter for 'note' or 'document'
+            exclude_notes: If True, excludes notes from search results (default: True)
+            content_type: Optional filter for content type
+            has_code: Optional filter for chunks containing code
+            section_title: Optional filter for section title
+
+        Returns:
+            List of retrieved chunks with source information
+        """
+        top_k = top_k or settings.max_retrieval_chunks
+
+        # If excluding notes, force source_type to 'document'
+        if exclude_notes and source_type is None:
+            source_type = 'document'
+
+        # Ensure BM25 index is built
+        if not self.hybrid_search_service._bm25_index:
+            await self.hybrid_search_service.build_bm25_index(db, source_type=source_type)
+
+        # Generate embedding for semantic search
+        logger.info(f"Performing hybrid search for query: {query[:50]}...")
+        query_embedding = self.embedding_service.embed_text(query)
+
+        # Semantic search
+        semantic_results = await self.vector_service.search_similar_chunks(
+            query_embedding=query_embedding,
+            n_results=top_k,
+            source_type=source_type,
+            content_type=content_type,
+            has_code=has_code,
+            section_title=section_title,
+        )
+
+        # BM25 keyword search
+        bm25_results = self.hybrid_search_service.bm25_search(query, top_k=top_k)
+
+        # Convert semantic results to (chunk_id, score) format
+        semantic_tuples = []
+        if semantic_results["ids"] and semantic_results["ids"][0]:
+            chunk_ids = semantic_results["ids"][0]
+            distances = semantic_results["distances"][0]
+            semantic_tuples = list(zip(chunk_ids, distances))
+
+        # Fuse results using RRF
+        fused_results = self.hybrid_search_service.reciprocal_rank_fusion(
+            semantic_results=semantic_tuples,
+            bm25_results=bm25_results,
+            semantic_weight=0.7,  # Favor semantic search slightly
+            bm25_weight=0.3,
+        )
+
+        # Limit to top_k
+        fused_results = fused_results[:top_k]
+
+        if not fused_results:
+            logger.info("No relevant chunks found via hybrid search")
+            return []
+
+        # Fetch chunk details from database
+        chunk_ids = [chunk_id for chunk_id, _ in fused_results]
+        result = await db.execute(
+            select(Chunk).where(Chunk.id.in_(chunk_ids))
+        )
+        chunks_by_id = {str(chunk.id): chunk for chunk in result.scalars().all()}
+
+        # Build RetrievedChunk objects maintaining fused order
+        retrieved_chunks = []
+        for chunk_id, fused_score in fused_results:
+            chunk = chunks_by_id.get(chunk_id)
+            if not chunk:
+                continue
+
+            # Get source title
+            if chunk.note_id:
+                result = await db.execute(
+                    select(Note.title).where(Note.id == chunk.note_id)
+                )
+                source_title = result.scalar_one_or_none() or "Unknown Note"
+                source_type_str = "note"
+                source_id = chunk.note_id
+            else:
+                result = await db.execute(
+                    select(Document.filename).where(Document.id == chunk.document_id)
+                )
+                source_title = result.scalar_one_or_none() or "Unknown Document"
+                source_type_str = "document"
+                source_id = chunk.document_id
+
+            retrieved_chunk = RetrievedChunk(
+                chunk_id=chunk_id,
+                content=chunk.content,
+                distance=1.0 - fused_score,  # Convert fused score to distance-like metric
+                source_type=source_type_str,
+                source_id=source_id,
+                source_title=source_title,
+                chunk_index=chunk.chunk_index,
+            )
+            retrieved_chunks.append(retrieved_chunk)
+
+        logger.info(f"Hybrid search returned {len(retrieved_chunks)} chunks")
+        return retrieved_chunks
 
     async def search_relevant_chunks(
         self,
@@ -69,9 +226,12 @@ class RAGService:
         top_k: int = None,
         source_type: Optional[str] = None,
         exclude_notes: bool = True,
+        content_type: Optional[str] = None,
+        has_code: Optional[bool] = None,
+        section_title: Optional[str] = None,
     ) -> List[RetrievedChunk]:
         """
-        Search for relevant chunks using semantic similarity.
+        Search for relevant chunks using semantic similarity with optional metadata filtering.
 
         Args:
             db: Database session
@@ -79,6 +239,9 @@ class RAGService:
             top_k: Number of chunks to retrieve (defaults to config)
             source_type: Optional filter for 'note' or 'document'
             exclude_notes: If True, excludes notes from search results (default: True)
+            content_type: Optional filter for content type ('narrative', 'code', 'list', etc.)
+            has_code: Optional filter for chunks containing code
+            section_title: Optional filter for section title
 
         Returns:
             List of retrieved chunks with source information
@@ -93,12 +256,23 @@ class RAGService:
         logger.info(f"Generating embedding for query: {query[:50]}...")
         query_embedding = self.embedding_service.embed_text(query)
 
-        # Search in vector database
-        logger.info(f"Searching for top {top_k} similar chunks (source_type={source_type})")
+        # Search in vector database with metadata filters
+        filter_info = f"source_type={source_type}"
+        if content_type:
+            filter_info += f", content_type={content_type}"
+        if has_code is not None:
+            filter_info += f", has_code={has_code}"
+        if section_title:
+            filter_info += f", section_title={section_title}"
+
+        logger.info(f"Searching for top {top_k} similar chunks ({filter_info})")
         results = await self.vector_service.search_similar_chunks(
             query_embedding=query_embedding,
             n_results=top_k,
             source_type=source_type,
+            content_type=content_type,
+            has_code=has_code,
+            section_title=section_title,
         )
 
         if not results["ids"] or not results["ids"][0]:
@@ -262,6 +436,10 @@ class RAGService:
         max_tokens: int = None,
         include_web_search: bool = True,  # Changed default to True
         exclude_notes: bool = True,  # Exclude notes by default
+        content_type: Optional[str] = None,
+        has_code: Optional[bool] = None,
+        section_title: Optional[str] = None,
+        auto_infer_filters: bool = True,  # Automatically infer filters from query
     ) -> tuple[str, List[dict]]:
         """
         Convenience method to search and assemble context in one call.
@@ -273,12 +451,41 @@ class RAGService:
             max_tokens: Maximum tokens for context
             include_web_search: Whether to include web search results (default: True)
             exclude_notes: Whether to exclude notes from sources (default: True)
+            content_type: Optional filter for content type ('narrative', 'code', 'list', etc.)
+            has_code: Optional filter for chunks containing code
+            section_title: Optional filter for section title
+            auto_infer_filters: Whether to automatically infer filters from query (default: True)
 
         Returns:
             Tuple of (assembled context, source citations)
         """
-        # Get local chunks from knowledge base (documents only, no notes)
-        chunks = await self.search_relevant_chunks(db, query, top_k=top_k, exclude_notes=exclude_notes)
+        # Auto-infer filters from query if enabled and no manual filters provided
+        if auto_infer_filters and content_type is None and has_code is None:
+            inferred = self._infer_filters_from_query(query)
+            content_type = content_type or inferred.get('content_type')
+            has_code = has_code if has_code is not None else inferred.get('has_code')
+
+        # Get local chunks from knowledge base using hybrid or semantic search
+        if self.use_hybrid_search and self.hybrid_search_service:
+            chunks = await self.search_relevant_chunks_hybrid(
+                db,
+                query,
+                top_k=top_k,
+                exclude_notes=exclude_notes,
+                content_type=content_type,
+                has_code=has_code,
+                section_title=section_title,
+            )
+        else:
+            chunks = await self.search_relevant_chunks(
+                db,
+                query,
+                top_k=top_k,
+                exclude_notes=exclude_notes,
+                content_type=content_type,
+                has_code=has_code,
+                section_title=section_title,
+            )
 
         # Re-rank chunks to get the best ones
         if settings.rerank_enabled and chunks:

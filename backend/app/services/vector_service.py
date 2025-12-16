@@ -87,20 +87,48 @@ class VectorService:
         query_embedding: List[float],
         n_results: int = 10,
         source_type: Optional[str] = None,
+        content_type: Optional[str] = None,
+        has_code: Optional[bool] = None,
+        section_title: Optional[str] = None,
     ) -> dict:
         """
-        Search for similar chunks using vector similarity.
+        Search for similar chunks using vector similarity with optional metadata filtering.
 
         Args:
             query_embedding: Query embedding vector
             n_results: Number of results to return
             source_type: Optional filter for source type ('note' or 'document')
+            content_type: Optional filter for content type ('narrative', 'code', 'list', etc.)
+            has_code: Optional filter for chunks containing code
+            section_title: Optional filter for section title (contains match)
 
         Returns:
             Dictionary with ids, distances, documents, and metadatas
         """
         try:
-            where_filter = {"source_type": source_type} if source_type else None
+            # Build where filter combining all specified filters
+            where_filter = None
+            filter_conditions = []
+
+            if source_type:
+                filter_conditions.append({"source_type": source_type})
+
+            if content_type:
+                filter_conditions.append({"content_type": content_type})
+
+            if has_code is not None:
+                filter_conditions.append({"has_code": has_code})
+
+            # Note: ChromaDB doesn't support "contains" for strings directly in where clause
+            # section_title would need to be filtered post-retrieval or use exact match
+            if section_title:
+                filter_conditions.append({"section_title": section_title})
+
+            # Combine filters using $and if multiple conditions
+            if len(filter_conditions) > 1:
+                where_filter = {"$and": filter_conditions}
+            elif len(filter_conditions) == 1:
+                where_filter = filter_conditions[0]
 
             results = self.collection.query(
                 query_embeddings=[query_embedding],
@@ -108,7 +136,7 @@ class VectorService:
                 where=where_filter,
             )
 
-            logger.debug(f"Found {len(results['ids'][0])} similar chunks")
+            logger.debug(f"Found {len(results['ids'][0])} similar chunks (filters: source_type={source_type}, content_type={content_type}, has_code={has_code}, section_title={section_title})")
             return results
         except Exception as e:
             logger.error(f"Failed to search similar chunks: {e}")
