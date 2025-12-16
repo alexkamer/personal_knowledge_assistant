@@ -42,16 +42,57 @@ class QueryAnalyzer:
             r"\b\d+\s*[\+\-\*\/×÷]\s*\d+",  # Basic arithmetic: 2+2, 5*8, etc.
             r"\bcalculate\b",
             r"\bsolve\b.*\bequation\b",
+            r"\bsquare root of\b",
+            r"\bpercentage\b.*\bof\b",
 
-            # Common general knowledge
+            # Geography and demographics
             r"\bcapital of\b",
             r"\bpresident of\b",
+            r"\bprime minister of\b",
             r"\bpopulation of\b",
-            r"\blargest\b.*\bcity\b",
-            r"\bsmallest\b.*\bcountry\b",
+            r"\blargest\b.*\b(city|country|continent|ocean|mountain|river)\b",
+            r"\bsmallest\b.*\b(country|state|continent)\b",
+            r"\blocated in\b.*\bcountry\b",
+            r"\bwhere is\b.*\b(country|city|state)\b",
 
-            # Very simple greetings/chat
-            r"^(hi|hello|hey|thanks|thank you)[\s\?!\.]*$",
+            # Date and time
+            r"\bwhat (day|date|time|year) is (it|today)\b",
+            r"\bwhen is\b.*\b(holiday|christmas|new year|easter)\b",
+            r"\bhow many days\b.*\bin\b.*\b(month|year|week)\b",
+            r"\bwhat time zone\b",
+
+            # Basic science facts
+            r"\bspeed of light\b",
+            r"\bboiling point\b.*\bwater\b",
+            r"\bfreezing point\b",
+            r"\bhow many\b.*\b(planets|continents|oceans)\b",
+            r"\bwhat color is\b.*\b(sky|grass|sun)\b",
+
+            # Language and definitions
+            r"\bdefine\b.*\b(word|term)\b",
+            r"\bwhat does\b.*\bmean\b",
+            r"\bsynonym for\b",
+            r"\bantonym for\b",
+            r"\bhow do you spell\b",
+            r"\btranslate\b.*\bto\b",
+
+            # Units and conversions
+            r"\bconvert\b.*\bto\b",
+            r"\bhow many\b.*\bin\b.*\b(feet|meters|miles|kilometers|pounds|kilograms|gallons|liters)\b",
+
+            # Historical facts (common knowledge)
+            r"\bwhen did\b.*\b(world war|ww1|ww2)\b",
+            r"\bwho invented\b.*\b(wheel|telephone|internet|computer)\b",
+            r"\bwhen was\b.*\b(born|died|discovered|invented)\b",
+
+            # Simple greetings/chat
+            r"^(hi|hello|hey|thanks|thank you|goodbye|bye)[\s\?!\.]*$",
+            r"^(how are you|what'?s up|good morning|good evening)[\s\?!\.]*$",
+
+            # Very basic questions
+            r"\bwhat is\b.*\b(gravity|oxygen|photosynthesis|dna|rna)\b",
+            r"\bhow old is\b.*\b(earth|sun|universe)\b",
+            r"\bhow tall is\b.*\b(mount everest|eiffel tower)\b",
         ]
 
     def analyze(self, query: str) -> Dict[str, Any]:
