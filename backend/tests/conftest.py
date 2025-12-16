@@ -10,12 +10,26 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.core.database import Base, get_db
+from app.core.database import get_db
+from app.models.base import Base  # Import the CORRECT Base class
 from app.main import app
 
+# Import all models to ensure they're registered with SQLAlchemy
+from app.models.conversation import Conversation, Message
+from app.models.note import Note
+from app.models.document import Document
+from app.models.chunk import Chunk
+from app.models.tag import Tag
+from app.models.note_tag import NoteTag
+from app.models.message_feedback import MessageFeedback
 
-# Test database URL (in-memory SQLite)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+# Test database URL (file-based SQLite for consistency across connections)
+import tempfile
+import os
+
+TEST_DB_FILE = os.path.join(tempfile.gettempdir(), "test_knowledge_assistant.db")
+TEST_DATABASE_URL = f"sqlite+aiosqlite:///{TEST_DB_FILE}"
 
 
 @pytest.fixture(scope="session")
@@ -26,29 +40,39 @@ def event_loop() -> Generator:
     loop.close()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def test_engine():
-    """Create a test database engine."""
+    """Create a test database engine with tables."""
+    # Remove existing test database file if it exists
+    if os.path.exists(TEST_DB_FILE):
+        os.remove(TEST_DB_FILE)
+
+    # Create engine with file-based database
     engine = create_async_engine(
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
         echo=False,
     )
 
+    # Create all tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     yield engine
 
+    # Drop all tables and dispose engine after test
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
 
+    # Remove test database file
+    if os.path.exists(TEST_DB_FILE):
+        os.remove(TEST_DB_FILE)
+
 
 @pytest.fixture
-async def test_db(test_engine) -> AsyncGenerator[AsyncSession, None]:
+async def test_db(test_engine):
     """Create a test database session."""
     async_session = async_sessionmaker(
         test_engine,
@@ -58,24 +82,36 @@ async def test_db(test_engine) -> AsyncGenerator[AsyncSession, None]:
 
     async with async_session() as session:
         yield session
+        await session.rollback()
 
 
 @pytest.fixture
-async def client(test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def client(test_engine, test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Create a test HTTP client with database override."""
     from httpx import ASGITransport
 
+    # Override get_db to return our test database session
     async def override_get_db():
-        yield test_db
+        # Create a new session from the same engine for each request
+        async_session = async_sessionmaker(
+            test_engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+        async with async_session() as session:
+            yield session
 
+    # Apply the dependency override
     app.dependency_overrides[get_db] = override_get_db
 
+    # Create HTTP client
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
         yield ac
 
+    # Clear overrides after test
     app.dependency_overrides.clear()
 
 

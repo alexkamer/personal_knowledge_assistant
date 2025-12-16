@@ -162,3 +162,164 @@ class TestEmbeddingService:
             service2 = get_embedding_service()
 
             assert service1 is service2
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_initialization_failure(self, mock_transformer):
+        """Test initialization failure handling."""
+        mock_transformer.side_effect = Exception("Model load failed")
+
+        with pytest.raises(Exception) as exc_info:
+            EmbeddingService()
+
+        assert "Model load failed" in str(exc_info.value)
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_get_embedding_dimension_not_initialized(self, mock_transformer):
+        """Test getting dimension when model is not initialized."""
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_transformer.return_value = mock_model
+
+        service = EmbeddingService()
+        # Set model to None after initialization
+        service.model = None
+
+        with pytest.raises(RuntimeError) as exc_info:
+            service.get_embedding_dimension()
+
+        assert "not initialized" in str(exc_info.value)
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_embed_text_model_not_initialized(self, mock_transformer):
+        """Test embed_text when model is not initialized."""
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_transformer.return_value = mock_model
+
+        service = EmbeddingService()
+        # Set model to None after initialization
+        service.model = None
+
+        with pytest.raises(RuntimeError) as exc_info:
+            service.embed_text("Test")
+
+        assert "not initialized" in str(exc_info.value)
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_embed_text_encoding_error(self, mock_transformer):
+        """Test handling of encoding errors."""
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_model.encode.side_effect = Exception("Encoding failed")
+        mock_transformer.return_value = mock_model
+
+        service = EmbeddingService()
+
+        with pytest.raises(Exception) as exc_info:
+            service.embed_text("Test")
+
+        assert "Encoding failed" in str(exc_info.value)
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_embed_batch_model_not_initialized(self, mock_transformer):
+        """Test embed_batch when model is not initialized."""
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_transformer.return_value = mock_model
+
+        service = EmbeddingService()
+        # Set model to None after initialization
+        service.model = None
+
+        with pytest.raises(RuntimeError) as exc_info:
+            service.embed_batch(["Test"])
+
+        assert "not initialized" in str(exc_info.value)
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_embed_batch_all_empty_strings(self, mock_transformer):
+        """Test batch embedding with all empty strings raises error."""
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_transformer.return_value = mock_model
+
+        service = EmbeddingService()
+
+        with pytest.raises(ValueError) as exc_info:
+            service.embed_batch(["", "   ", ""])
+
+        assert "No valid texts" in str(exc_info.value)
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_embed_batch_encoding_error(self, mock_transformer):
+        """Test handling of batch encoding errors."""
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_model.encode.side_effect = Exception("Batch encoding failed")
+        mock_transformer.return_value = mock_model
+
+        service = EmbeddingService()
+
+        with pytest.raises(Exception) as exc_info:
+            service.embed_batch(["Text 1", "Text 2"])
+
+        assert "Batch encoding failed" in str(exc_info.value)
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_embed_batch_with_progress_bar(self, mock_transformer):
+        """Test that progress bar is shown for large batches."""
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_embeddings = Mock()
+        # Create 15 embeddings (> 10 triggers progress bar)
+        mock_embeddings.tolist.return_value = [[0.1] * 384 for _ in range(15)]
+        mock_model.encode.return_value = mock_embeddings
+        mock_transformer.return_value = mock_model
+
+        service = EmbeddingService()
+        texts = [f"Text {i}" for i in range(15)]
+        embeddings = service.embed_batch(texts)
+
+        assert len(embeddings) == 15
+
+        # Check that encode was called with show_progress_bar=True
+        call_args = mock_model.encode.call_args
+        assert call_args[1].get('show_progress_bar') is True
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_embed_batch_without_progress_bar(self, mock_transformer):
+        """Test that progress bar is not shown for small batches."""
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_embeddings = Mock()
+        mock_embeddings.tolist.return_value = [[0.1] * 384 for _ in range(5)]
+        mock_model.encode.return_value = mock_embeddings
+        mock_transformer.return_value = mock_model
+
+        service = EmbeddingService()
+        texts = [f"Text {i}" for i in range(5)]
+        embeddings = service.embed_batch(texts)
+
+        assert len(embeddings) == 5
+
+        # Check that encode was called with show_progress_bar=False
+        call_args = mock_model.encode.call_args
+        assert call_args[1].get('show_progress_bar') is False
+
+    @patch('app.services.embedding_service.SentenceTransformer')
+    def test_embed_batch_uses_correct_batch_size(self, mock_transformer):
+        """Test that batch embedding uses batch_size=32."""
+        mock_model = Mock()
+        mock_model.get_sentence_embedding_dimension.return_value = 384
+        mock_embeddings = Mock()
+        mock_embeddings.tolist.return_value = [[0.1] * 384 for _ in range(10)]
+        mock_model.encode.return_value = mock_embeddings
+        mock_transformer.return_value = mock_model
+
+        service = EmbeddingService()
+        texts = [f"Text {i}" for i in range(10)]
+        service.embed_batch(texts)
+
+        # Check that batch_size=32 was used
+        call_args = mock_model.encode.call_args
+        assert call_args[1].get('batch_size') == 32

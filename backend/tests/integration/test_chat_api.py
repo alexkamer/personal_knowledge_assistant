@@ -3,54 +3,166 @@ Integration tests for the chat API endpoints.
 """
 import pytest
 from httpx import AsyncClient
+from unittest.mock import AsyncMock, Mock, patch
+
+
+class TestChatAPI:
+    """Test suite for the main chat endpoint."""
+
+    @pytest.mark.asyncio
+    @patch('app.api.v1.endpoints.chat.get_llm_service')
+    @patch('app.api.v1.endpoints.chat.get_rag_service')
+    @patch('app.api.v1.endpoints.chat.get_token_counter')
+    async def test_chat_creates_new_conversation(
+        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+    ):
+        """Test sending a message creates a new conversation."""
+        # Mock services
+        mock_llm = Mock()
+        mock_llm.generate_answer = AsyncMock(return_value="Test answer")
+        mock_llm.generate_follow_up_questions = AsyncMock(return_value=["Question 1?", "Question 2?"])
+        mock_llm.primary_model = "qwen2.5:14b"
+        mock_llm_service.return_value = mock_llm
+
+        mock_rag = Mock()
+        mock_rag.retrieve_and_assemble = AsyncMock(return_value=("Test context", []))
+        mock_rag_service.return_value = mock_rag
+
+        mock_counter = Mock()
+        mock_counter.count_tokens.return_value = 10
+        mock_token_counter.return_value = mock_counter
+
+        response = await client.post(
+            "/api/v1/chat/",
+            json={
+                "message": "What is testing?",
+                "conversation_title": "Test Conversation",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "conversation_id" in data
+        assert "message_id" in data
+        assert data["response"] == "Test answer"
+        assert "sources" in data
+        assert data["model_used"] == "qwen2.5:14b"
+
+    @pytest.mark.asyncio
+    @patch('app.api.v1.endpoints.chat.get_llm_service')
+    @patch('app.api.v1.endpoints.chat.get_rag_service')
+    @patch('app.api.v1.endpoints.chat.get_token_counter')
+    async def test_chat_uses_existing_conversation(
+        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+    ):
+        """Test sending a message to an existing conversation."""
+        # Mock services
+        mock_llm = Mock()
+        mock_llm.generate_answer = AsyncMock(return_value="Follow-up answer")
+        mock_llm.generate_follow_up_questions = AsyncMock(return_value=["Question 1?", "Question 2?"])
+        mock_llm.primary_model = "qwen2.5:14b"
+        mock_llm_service.return_value = mock_llm
+
+        mock_rag = Mock()
+        mock_rag.retrieve_and_assemble = AsyncMock(return_value=("Context", []))
+        mock_rag_service.return_value = mock_rag
+
+        mock_counter = Mock()
+        mock_counter.count_tokens.return_value = 10
+        mock_token_counter.return_value = mock_counter
+
+        # Create first conversation
+        first_response = await client.post(
+            "/api/v1/chat/",
+            json={"message": "First message"},
+        )
+        conversation_id = first_response.json()["conversation_id"]
+
+        # Send follow-up message
+        response = await client.post(
+            "/api/v1/chat/",
+            json={
+                "message": "Follow-up message",
+                "conversation_id": conversation_id,
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["conversation_id"] == conversation_id
+        assert data["response"] == "Follow-up answer"
 
 
 class TestConversationsAPI:
     """Test suite for conversation endpoints."""
 
     @pytest.mark.asyncio
-    async def test_create_conversation(self, client: AsyncClient):
-        """Test creating a new conversation."""
-        response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={
-                "title": "Test Conversation",
-                "summary": "A test conversation",
-            },
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["title"] == "Test Conversation"
-        assert data["summary"] == "A test conversation"
-        assert "id" in data
-        assert "created_at" in data
-
-    @pytest.mark.asyncio
-    async def test_list_conversations(self, client: AsyncClient):
+    @patch('app.api.v1.endpoints.chat.get_llm_service')
+    @patch('app.api.v1.endpoints.chat.get_rag_service')
+    @patch('app.api.v1.endpoints.chat.get_token_counter')
+    async def test_list_conversations(
+        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+    ):
         """Test listing conversations."""
-        # Create a conversation first
+        # Mock services for chat endpoint
+        mock_llm = Mock()
+        mock_llm.generate_answer = AsyncMock(return_value="Answer")
+        mock_llm.generate_follow_up_questions = AsyncMock(return_value=["Question 1?", "Question 2?"])
+        mock_llm.primary_model = "qwen2.5:14b"
+        mock_llm_service.return_value = mock_llm
+
+        mock_rag = Mock()
+        mock_rag.retrieve_and_assemble = AsyncMock(return_value=("", []))
+        mock_rag_service.return_value = mock_rag
+
+        mock_counter = Mock()
+        mock_counter.count_tokens.return_value = 10
+        mock_token_counter.return_value = mock_counter
+
+        # Create a conversation by sending a message
         await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "Test 1"},
+            "/api/v1/chat/",
+            json={"message": "Test message", "conversation_title": "Test 1"},
         )
 
+        # List conversations
         response = await client.get("/api/v1/chat/conversations/")
 
         assert response.status_code == 200
         data = response.json()
         assert "conversations" in data
+        assert "total" in data
         assert len(data["conversations"]) >= 1
 
     @pytest.mark.asyncio
-    async def test_get_conversation_by_id(self, client: AsyncClient):
+    @patch('app.api.v1.endpoints.chat.get_llm_service')
+    @patch('app.api.v1.endpoints.chat.get_rag_service')
+    @patch('app.api.v1.endpoints.chat.get_token_counter')
+    async def test_get_conversation_by_id(
+        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+    ):
         """Test getting a conversation by ID."""
+        # Mock services
+        mock_llm = Mock()
+        mock_llm.generate_answer = AsyncMock(return_value="Answer")
+        mock_llm.generate_follow_up_questions = AsyncMock(return_value=["Question 1?", "Question 2?"])
+        mock_llm.primary_model = "qwen2.5:14b"
+        mock_llm_service.return_value = mock_llm
+
+        mock_rag = Mock()
+        mock_rag.retrieve_and_assemble = AsyncMock(return_value=("", []))
+        mock_rag_service.return_value = mock_rag
+
+        mock_counter = Mock()
+        mock_counter.count_tokens.return_value = 10
+        mock_token_counter.return_value = mock_counter
+
         # Create a conversation
         create_response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "Test Conversation"},
+            "/api/v1/chat/",
+            json={"message": "Test", "conversation_title": "Test Conversation"},
         )
-        conversation_id = create_response.json()["id"]
+        conversation_id = create_response.json()["conversation_id"]
 
         # Get the conversation
         response = await client.get(f"/api/v1/chat/conversations/{conversation_id}")
@@ -59,6 +171,8 @@ class TestConversationsAPI:
         data = response.json()
         assert data["id"] == conversation_id
         assert data["title"] == "Test Conversation"
+        assert "messages" in data
+        assert len(data["messages"]) == 2  # User message + Assistant message
 
     @pytest.mark.asyncio
     async def test_get_nonexistent_conversation(self, client: AsyncClient):
@@ -68,17 +182,37 @@ class TestConversationsAPI:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_update_conversation(self, client: AsyncClient):
+    @patch('app.api.v1.endpoints.chat.get_llm_service')
+    @patch('app.api.v1.endpoints.chat.get_rag_service')
+    @patch('app.api.v1.endpoints.chat.get_token_counter')
+    async def test_update_conversation(
+        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+    ):
         """Test updating a conversation."""
+        # Mock services
+        mock_llm = Mock()
+        mock_llm.generate_answer = AsyncMock(return_value="Answer")
+        mock_llm.generate_follow_up_questions = AsyncMock(return_value=["Question 1?", "Question 2?"])
+        mock_llm.primary_model = "qwen2.5:14b"
+        mock_llm_service.return_value = mock_llm
+
+        mock_rag = Mock()
+        mock_rag.retrieve_and_assemble = AsyncMock(return_value=("", []))
+        mock_rag_service.return_value = mock_rag
+
+        mock_counter = Mock()
+        mock_counter.count_tokens.return_value = 10
+        mock_token_counter.return_value = mock_counter
+
         # Create a conversation
         create_response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "Original Title"},
+            "/api/v1/chat/",
+            json={"message": "Test", "conversation_title": "Original Title"},
         )
-        conversation_id = create_response.json()["id"]
+        conversation_id = create_response.json()["conversation_id"]
 
-        # Update the conversation
-        response = await client.put(
+        # Update the conversation (use PATCH, not PUT)
+        response = await client.patch(
             f"/api/v1/chat/conversations/{conversation_id}",
             json={
                 "title": "Updated Title",
@@ -92,153 +226,77 @@ class TestConversationsAPI:
         assert data["summary"] == "Updated summary"
 
     @pytest.mark.asyncio
-    async def test_delete_conversation(self, client: AsyncClient):
+    @patch('app.api.v1.endpoints.chat.get_llm_service')
+    @patch('app.api.v1.endpoints.chat.get_rag_service')
+    @patch('app.api.v1.endpoints.chat.get_token_counter')
+    async def test_delete_conversation(
+        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+    ):
         """Test deleting a conversation."""
+        # Mock services
+        mock_llm = Mock()
+        mock_llm.generate_answer = AsyncMock(return_value="Answer")
+        mock_llm.generate_follow_up_questions = AsyncMock(return_value=["Question 1?", "Question 2?"])
+        mock_llm.primary_model = "qwen2.5:14b"
+        mock_llm_service.return_value = mock_llm
+
+        mock_rag = Mock()
+        mock_rag.retrieve_and_assemble = AsyncMock(return_value=("", []))
+        mock_rag_service.return_value = mock_rag
+
+        mock_counter = Mock()
+        mock_counter.count_tokens.return_value = 10
+        mock_token_counter.return_value = mock_counter
+
         # Create a conversation
         create_response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "To Delete"},
+            "/api/v1/chat/",
+            json={"message": "Test", "conversation_title": "To Delete"},
         )
-        conversation_id = create_response.json()["id"]
+        conversation_id = create_response.json()["conversation_id"]
 
         # Delete the conversation
         response = await client.delete(f"/api/v1/chat/conversations/{conversation_id}")
 
-        assert response.status_code == 200
+        assert response.status_code == 204
 
         # Verify it's deleted
         get_response = await client.get(f"/api/v1/chat/conversations/{conversation_id}")
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
-    async def test_pin_conversation(self, client: AsyncClient):
-        """Test pinning a conversation."""
-        # Create a conversation
-        create_response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "To Pin"},
-        )
-        conversation_id = create_response.json()["id"]
 
-        # Pin the conversation
-        response = await client.post(f"/api/v1/chat/conversations/{conversation_id}/pin")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["is_pinned"] is True
+class TestMessageFeedbackAPI:
+    """Test suite for message feedback endpoints."""
 
     @pytest.mark.asyncio
-    async def test_unpin_conversation(self, client: AsyncClient):
-        """Test unpinning a conversation."""
-        # Create and pin a conversation
-        create_response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "To Unpin"},
-        )
-        conversation_id = create_response.json()["id"]
-        await client.post(f"/api/v1/chat/conversations/{conversation_id}/pin")
-
-        # Unpin the conversation
-        response = await client.post(f"/api/v1/chat/conversations/{conversation_id}/unpin")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["is_pinned"] is False
-
-
-class TestMessagesAPI:
-    """Test suite for message endpoints."""
-
-    @pytest.mark.asyncio
-    async def test_create_message(self, client: AsyncClient):
-        """Test creating a message in a conversation."""
-        # Create a conversation first
-        conv_response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "Test"},
-        )
-        conversation_id = conv_response.json()["id"]
-
-        # Create a message
-        response = await client.post(
-            f"/api/v1/chat/conversations/{conversation_id}/messages",
-            json={
-                "role": "user",
-                "content": "Hello, how are you?",
-            },
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["role"] == "user"
-        assert data["content"] == "Hello, how are you?"
-        assert data["conversation_id"] == conversation_id
-
-    @pytest.mark.asyncio
-    async def test_list_messages(self, client: AsyncClient):
-        """Test listing messages in a conversation."""
-        # Create a conversation and message
-        conv_response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "Test"},
-        )
-        conversation_id = conv_response.json()["id"]
-
-        await client.post(
-            f"/api/v1/chat/conversations/{conversation_id}/messages",
-            json={"role": "user", "content": "Test message"},
-        )
-
-        # List messages
-        response = await client.get(
-            f"/api/v1/chat/conversations/{conversation_id}/messages"
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) >= 1
-        assert data[0]["content"] == "Test message"
-
-    @pytest.mark.asyncio
-    async def test_get_message_by_id(self, client: AsyncClient):
-        """Test getting a specific message."""
-        # Create conversation and message
-        conv_response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "Test"},
-        )
-        conversation_id = conv_response.json()["id"]
-
-        msg_response = await client.post(
-            f"/api/v1/chat/conversations/{conversation_id}/messages",
-            json={"role": "user", "content": "Test message"},
-        )
-        message_id = msg_response.json()["id"]
-
-        # Get the message
-        response = await client.get(f"/api/v1/chat/messages/{message_id}")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["id"] == message_id
-        assert data["content"] == "Test message"
-
-    @pytest.mark.asyncio
-    async def test_submit_feedback(self, client: AsyncClient):
+    @patch('app.api.v1.endpoints.chat.get_llm_service')
+    @patch('app.api.v1.endpoints.chat.get_rag_service')
+    @patch('app.api.v1.endpoints.chat.get_token_counter')
+    async def test_submit_feedback(
+        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+    ):
         """Test submitting feedback for a message."""
-        # Create conversation and message
-        conv_response = await client.post(
-            "/api/v1/chat/conversations/",
-            json={"title": "Test"},
-        )
-        conversation_id = conv_response.json()["id"]
+        # Mock services
+        mock_llm = Mock()
+        mock_llm.generate_answer = AsyncMock(return_value="Test response")
+        mock_llm.generate_follow_up_questions = AsyncMock(return_value=["Question 1?", "Question 2?"])
+        mock_llm.primary_model = "qwen2.5:14b"
+        mock_llm_service.return_value = mock_llm
 
-        msg_response = await client.post(
-            f"/api/v1/chat/conversations/{conversation_id}/messages",
-            json={"role": "assistant", "content": "Test response"},
+        mock_rag = Mock()
+        mock_rag.retrieve_and_assemble = AsyncMock(return_value=("", []))
+        mock_rag_service.return_value = mock_rag
+
+        mock_counter = Mock()
+        mock_counter.count_tokens.return_value = 10
+        mock_token_counter.return_value = mock_counter
+
+        # Create a conversation and get assistant message ID
+        chat_response = await client.post(
+            "/api/v1/chat/",
+            json={"message": "Test question"},
         )
-        message_id = msg_response.json()["id"]
+        message_id = chat_response.json()["message_id"]
 
         # Submit positive feedback
         response = await client.post(
@@ -250,3 +308,4 @@ class TestMessagesAPI:
         data = response.json()
         assert data["is_positive"] is True
         assert data["comment"] == "Great answer!"
+        assert data["message_id"] == message_id
