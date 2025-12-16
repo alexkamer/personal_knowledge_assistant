@@ -189,6 +189,10 @@ class NoteService:
             setattr(note, field, value)
 
         await db.commit()
+        await db.refresh(note)
+
+        # Eagerly load the tags_rel relationship
+        await db.execute(select(Note).where(Note.id == note.id).options(selectinload(Note.tags_rel)))
         await db.refresh(note, ["tags_rel"])
 
         # Reprocess chunks if content changed
