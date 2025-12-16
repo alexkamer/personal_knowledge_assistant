@@ -1,6 +1,7 @@
 /**
  * Lexical ImageNode for displaying images in the editor
  */
+import React from 'react';
 import {
   DecoratorNode,
   NodeKey,
@@ -26,6 +27,22 @@ export type SerializedImageNode = Spread<
   },
   SerializedLexicalNode
 >;
+
+function ImageComponent({ src, altText }: { src: string; altText: string }): JSX.Element {
+  return (
+    <img
+      src={src}
+      alt={altText}
+      style={{
+        maxWidth: '100%',
+        height: 'auto',
+        display: 'block',
+        margin: '1rem 0',
+        borderRadius: '0.375rem',
+      }}
+    />
+  );
+}
 
 export class ImageNode extends DecoratorNode<JSX.Element> {
   __src: string;
@@ -107,19 +124,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   }
 
   decorate(): JSX.Element {
-    return (
-      <img
-        src={this.__src}
-        alt={this.__altText}
-        style={{
-          maxWidth: '100%',
-          height: 'auto',
-          display: 'block',
-          margin: '1rem 0',
-          borderRadius: '0.375rem',
-        }}
-      />
-    );
+    return <ImageComponent src={this.__src} altText={this.__altText} />;
   }
 }
 
