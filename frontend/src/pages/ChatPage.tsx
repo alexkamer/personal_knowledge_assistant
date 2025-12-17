@@ -3,7 +3,8 @@
  */
 import { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, Plus, MoreVertical, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { MessageSquare, Plus, MoreVertical, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff, GraduationCap } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { TokenUsage } from '@/components/chat/TokenUsage';
@@ -27,6 +28,7 @@ export function ChatPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(true); // Changed default to true
   const [includeNotes, setIncludeNotes] = useState<boolean>(false); // Default to false - only use reputable sources
+  const [socraticMode, setSocraticMode] = useState<boolean>(false); // Default to false - direct answers
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [streamingSources, setStreamingSources] = useState<any[]>([]);
@@ -40,12 +42,14 @@ export function ChatPage() {
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [prefillQuestion, setPrefillQuestion] = useState<string>('');
 
   const menuRef = useRef<HTMLDivElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
+  const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { data: conversationsData } = useConversations();
   const { data: conversationData, isLoading: isLoadingConversation } = useConversation(
@@ -98,6 +102,16 @@ export function ChatPage() {
     }
   }, [editingConversationId]);
 
+  // Handle prefilled question from navigation state (from Context Panel)
+  useEffect(() => {
+    const prefill = location.state?.prefillQuestion;
+    if (prefill && typeof prefill === 'string') {
+      setPrefillQuestion(prefill);
+      // Clear navigation state to prevent re-use on re-renders
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
   const handleSendMessage = async (message: string) => {
     try {
       setErrorMessage(null);
@@ -109,6 +123,7 @@ export function ChatPage() {
       setStreamingToolCalls([]);
       setStreamingToolResults([]);
       setActiveAgent(null);
+      setPrefillQuestion(''); // Clear prefill after sending
 
       // Get preferred model from localStorage
       const preferredModel = localStorage.getItem('preferred_model') || undefined;
@@ -123,6 +138,7 @@ export function ChatPage() {
           model: preferredModel,
           include_web_search: webSearchEnabled,
           include_notes: includeNotes,
+          socratic_mode: socraticMode,
         },
         // onChunk
         (chunk) => {
@@ -673,6 +689,22 @@ export function ChatPage() {
             </button>
           </div>
 
+          {/* Socratic Learning Mode Toggle */}
+          <div className="px-6 pb-2">
+            <button
+              onClick={() => setSocraticMode(!socraticMode)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                socraticMode
+                  ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+              title="Enable Socratic Learning Mode: AI teaches through guided questions instead of direct answers"
+            >
+              <GraduationCap size={16} />
+              <span>{socraticMode ? '✓ Socratic Mode (Learning)' : 'Direct Answers'}</span>
+            </button>
+          </div>
+
           {/* Active Agent Indicator */}
           {activeAgent && (
             <div className="px-6 pb-2">
@@ -694,6 +726,7 @@ export function ChatPage() {
           <ChatInput
             onSend={handleSendMessage}
             disabled={isStreaming}
+            initialValue={prefillQuestion}
           />
         </main>
       </div>

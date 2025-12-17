@@ -13,6 +13,7 @@ from app.core.retry import retry_with_backoff, vector_db_circuit_breaker
 from app.models.chunk import Chunk
 from app.models.note import Note
 from app.models.document import Document
+from app.models.youtube_video import YouTubeVideo
 from app.services.embedding_service import get_embedding_service
 from app.services.vector_service import get_vector_service
 from app.services.web_search_service import get_web_search_service
@@ -137,7 +138,7 @@ class RAGService:
             db: Database session
             query: Search query
             top_k: Number of chunks to retrieve (defaults to config)
-            source_type: Optional filter for 'note' or 'document'
+            source_type: Optional filter for 'note', 'document', or 'youtube'
             exclude_notes: If True, excludes notes from search results (default: True)
             content_type: Optional filter for content type
             has_code: Optional filter for chunks containing code
@@ -148,9 +149,8 @@ class RAGService:
         """
         top_k = top_k or settings.max_retrieval_chunks
 
-        # If excluding notes, force source_type to 'document'
-        if exclude_notes and source_type is None:
-            source_type = 'document'
+        # If excluding notes, we don't force source_type since we want both documents and youtube
+        # The vector service will handle filtering out notes via the exclude_notes parameter
 
         # Ensure BM25 index is built
         if not self.hybrid_search_service._bm25_index:
@@ -165,6 +165,7 @@ class RAGService:
             query_embedding=query_embedding,
             n_results=top_k,
             source_type=source_type,
+            exclude_notes=exclude_notes,
             content_type=content_type,
             has_code=has_code,
             section_title=section_title,
@@ -205,6 +206,7 @@ class RAGService:
         # Batch fetch source titles to avoid N+1 queries
         note_ids = [chunk.note_id for chunk in chunks_by_id.values() if chunk.note_id]
         doc_ids = [chunk.document_id for chunk in chunks_by_id.values() if chunk.document_id]
+        youtube_ids = [chunk.youtube_video_id for chunk in chunks_by_id.values() if chunk.youtube_video_id]
 
         # Single query for all note titles
         note_title_map = {}
@@ -222,6 +224,14 @@ class RAGService:
             )
             doc_title_map = {str(doc_id): filename for doc_id, filename in result}
 
+        # Single query for all YouTube video titles
+        youtube_title_map = {}
+        if youtube_ids:
+            result = await db.execute(
+                select(YouTubeVideo.id, YouTubeVideo.title).where(YouTubeVideo.id.in_(youtube_ids))
+            )
+            youtube_title_map = {str(yt_id): title for yt_id, title in result}
+
         # Build RetrievedChunk objects maintaining fused order
         retrieved_chunks = []
         for chunk_id, fused_score in fused_results:
@@ -234,10 +244,14 @@ class RAGService:
                 source_title = note_title_map.get(str(chunk.note_id), "Unknown Note")
                 source_type_str = "note"
                 source_id = chunk.note_id
-            else:
+            elif chunk.document_id:
                 source_title = doc_title_map.get(str(chunk.document_id), "Unknown Document")
                 source_type_str = "document"
                 source_id = chunk.document_id
+            else:
+                source_title = youtube_title_map.get(str(chunk.youtube_video_id), "Unknown Video")
+                source_type_str = "youtube"
+                source_id = chunk.youtube_video_id
 
             retrieved_chunk = RetrievedChunk(
                 chunk_id=chunk_id,
@@ -275,7 +289,7 @@ class RAGService:
             db: Database session
             query: Search query
             top_k: Number of chunks to retrieve (defaults to config)
-            source_type: Optional filter for 'note' or 'document'
+            source_type: Optional filter for 'note', 'document', or 'youtube'
             exclude_notes: If True, excludes notes from search results (default: True)
             content_type: Optional filter for content type ('narrative', 'code', 'list', etc.)
             has_code: Optional filter for chunks containing code
@@ -286,16 +300,15 @@ class RAGService:
         """
         top_k = top_k or settings.max_retrieval_chunks
 
-        # If excluding notes, force source_type to 'document'
-        if exclude_notes and source_type is None:
-            source_type = 'document'
+        # If excluding notes, we don't force source_type since we want both documents and youtube
+        # The vector service will handle filtering out notes via the exclude_notes parameter
 
         # Generate embedding for the query
         logger.info(f"Generating embedding for query: {query[:50]}...")
         query_embedding = self.embedding_service.embed_text(query)
 
         # Search in vector database with metadata filters
-        filter_info = f"source_type={source_type}"
+        filter_info = f"source_type={source_type}, exclude_notes={exclude_notes}"
         if content_type:
             filter_info += f", content_type={content_type}"
         if has_code is not None:
@@ -308,6 +321,7 @@ class RAGService:
             query_embedding=query_embedding,
             n_results=top_k,
             source_type=source_type,
+            exclude_notes=exclude_notes,
             content_type=content_type,
             has_code=has_code,
             section_title=section_title,
@@ -328,6 +342,7 @@ class RAGService:
         # Batch fetch source titles to avoid N+1 queries
         note_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "note"]
         doc_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "document"]
+        youtube_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "youtube"]
 
         # Single query for all note titles
         note_title_map = {}
@@ -345,6 +360,14 @@ class RAGService:
             )
             doc_title_map = {str(doc_id): filename for doc_id, filename in result}
 
+        # Single query for all YouTube video titles
+        youtube_title_map = {}
+        if youtube_ids:
+            result = await db.execute(
+                select(YouTubeVideo.id, YouTubeVideo.title).where(YouTubeVideo.id.in_(youtube_ids))
+            )
+            youtube_title_map = {str(yt_id): title for yt_id, title in result}
+
         # Fetch source titles from preloaded maps
         retrieved_chunks = []
         for idx, chunk_id in enumerate(chunk_ids):
@@ -355,8 +378,10 @@ class RAGService:
             # Get source title from preloaded maps
             if source_type == "note":
                 source_title = note_title_map.get(str(source_id), "Unknown Note")
-            else:
+            elif source_type == "document":
                 source_title = doc_title_map.get(str(source_id), "Unknown Document")
+            else:  # youtube
+                source_title = youtube_title_map.get(str(source_id), "Unknown Video")
 
             retrieved_chunk = RetrievedChunk(
                 chunk_id=chunk_id,

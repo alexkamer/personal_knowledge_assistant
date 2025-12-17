@@ -87,6 +87,7 @@ class VectorService:
         query_embedding: List[float],
         n_results: int = 10,
         source_type: Optional[str] = None,
+        exclude_notes: bool = False,
         content_type: Optional[str] = None,
         has_code: Optional[bool] = None,
         section_title: Optional[str] = None,
@@ -97,7 +98,8 @@ class VectorService:
         Args:
             query_embedding: Query embedding vector
             n_results: Number of results to return
-            source_type: Optional filter for source type ('note' or 'document')
+            source_type: Optional filter for source type ('note', 'document', or 'youtube')
+            exclude_notes: If True, excludes notes from results (allows document + youtube)
             content_type: Optional filter for content type ('narrative', 'code', 'list', etc.)
             has_code: Optional filter for chunks containing code
             section_title: Optional filter for section title (contains match)
@@ -112,6 +114,14 @@ class VectorService:
 
             if source_type:
                 filter_conditions.append({"source_type": source_type})
+            elif exclude_notes:
+                # Exclude notes: allow both document and youtube
+                filter_conditions.append({
+                    "$or": [
+                        {"source_type": "document"},
+                        {"source_type": "youtube"}
+                    ]
+                })
 
             if content_type:
                 filter_conditions.append({"content_type": content_type})

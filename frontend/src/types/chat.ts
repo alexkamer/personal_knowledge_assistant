@@ -69,6 +69,7 @@ export interface ChatRequest {
   top_k?: number;
   include_web_search?: boolean;
   include_notes?: boolean;
+  socratic_mode?: boolean;
 }
 
 export interface ChatResponse {

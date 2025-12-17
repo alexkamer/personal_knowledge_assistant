@@ -300,7 +300,9 @@ describe('ChatPage - New Features', () => {
           expect.any(Function), // onError
           expect.any(Function), // onSuggestedQuestions
           expect.any(Function), // onAgent
-          expect.any(Function)  // onStatus
+          expect.any(Function), // onStatus
+          expect.any(Function), // onToolCall
+          expect.any(Function)  // onToolResult
         );
       });
     });
@@ -334,14 +336,16 @@ describe('ChatPage - New Features', () => {
             message: 'Test without notes',
             include_notes: false,
           }),
-          expect.any(Function),
-          expect.any(Function),
-          expect.any(Function),
-          expect.any(Function),
-          expect.any(Function),
-          expect.any(Function),
-          expect.any(Function),
-          expect.any(Function)
+          expect.any(Function), // onChunk
+          expect.any(Function), // onSources
+          expect.any(Function), // onConversationId
+          expect.any(Function), // onDone
+          expect.any(Function), // onError
+          expect.any(Function), // onSuggestedQuestions
+          expect.any(Function), // onAgent
+          expect.any(Function), // onStatus
+          expect.any(Function), // onToolCall
+          expect.any(Function)  // onToolResult
         );
       });
     });
@@ -398,14 +402,16 @@ describe('ChatPage - New Features', () => {
         expect.objectContaining({
           include_notes: true,
         }),
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function)
+        expect.any(Function), // onChunk
+        expect.any(Function), // onSources
+        expect.any(Function), // onConversationId
+        expect.any(Function), // onDone
+        expect.any(Function), // onError
+        expect.any(Function), // onSuggestedQuestions
+        expect.any(Function), // onAgent
+        expect.any(Function), // onStatus
+        expect.any(Function), // onToolCall
+        expect.any(Function)  // onToolResult
       );
     });
   });

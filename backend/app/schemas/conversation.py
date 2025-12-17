@@ -112,6 +112,7 @@ class ChatRequest(BaseModel):
     top_k: Optional[int] = Field(None, ge=1, le=20, description="Number of chunks to retrieve")
     include_web_search: bool = Field(False, description="Include web search results")
     include_notes: bool = Field(False, description="Include personal notes as sources (default: reputable sources only)")
+    socratic_mode: bool = Field(False, description="Enable Socratic Learning Mode (AI teaches through questioning)")
 
 
 class ChatResponse(BaseModel):

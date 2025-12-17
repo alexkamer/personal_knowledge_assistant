@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Youtube, Search, FileText, Sparkles, AlertCircle, Loader2, CheckCircle, X, Copy, Check, User, Eye, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { youtubeService, TranscriptData, VideoSummary, VideoMetadata } from '@/services/youtubeService';
+import { ContextPanel } from '@/components/context/ContextPanel';
 
 export function YouTubePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,6 +26,7 @@ export function YouTubePage() {
     keyPoints: true,
     topics: true,
   });
+  const [isContextPanelCollapsed, setIsContextPanelCollapsed] = useState(false);
 
   const transcriptRefs = useRef<{ [key: number]: HTMLButtonElement | null }>({});
 
@@ -300,8 +302,8 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
 
       {/* Main Content */}
       {transcriptData ? (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Video Player Column */}
             <div className="lg:col-span-2 space-y-4">
               {/* Video Embed */}
@@ -645,6 +647,16 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                   })}
                 </div>
               </div>
+            </div>
+
+            {/* Context Intelligence Panel */}
+            <div className="lg:col-span-1">
+              <ContextPanel
+                sourceType="youtube"
+                sourceId={transcriptData.video_id}
+                isCollapsed={isContextPanelCollapsed}
+                onToggle={() => setIsContextPanelCollapsed(!isContextPanelCollapsed)}
+              />
             </div>
           </div>
         </div>

@@ -23,7 +23,7 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # Source reference (either note_id or document_id)
+    # Source reference (exactly one of: note_id, document_id, youtube_video_id)
     note_id: Mapped[Optional[str]] = mapped_column(
         String(36),
         ForeignKey("notes.id", ondelete="CASCADE"),
@@ -33,6 +33,12 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
     document_id: Mapped[Optional[str]] = mapped_column(
         String(36),
         ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    youtube_video_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("youtube_videos.id", ondelete="CASCADE"),
         nullable=True,
         index=True,
     )
@@ -55,7 +61,15 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
     document: Mapped[Optional["Document"]] = relationship(
         "Document", back_populates="chunks"
     )
+    youtube_video: Mapped[Optional["YouTubeVideo"]] = relationship(
+        "YouTubeVideo", back_populates="chunks"
+    )
 
     def __repr__(self) -> str:
-        source = f"note={self.note_id}" if self.note_id else f"document={self.document_id}"
+        if self.note_id:
+            source = f"note={self.note_id}"
+        elif self.document_id:
+            source = f"document={self.document_id}"
+        else:
+            source = f"youtube_video={self.youtube_video_id}"
         return f"<Chunk(id={self.id}, {source}, index={self.chunk_index})>"

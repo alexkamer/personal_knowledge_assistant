@@ -6,10 +6,13 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.services.youtube_service import get_youtube_service
 from app.services.llm_service import LLMService, get_llm_service
 from app.services.agent_service import get_agent_service
+from app.services.youtube_ingestion_service import get_youtube_ingestion_service
 from youtube_transcript_api._errors import (
     NoTranscriptFound,
     TranscriptsDisabled,
@@ -220,6 +223,117 @@ class VideoMetadataResponse(BaseModel):
     upload_date: str
     thumbnail: str
     description: str
+
+
+class VideoIngestRequest(BaseModel):
+    """Request to ingest a YouTube video into the knowledge base."""
+
+    url: str = Field(..., description="YouTube video URL or ID")
+    languages: Optional[List[str]] = Field(
+        default=None,
+        description="Preferred languages (default: ['en'])",
+    )
+
+
+class VideoIngestResponse(BaseModel):
+    """Response after ingesting a YouTube video."""
+
+    id: str
+    video_id: str
+    title: str
+    channel: Optional[str]
+    duration: Optional[int]
+    transcript_language: Optional[str]
+    is_generated: bool
+    chunk_count: int
+
+
+@router.post("/ingest", response_model=VideoIngestResponse)
+async def ingest_video(
+    request: VideoIngestRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Ingest a YouTube video into the knowledge base.
+
+    This endpoint:
+    1. Fetches video metadata and transcript
+    2. Creates a YouTubeVideo record in the database
+    3. Chunks the transcript (with timestamps preserved)
+    4. Generates embeddings for each chunk
+    5. Stores chunks in both PostgreSQL and ChromaDB
+
+    Once ingested, the video becomes searchable via the RAG pipeline
+    alongside notes and documents.
+
+    Args:
+        request: YouTube URL or video ID with optional language preferences
+        db: Database session
+
+    Returns:
+        Ingested video metadata and chunk count
+
+    Raises:
+        HTTPException: If video is invalid, transcript unavailable, or ingestion fails
+    """
+    ingestion_service = get_youtube_ingestion_service()
+
+    try:
+        youtube_video = await ingestion_service.ingest_video(
+            db=db,
+            video_url=request.url,
+            languages=request.languages,
+        )
+
+        # Count chunks for the response
+        from sqlalchemy import select, func
+        from app.models.chunk import Chunk
+
+        result = await db.execute(
+            select(func.count(Chunk.id)).where(
+                Chunk.youtube_video_id == youtube_video.id
+            )
+        )
+        chunk_count = result.scalar_one()
+
+        return VideoIngestResponse(
+            id=str(youtube_video.id),
+            video_id=youtube_video.video_id,
+            title=youtube_video.title,
+            channel=youtube_video.channel,
+            duration=youtube_video.duration,
+            transcript_language=youtube_video.transcript_language,
+            is_generated=youtube_video.is_generated,
+            chunk_count=chunk_count,
+        )
+
+    except ValueError as e:
+        # Invalid URL
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+    except NoTranscriptFound:
+        raise HTTPException(
+            status_code=404,
+            detail="No transcript found for this video",
+        )
+    except TranscriptsDisabled:
+        raise HTTPException(
+            status_code=403,
+            detail="Transcripts are disabled for this video",
+        )
+    except VideoUnavailable:
+        raise HTTPException(
+            status_code=404,
+            detail="Video is unavailable or doesn't exist",
+        )
+    except Exception as e:
+        logger.error(f"Error ingesting video: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to ingest video: {str(e)}",
+        )
 
 
 @router.get("/metadata/{video_id}", response_model=VideoMetadataResponse)

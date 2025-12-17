@@ -1,21 +1,30 @@
 /**
  * Chat input component for sending messages.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send } from 'lucide-react';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  initialValue?: string;
 }
 
 export function ChatInput({
   onSend,
   disabled = false,
   placeholder = 'Ask a question about your notes and documents...',
+  initialValue = '',
 }: ChatInputProps) {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(initialValue);
+
+  // Update message when initialValue changes (from prefilled questions)
+  useEffect(() => {
+    if (initialValue) {
+      setMessage(initialValue);
+    }
+  }, [initialValue]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

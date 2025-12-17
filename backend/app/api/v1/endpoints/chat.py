@@ -28,6 +28,7 @@ from app.services.llm_service import get_llm_service
 from app.services.rag_service import get_rag_service
 from app.services.rag_orchestrator import get_rag_orchestrator
 from app.services.agent_service import get_agent_service
+from app.services.socratic_service import SocraticService
 from app.utils.token_counter import get_token_counter
 
 logger = logging.getLogger(__name__)
@@ -353,25 +354,40 @@ async def chat_stream(
 
             else:
                 # Standard RAG path without tools
-                stream = await llm_service.generate_answer(
-                    query=clean_message,  # Use clean message without @ mention
-                    context=context,
-                    conversation_history=conversation_history,
-                    model=request.model or agent_config.model,  # Use agent's model if not specified
-                    stream=True,
-                    temperature=agent_config.temperature,  # Use agent's temperature
-                    system_prompt=agent_config.system_prompt,  # Use agent's system prompt
-                )
+                if request.socratic_mode:
+                    # Socratic Learning Mode: Guide user through questions
+                    socratic_service = SocraticService(llm_service)
+                    response = await socratic_service.generate_socratic_response(
+                        user_question=clean_message,
+                        context=context,
+                        conversation_history=conversation_history,
+                        model=request.model or agent_config.model,
+                    )
 
-                # Collect full response while streaming
-                full_response = []
-                async for chunk in stream:
-                    if chunk:
-                        full_response.append(chunk)
-                        yield f'data: {json.dumps({"type": "chunk", "content": chunk})}\n\n'
+                    # Stream the Socratic response
+                    yield f'data: {json.dumps({"type": "chunk", "content": response})}\n\n'
+                    complete_response = response
+                else:
+                    # Standard mode: Direct answer
+                    stream = await llm_service.generate_answer(
+                        query=clean_message,  # Use clean message without @ mention
+                        context=context,
+                        conversation_history=conversation_history,
+                        model=request.model or agent_config.model,  # Use agent's model if not specified
+                        stream=True,
+                        temperature=agent_config.temperature,  # Use agent's temperature
+                        system_prompt=agent_config.system_prompt,  # Use agent's system prompt
+                    )
 
-                # Save complete message to database
-                complete_response = "".join(full_response)
+                    # Collect full response while streaming
+                    full_response = []
+                    async for chunk in stream:
+                        if chunk:
+                            full_response.append(chunk)
+                            yield f'data: {json.dumps({"type": "chunk", "content": chunk})}\n\n'
+
+                    # Save complete message to database
+                    complete_response = "".join(full_response)
             assistant_message = await ConversationService.add_message(
                 db=db,
                 conversation_id=str(conversation.id),

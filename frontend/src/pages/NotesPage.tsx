@@ -8,12 +8,14 @@ import { TagFilter } from '../components/tags/TagFilter';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Note } from '../types/note';
 import { useNotes } from '../hooks/useNotes';
+import { ContextPanel } from '@/components/context/ContextPanel';
 
 function NotesPage() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isContextPanelCollapsed, setIsContextPanelCollapsed] = useState(false);
   const { data: notesData } = useNotes();
 
   const handleSelectNote = (note: Note) => {
@@ -141,6 +143,18 @@ function NotesPage() {
           </div>
         )}
       </div>
+
+      {/* Context Intelligence Panel - Only shown when a note is selected */}
+      {selectedNote && !isCreating && (
+        <div className="w-80 flex-shrink-0">
+          <ContextPanel
+            sourceType="note"
+            sourceId={selectedNote.id}
+            isCollapsed={isContextPanelCollapsed}
+            onToggle={() => setIsContextPanelCollapsed(!isContextPanelCollapsed)}
+          />
+        </div>
+      )}
     </div>
   );
 }
