@@ -90,9 +90,9 @@ class ToolOrchestrator:
 
             # Call LLM
             try:
-                llm_response = await self.llm_service.generate_answer(
-                    messages=[{"role": "user", "content": prompt}],
+                llm_response = await self.llm_service._generate_response(
                     model=agent_config.model,
+                    messages=[{"role": "user", "content": prompt}],
                     temperature=agent_config.temperature,
                 )
             except Exception as e:
