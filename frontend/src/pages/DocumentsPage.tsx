@@ -23,10 +23,10 @@ export function DocumentsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-stone-900 mb-2">Documents</h1>
-        <p className="text-stone-600">
+    <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-white mb-2">Documents</h1>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
           Upload and manage your documents for AI-powered search
         </p>
       </div>
@@ -43,41 +43,41 @@ export function DocumentsPage() {
         <div className="lg:sticky lg:top-8 lg:self-start space-y-6">
           {selectedDocument ? (
             <>
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="px-6 py-4 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
+              <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
+                <div className="px-4 py-3 bg-stone-50 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <FileText className="text-blue-600" size={20} />
+                    <FileText className="text-stone-700 dark:text-stone-300" size={18} />
                     <div>
-                      <h2 className="text-lg font-semibold text-stone-900">
+                      <h2 className="text-sm font-semibold text-stone-900 dark:text-white">
                         {selectedDocument.filename}
                       </h2>
-                      <p className="text-sm text-stone-500">
+                      <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                         {selectedDocument.file_type.toUpperCase()} • {(selectedDocument.file_size / 1024).toFixed(1)} KB
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={handleClosePreview}
-                    className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors"
+                    className="p-1.5 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"
                     aria-label="Close preview"
                   >
-                    <X size={20} />
+                    <X size={18} />
                   </button>
                 </div>
 
-                <div className="p-6">
+                <div className="p-5">
                   {isLoading ? (
                     <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-stone-900 dark:border-white"></div>
                     </div>
                   ) : documentContent ? (
-                    <div className="prose prose-sm max-w-none">
-                      <pre className="whitespace-pre-wrap text-sm text-stone-700 font-sans bg-stone-50 p-4 rounded-md border border-stone-200 max-h-96 overflow-y-auto">
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <pre className="whitespace-pre-wrap text-xs text-stone-700 dark:text-stone-300 font-mono bg-stone-50 dark:bg-stone-800/50 p-3 rounded-md border border-stone-200 dark:border-stone-700 max-h-96 overflow-y-auto">
                         {documentContent.content}
                       </pre>
                     </div>
                   ) : (
-                    <p className="text-stone-500 text-center py-12">
+                    <p className="text-stone-500 dark:text-stone-400 text-center text-sm py-12">
                       Failed to load document content
                     </p>
                   )}
@@ -93,9 +93,9 @@ export function DocumentsPage() {
               />
             </>
           ) : (
-            <div className="bg-white rounded-lg shadow-md p-12 text-center">
-              <FileText className="mx-auto mb-4 text-stone-300" size={64} />
-              <p className="text-stone-500">
+            <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200 dark:border-stone-800 rounded-lg p-12 text-center">
+              <FileText className="mx-auto mb-4 text-stone-400 dark:text-stone-600" size={48} />
+              <p className="text-stone-500 dark:text-stone-400 text-sm">
                 Select a document to preview its content
               </p>
             </div>

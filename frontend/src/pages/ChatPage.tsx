@@ -537,28 +537,28 @@ export function ChatPage() {
       <GradientMesh />
 
       {/* Header */}
-      <header className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-b border-stone-200/50 dark:border-stone-800/50 px-6 py-4 relative z-10">
+      <header className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 px-6 py-4 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <MessageSquare className="text-blue-600 dark:text-blue-400" size={28} />
+            <MessageSquare className="text-stone-700 dark:text-stone-300" size={22} />
             <div>
-              <h1 className="text-2xl font-bold text-stone-900 dark:text-white">AI Chat</h1>
-              <p className="text-sm text-stone-600 dark:text-stone-400">Ask questions about your knowledge base</p>
+              <h1 className="text-xl font-semibold tracking-tight text-stone-900 dark:text-white">AI Chat</h1>
+              <p className="text-xs text-stone-600 dark:text-stone-400">Ask questions about your knowledge base</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="p-2 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+              className="p-2 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"
               title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <button
               onClick={handleNewChat}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 rounded-md font-medium transition-colors"
             >
-              <Plus size={18} />
+              <Plus size={16} />
               New Chat
             </button>
           </div>
@@ -568,12 +568,12 @@ export function ChatPage() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden relative z-0">
         {/* Sidebar - Conversation List */}
-        <aside className={`bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-r border-stone-200/50 dark:border-stone-800/50 flex flex-col transition-all duration-300 ease-in-out relative z-10 ${
-          isSidebarCollapsed ? 'w-0' : 'w-80'
+        <aside className={`bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-r border-stone-200 dark:border-stone-800 flex flex-col transition-all duration-300 ease-in-out relative z-10 ${
+          isSidebarCollapsed ? 'w-0' : 'w-72'
         }`}>
           <div className={`${isSidebarCollapsed ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 flex flex-col h-full`}>
             <div className="px-4 py-3 border-b border-stone-200 dark:border-stone-800 flex-shrink-0 flex items-center justify-between">
-              <h2 className="font-semibold text-stone-900 dark:text-white">Conversations</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300">Conversations</h2>
               <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                 className="p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors"
@@ -586,14 +586,14 @@ export function ChatPage() {
             {/* Search Input */}
             <div className="px-4 py-3 border-b border-stone-200 dark:border-stone-800 flex-shrink-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 dark:text-stone-500" size={18} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 dark:text-stone-500" size={16} />
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search conversations..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2 border border-stone-300 dark:border-stone-700 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-9 pr-9 py-1.5 text-sm border border-stone-300 dark:border-stone-700 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400 focus:border-transparent transition-colors"
                 />
                 {searchQuery && (
                   <button

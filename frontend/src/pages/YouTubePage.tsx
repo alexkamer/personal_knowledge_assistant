@@ -236,17 +236,17 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-900">
       {/* Header */}
-      <div className="bg-white dark:bg-stone-800 border-b border-stone-200 dark:border-stone-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-red-500 rounded-lg">
+      <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-700/50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-7">
+          <div className="flex items-center gap-4 mb-5">
+            <div className="p-2.5 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-md">
               <Youtube className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-stone-900 dark:text-white">
+              <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
                 YouTube Learning
               </h1>
-              <p className="text-sm text-stone-600 dark:text-stone-400">
+              <p className="text-sm font-medium text-stone-600 dark:text-stone-400 mt-0.5">
                 Learn better from videos with AI-powered transcripts and summaries
               </p>
             </div>
@@ -261,7 +261,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Paste YouTube URL here (e.g., https://www.youtube.com/watch?v=...)"
-                className="w-full px-4 py-3 pr-10 border border-stone-300 dark:border-stone-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-stone-700 dark:text-white"
+                className="w-full px-4 py-3 pr-10 bg-white/90 dark:bg-stone-700/90 backdrop-blur-xl border border-stone-300/50 dark:border-stone-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:text-white shadow-sm transition-all"
                 disabled={loading}
               />
               <Youtube className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
@@ -269,7 +269,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
             <button
               onClick={handleLoadVideo}
               disabled={loading || !url.trim()}
-              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
                 <>
@@ -287,7 +287,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
 
           {/* Error Display */}
           {error && (
-            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-red-800 dark:text-red-200">
@@ -307,21 +307,21 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
             {/* Video Player Column */}
             <div className="lg:col-span-2 space-y-4">
               {/* Video Embed */}
-              <div className="bg-white dark:bg-stone-800 rounded-lg shadow-sm overflow-hidden">
+              <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg overflow-hidden">
                 <div className="relative pb-[56.25%]">
                   <iframe
                     src={youtubeService.getEmbedUrl(transcriptData.video_id, currentTime)}
                     title="YouTube video player"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                    className="absolute inset-0 w-full h-full"
+                    className="absolute inset-0 w-full h-full rounded-2xl"
                   />
                 </div>
               </div>
 
               {/* Video Metadata */}
               {metadata && (
-                <div className="bg-white dark:bg-stone-800 rounded-lg shadow-sm p-4">
+                <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg p-5">
                   <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-3">
                     {metadata.title}
                   </h1>
@@ -342,7 +342,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
               )}
 
               {/* Video Info */}
-              <div className="bg-white dark:bg-stone-800 rounded-lg shadow-sm p-4">
+              <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex-1">
                     <h2 className="font-semibold text-stone-900 dark:text-white">
@@ -357,7 +357,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                   </div>
                   <button
                     onClick={handleCopyTranscript}
-                    className="px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-300"
+                    className="px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-xl transition-colors flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-300"
                     title="Copy transcript to clipboard"
                   >
                     {copiedTranscript ? (
@@ -376,7 +376,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
               </div>
 
               {/* AI Summary Section */}
-              <div className="bg-white dark:bg-stone-800 rounded-lg shadow-sm p-6">
+              <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -387,7 +387,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                   {!summary && !summarizing && (
                     <button
                       onClick={handleSummarize}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center gap-2"
                     >
                       <Sparkles className="w-4 h-4" />
                       Generate Summary
@@ -557,21 +557,21 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
 
             {/* Transcript Sidebar */}
             <div className="lg:col-span-1">
-              <div className="bg-white dark:bg-stone-800 rounded-lg shadow-sm overflow-hidden sticky top-6">
+              <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg overflow-hidden sticky top-6">
                 {/* Search */}
-                <div className="p-4 border-b border-stone-200 dark:border-stone-700">
+                <div className="p-4 border-b border-stone-200/50 dark:border-stone-700/50">
                   <div className="relative">
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search transcript..."
-                      className="w-full px-4 py-2 pr-20 border border-stone-300 dark:border-stone-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-stone-700 dark:text-white text-sm"
+                      className="w-full px-4 py-2 pr-20 bg-white/90 dark:bg-stone-700/90 backdrop-blur-xl border border-stone-300/50 dark:border-stone-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:text-white text-sm shadow-sm transition-all"
                     />
                     {searchQuery ? (
                       <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-stone-200 dark:hover:bg-stone-600 rounded transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-stone-200 dark:hover:bg-stone-600 rounded-lg transition-colors"
                         title="Clear search"
                       >
                         <X className="w-4 h-4 text-stone-500" />
@@ -664,7 +664,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
         // Empty State
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-red-500/20 to-red-600/20 dark:bg-red-900/20 rounded-2xl mb-4">
               <Youtube className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
             <h2 className="text-2xl font-bold text-stone-900 dark:text-white mb-2">
@@ -677,8 +677,8 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
 
             {/* Features */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              <div className="p-4 bg-white dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700">
-                <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+              <div className="p-5 bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg">
+                <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
                 <h3 className="font-semibold text-stone-900 dark:text-white text-sm mb-1">
                   Interactive Transcript
                 </h3>
@@ -686,7 +686,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                   Click timestamps to jump to specific moments
                 </p>
               </div>
-              <div className="p-4 bg-white dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700">
+              <div className="p-5 bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg">
                 <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
                 <h3 className="font-semibold text-stone-900 dark:text-white text-sm mb-1">
                   AI Summaries
@@ -695,7 +695,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                   Get key takeaways and concepts
                 </p>
               </div>
-              <div className="p-4 bg-white dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700">
+              <div className="p-5 bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg">
                 <Search className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto mb-2" />
                 <h3 className="font-semibold text-stone-900 dark:text-white text-sm mb-1">
                   Smart Search

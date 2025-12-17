@@ -87,20 +87,20 @@ function NotesPage() {
           {/* Notes List with header */}
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
-              <h2 className="text-xl font-semibold text-stone-800 pl-3">Notes</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300 pl-3">Notes</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCreateNew}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="px-4 py-1.5 bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 rounded-md text-sm font-medium transition-colors"
                 >
                   New Note
                 </button>
                 <button
                   onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                  className="p-1 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded transition-colors"
+                  className="p-1.5 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-md transition-colors"
                   title="Hide sidebar"
                 >
-                  <ChevronLeft size={20} />
+                  <ChevronLeft size={18} />
                 </button>
               </div>
             </div>
@@ -118,7 +118,7 @@ function NotesPage() {
         {isSidebarCollapsed && (
           <button
             onClick={() => setIsSidebarCollapsed(false)}
-            className="absolute top-3 left-2 p-1 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded transition-colors z-10"
+            className="absolute top-3 left-2 p-2 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-lg shadow-md hover:shadow-lg transition-all z-10"
             title="Show sidebar"
           >
             <ChevronRight size={20} />
@@ -136,9 +136,9 @@ function NotesPage() {
             onNavigateToNote={handleNavigateToNoteById}
           />
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center text-stone-500 h-full flex items-center justify-center">
+          <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200 dark:border-stone-800 rounded-lg p-12 text-center text-stone-500 dark:text-stone-400 h-full flex items-center justify-center">
             <div>
-              <p className="text-xl">Select a note to edit or create a new one</p>
+              <p className="text-sm text-stone-600 dark:text-stone-400">Select a note to edit or create a new one</p>
             </div>
           </div>
         )}

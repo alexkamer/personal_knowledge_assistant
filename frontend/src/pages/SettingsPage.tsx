@@ -48,50 +48,51 @@ function SettingsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200 dark:border-stone-800 rounded-lg p-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6 border-b border-stone-200 pb-4">
-          <Settings size={28} className="text-blue-600" />
+        <div className="flex items-center gap-3 mb-6 border-b border-stone-200 dark:border-stone-800 pb-4">
+          <Settings size={20} className="text-stone-700 dark:text-stone-300" />
           <div>
-            <h1 className="text-2xl font-bold text-stone-800">Settings</h1>
-            <p className="text-sm text-stone-600">Configure your AI assistant</p>
+            <h1 className="text-xl font-semibold tracking-tight text-stone-900 dark:text-white">Settings</h1>
+            <p className="text-xs text-stone-600 dark:text-stone-400">Configure your AI assistant</p>
           </div>
         </div>
 
         {/* Model Selection Section */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-stone-800 mb-2">AI Model Selection</h2>
-          <p className="text-sm text-stone-600 mb-4">
-            Choose which local LLM model to use for answering your questions. Each model has different trade-offs between speed and capability.
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-3">AI Model Selection</h2>
+          <p className="text-xs text-stone-600 dark:text-stone-400 mb-4">
+            Choose which local LLM model to use for answering your questions.
           </p>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {AVAILABLE_MODELS.map((model) => (
               <div
                 key={model.id}
                 onClick={() => handleModelSelect(model.id)}
-                className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                className={`relative p-4 border rounded-md cursor-pointer transition-all duration-150 ${
                   selectedModel === model.id
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50'
+                    ? 'border-stone-900 dark:border-white bg-stone-900 dark:bg-white text-white dark:text-stone-900'
+                    : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:border-stone-300 dark:hover:border-stone-600'
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-stone-900">{model.name}</h3>
+                      <h3 className={`text-sm font-semibold ${selectedModel === model.id ? 'text-white dark:text-stone-900' : 'text-stone-900 dark:text-white'}`}>
+                        {model.name}
+                      </h3>
                       {selectedModel === model.id && (
-                        <CheckCircle size={20} className="text-blue-600" />
+                        <CheckCircle size={16} className={selectedModel === model.id ? 'text-white dark:text-stone-900' : ''} />
                       )}
                     </div>
-                    <p className="text-sm text-stone-600 mt-1">{model.description}</p>
+                    <p className={`text-xs mt-1 ${selectedModel === model.id ? 'text-stone-200 dark:text-stone-700' : 'text-stone-600 dark:text-stone-400'}`}>
+                      {model.description}
+                    </p>
                     <div className="flex gap-4 mt-2">
-                      <span className="text-xs text-stone-500">
-                        <strong>Size:</strong> {model.size}
-                      </span>
-                      <span className="text-xs text-stone-500">
-                        <strong>Speed:</strong> {model.speed}
+                      <span className={`text-xs ${selectedModel === model.id ? 'text-stone-300 dark:text-stone-600' : 'text-stone-500 dark:text-stone-500'}`}>
+                        {model.size} • {model.speed}
                       </span>
                     </div>
                   </div>
@@ -103,17 +104,17 @@ function SettingsPage() {
 
         {/* Save Confirmation */}
         {saved && (
-          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-md text-green-800">
-            <CheckCircle size={18} />
-            <span className="text-sm font-medium">Settings saved successfully</span>
+          <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md text-green-800 dark:text-green-400">
+            <CheckCircle size={16} />
+            <span className="text-xs font-medium">Settings saved successfully</span>
           </div>
         )}
 
         {/* Info Section */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-2">About Local Models</h3>
-          <p className="text-sm text-blue-800">
-            All models run locally on your machine using Ollama. Your data never leaves your computer, ensuring complete privacy. Model changes take effect immediately for new conversations.
+        <div className="mt-6 p-4 bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 rounded-md">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-2">About Local Models</h3>
+          <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
+            All models run locally on your machine using Ollama. Your data never leaves your computer, ensuring complete privacy.
           </p>
         </div>
       </div>
