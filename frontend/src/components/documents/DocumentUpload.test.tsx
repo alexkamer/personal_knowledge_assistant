@@ -120,7 +120,7 @@ describe('DocumentUpload', () => {
       dropZone.dispatchEvent(new Event('dragleave', { bubbles: true }));
 
       await waitFor(() => {
-        expect(dropZone.className).toContain('border-gray-300');
+        expect(dropZone.className).toContain('border-stone-300');
         expect(dropZone.className).toContain('bg-white');
       });
     });

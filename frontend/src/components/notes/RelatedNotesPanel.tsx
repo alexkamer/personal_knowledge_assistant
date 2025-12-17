@@ -53,20 +53,20 @@ export function RelatedNotesPanel({ noteId, onNavigate }: RelatedNotesPanelProps
 
   if (loading) {
     return (
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+      <div className="mt-6 pt-6 border-t border-stone-200">
+        <h3 className="text-sm font-semibold text-stone-700 mb-3 flex items-center gap-2">
           <Sparkles size={16} className="text-purple-600" />
           Related Notes
         </h3>
-        <p className="text-sm text-gray-500">Loading...</p>
+        <p className="text-sm text-stone-500">Loading...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+      <div className="mt-6 pt-6 border-t border-stone-200">
+        <h3 className="text-sm font-semibold text-stone-700 mb-3 flex items-center gap-2">
           <Sparkles size={16} className="text-purple-600" />
           Related Notes
         </h3>
@@ -77,23 +77,23 @@ export function RelatedNotesPanel({ noteId, onNavigate }: RelatedNotesPanelProps
 
   if (relatedNotes.length === 0) {
     return (
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+      <div className="mt-6 pt-6 border-t border-stone-200">
+        <h3 className="text-sm font-semibold text-stone-700 mb-3 flex items-center gap-2">
           <Sparkles size={16} className="text-purple-600" />
           Related Notes
         </h3>
-        <p className="text-sm text-gray-500 italic">No semantically related notes found.</p>
+        <p className="text-sm text-stone-500 italic">No semantically related notes found.</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-6 pt-6 border-t border-gray-200">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+    <div className="mt-6 pt-6 border-t border-stone-200">
+      <h3 className="text-sm font-semibold text-stone-700 mb-3 flex items-center gap-2">
         <Sparkles size={16} className="text-purple-600" />
         Related Notes ({relatedNotes.length})
       </h3>
-      <p className="text-xs text-gray-500 mb-3">
+      <p className="text-xs text-stone-500 mb-3">
         Discovered by AI based on semantic similarity
       </p>
       <div className="space-y-2">
@@ -104,15 +104,15 @@ export function RelatedNotesPanel({ noteId, onNavigate }: RelatedNotesPanelProps
             className="w-full text-left px-3 py-2 rounded-md hover:bg-purple-50 transition-colors group flex items-start gap-2"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 group-hover:text-purple-700 truncate">
+              <p className="text-sm font-medium text-stone-900 group-hover:text-purple-700 truncate">
                 {relatedNote.title}
               </p>
               <div className="flex items-center gap-2 mt-1">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-stone-500">
                   {Math.round(relatedNote.similarity_score * 100)}% similar
                 </p>
-                <span className="text-xs text-gray-300">•</span>
-                <p className="text-xs text-gray-500">
+                <span className="text-xs text-stone-300">•</span>
+                <p className="text-xs text-stone-500">
                   Updated {new Date(relatedNote.updated_at).toLocaleDateString()}
                 </p>
               </div>

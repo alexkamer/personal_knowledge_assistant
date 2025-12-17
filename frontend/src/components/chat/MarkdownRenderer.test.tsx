@@ -265,7 +265,7 @@ describe('MarkdownRenderer', () => {
       const { container } = render(<MarkdownRenderer content={content} />);
 
       const th = container.querySelector('th');
-      expect(th).toHaveClass('bg-gray-100', 'dark:bg-gray-800');
+      expect(th).toHaveClass('bg-stone-100', 'dark:bg-stone-800');
     });
   });
 

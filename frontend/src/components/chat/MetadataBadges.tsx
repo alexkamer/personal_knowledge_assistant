@@ -15,7 +15,7 @@ export function MetadataBadges({ contentType, hasCode, semanticDensity }: Metada
   // Content type badge
   if (contentType) {
     const contentTypeConfig = {
-      paragraph: { icon: FileText, label: 'Paragraph', color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' },
+      paragraph: { icon: FileText, label: 'Paragraph', color: 'bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-300' },
       list: { icon: List, label: 'List', color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' },
       heading: { icon: Heading, label: 'Heading', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' },
       code: { icon: Code, label: 'Code', color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' },

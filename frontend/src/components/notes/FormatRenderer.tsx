@@ -22,9 +22,9 @@ export function FormatRenderer({ content, className = '' }: FormatRendererProps)
 
       // Render heading with appropriate size
       const sizeClasses = {
-        1: 'text-3xl font-bold text-gray-900',
-        2: 'text-2xl font-semibold text-gray-800',
-        3: 'text-xl font-medium text-gray-700',
+        1: 'text-3xl font-bold text-stone-900',
+        2: 'text-2xl font-semibold text-stone-800',
+        3: 'text-xl font-medium text-stone-700',
       };
 
       return (

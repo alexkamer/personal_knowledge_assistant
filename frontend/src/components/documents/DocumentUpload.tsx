@@ -63,21 +63,21 @@ export function DocumentUpload() {
         ${
           isDragging
             ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 bg-white hover:border-gray-400'
+            : 'border-stone-300 bg-white hover:border-stone-400'
         }
         ${uploadDocument.isPending ? 'opacity-50 pointer-events-none' : ''}
       `}
     >
-      <Upload className="mx-auto mb-4 text-gray-400" size={48} />
+      <Upload className="mx-auto mb-4 text-stone-400" size={48} />
 
       <div className="mb-4">
-        <p className="text-lg font-medium text-gray-700 mb-2">
+        <p className="text-lg font-medium text-stone-700 mb-2">
           {uploadDocument.isPending ? 'Uploading...' : 'Upload a document'}
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-stone-500">
           Drag and drop your file here, or click to browse
         </p>
-        <p className="text-xs text-gray-400 mt-2">
+        <p className="text-xs text-stone-400 mt-2">
           Supported formats: TXT, MD, PDF, DOCX
         </p>
       </div>

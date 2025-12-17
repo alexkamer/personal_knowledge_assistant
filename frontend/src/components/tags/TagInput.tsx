@@ -64,14 +64,14 @@ export const TagInput: React.FC<TagInputProps> = ({ value, onChange, disabled = 
 
   return (
     <div className="relative">
-      <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor="tags" className="block text-sm font-medium text-stone-700 mb-1">
         Tags
       </label>
 
       {/* Tag display and input */}
       <div
-        className={`flex flex-wrap gap-2 p-2 border border-gray-300 rounded-md min-h-[42px] ${
-          disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+        className={`flex flex-wrap gap-2 p-2 border border-stone-300 rounded-md min-h-[42px] ${
+          disabled ? 'bg-stone-100 cursor-not-allowed' : 'bg-white'
         }`}
         onClick={() => !disabled && inputRef.current?.focus()}
       >
@@ -113,22 +113,22 @@ export const TagInput: React.FC<TagInputProps> = ({ value, onChange, disabled = 
 
       {/* Autocomplete suggestions */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-10 w-full mt-1 bg-white border border-stone-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
           {suggestions.map((tag) => (
             <button
               key={tag.id}
               type="button"
               onClick={() => handleAddTag(tag.name)}
-              className="w-full text-left px-3 py-2 hover:bg-gray-100 flex justify-between items-center"
+              className="w-full text-left px-3 py-2 hover:bg-stone-100 flex justify-between items-center"
             >
               <span>{tag.name}</span>
-              <span className="text-xs text-gray-500">({tag.note_count} notes)</span>
+              <span className="text-xs text-stone-500">({tag.note_count} notes)</span>
             </button>
           ))}
         </div>
       )}
 
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-xs text-stone-500">
         Press Enter to add a tag. Click X to remove.
       </p>
     </div>

@@ -331,7 +331,7 @@ describe('TagInput', () => {
     it('should apply disabled styles', () => {
       const { container } = render(<TagInput value={[]} onChange={mockOnChange} disabled={true} />);
 
-      const tagContainer = container.querySelector('.bg-gray-100');
+      const tagContainer = container.querySelector('.bg-stone-100');
       expect(tagContainer).toBeInTheDocument();
     });
 

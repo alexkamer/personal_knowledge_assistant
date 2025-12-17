@@ -27,10 +27,10 @@ export function ThoughtDiffViewer({
       {/* Header with Confidence Change */}
       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-stone-900 dark:text-white">
             Understanding Evolution
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">
             {new Date(earlierSnapshot.timestamp).toLocaleDateString()} →{' '}
             {new Date(laterSnapshot.timestamp).toLocaleDateString()}
           </p>
@@ -48,13 +48,13 @@ export function ThoughtDiffViewer({
                   ? 'text-green-600 dark:text-green-400'
                   : confidenceChange < 0
                   ? 'text-red-600 dark:text-red-400'
-                  : 'text-gray-600 dark:text-gray-400'
+                  : 'text-stone-600 dark:text-stone-400'
               }`}
             >
               {confidenceChange > 0 ? '+' : ''}
               {confidencePercent}%
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Confidence Change</div>
+            <div className="text-xs text-stone-600 dark:text-stone-400">Confidence Change</div>
           </div>
         </div>
       </div>
@@ -62,18 +62,18 @@ export function ThoughtDiffViewer({
       {/* Side-by-Side Comparison */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Before */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+        <div className="border border-stone-200 dark:border-stone-700 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
             <span className="text-red-600 dark:text-red-400">Before</span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-stone-500">
               ({Math.round(earlierSnapshot.confidence * 100)}% confident)
             </span>
           </h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          <p className="text-sm text-stone-600 dark:text-stone-400 mb-3">
             {earlierSnapshot.understanding}
           </p>
           {earlierSnapshot.misconceptions.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
               <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-2">
                 Misconceptions:
               </p>
@@ -88,18 +88,18 @@ export function ThoughtDiffViewer({
         </div>
 
         {/* After */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+        <div className="border border-stone-200 dark:border-stone-700 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
             <span className="text-green-600 dark:text-green-400">After</span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-stone-500">
               ({Math.round(laterSnapshot.confidence * 100)}% confident)
             </span>
           </h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          <p className="text-sm text-stone-600 dark:text-stone-400 mb-3">
             {laterSnapshot.understanding}
           </p>
           {evolutionAnalysis.misconceptions_corrected.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
               <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-2">
                 Misconceptions Corrected:
               </p>
@@ -115,8 +115,8 @@ export function ThoughtDiffViewer({
       </div>
 
       {/* Diff-Style Changes */}
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+      <div className="border border-stone-200 dark:border-stone-700 rounded-lg p-4 bg-stone-50 dark:bg-stone-900">
+        <h4 className="text-sm font-semibold text-stone-900 dark:text-white mb-3">
           Conceptual Diff
         </h4>
         <div className="space-y-1 font-mono text-xs">
@@ -138,7 +138,7 @@ export function ThoughtDiffViewer({
 
           {evolutionAnalysis.concepts_gained.length === 0 &&
             evolutionAnalysis.concepts_lost.length === 0 && (
-              <p className="text-gray-500 dark:text-gray-400 italic">
+              <p className="text-stone-500 dark:text-stone-400 italic">
                 No conceptual changes detected
               </p>
             )}

@@ -26,8 +26,8 @@ export function SuggestedQuestionsSection({
   };
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+    <div className="border-t border-stone-200 dark:border-stone-700 pt-6">
+      <h4 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
         <HelpCircle className="w-4 h-4 text-purple-600 dark:text-purple-500" />
         Explore Further
       </h4>
@@ -41,7 +41,7 @@ export function SuggestedQuestionsSection({
           >
             <div className="flex items-start gap-3">
               <MessageSquare className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-purple-900 dark:group-hover:text-purple-100 transition-colors">
+              <p className="text-sm text-stone-800 dark:text-stone-200 group-hover:text-purple-900 dark:group-hover:text-purple-100 transition-colors">
                 {question}
               </p>
             </div>
@@ -49,7 +49,7 @@ export function SuggestedQuestionsSection({
         ))}
       </div>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 italic">
+      <p className="text-xs text-stone-500 dark:text-stone-400 mt-3 italic">
         Click any question to explore it in chat
       </p>
     </div>

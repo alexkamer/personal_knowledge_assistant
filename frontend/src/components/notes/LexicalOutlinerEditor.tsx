@@ -54,13 +54,13 @@ const theme = {
     italic: 'italic',
     underline: 'underline',
     strikethrough: 'line-through',
-    code: 'bg-gray-100 text-red-600 px-1.5 py-0.5 rounded font-mono text-sm',
+    code: 'bg-stone-100 text-red-600 px-1.5 py-0.5 rounded font-mono text-sm',
   },
   link: 'text-blue-600 underline hover:text-blue-800 cursor-pointer',
   heading: {
-    h1: 'text-3xl font-bold text-gray-900 mb-2',
-    h2: 'text-2xl font-semibold text-gray-800 mb-2',
-    h3: 'text-xl font-medium text-gray-700 mb-1',
+    h1: 'text-3xl font-bold text-stone-900 mb-2',
+    h2: 'text-2xl font-semibold text-stone-800 mb-2',
+    h3: 'text-xl font-medium text-stone-700 mb-1',
   },
   list: {
     ul: 'list-disc ml-6',
@@ -70,20 +70,20 @@ const theme = {
       listitem: 'list-none',
     },
   },
-  code: 'bg-gray-900 text-gray-100 font-mono text-sm p-4 rounded-lg my-2 block overflow-x-auto',
+  code: 'bg-stone-900 text-stone-100 font-mono text-sm p-4 rounded-lg my-2 block overflow-x-auto',
   codeHighlight: {
     atrule: 'text-purple-400',
     attr: 'text-blue-400',
     boolean: 'text-purple-400',
     builtin: 'text-yellow-400',
-    cdata: 'text-gray-400',
+    cdata: 'text-stone-400',
     char: 'text-green-400',
     class: 'text-yellow-400',
     'class-name': 'text-yellow-400',
-    comment: 'text-gray-500',
+    comment: 'text-stone-500',
     constant: 'text-purple-400',
     deleted: 'text-red-400',
-    doctype: 'text-gray-400',
+    doctype: 'text-stone-400',
     entity: 'text-yellow-400',
     function: 'text-blue-400',
     important: 'text-red-400',
@@ -91,10 +91,10 @@ const theme = {
     keyword: 'text-purple-400',
     namespace: 'text-yellow-400',
     number: 'text-orange-400',
-    operator: 'text-gray-300',
-    prolog: 'text-gray-400',
+    operator: 'text-stone-300',
+    prolog: 'text-stone-400',
     property: 'text-blue-400',
-    punctuation: 'text-gray-400',
+    punctuation: 'text-stone-400',
     regex: 'text-green-400',
     selector: 'text-green-400',
     string: 'text-green-400',
@@ -258,7 +258,7 @@ export function LexicalOutlinerEditor({
                 className="outline-none min-h-[400px] focus:outline-none"
                 aria-placeholder={placeholder}
                 placeholder={
-                  <div className="absolute top-6 left-6 text-gray-400 pointer-events-none">
+                  <div className="absolute top-6 left-6 text-stone-400 pointer-events-none">
                     {placeholder}
                   </div>
                 }

@@ -150,7 +150,7 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="text-center text-gray-500">Loading notes...</div>
+        <div className="text-center text-stone-500">Loading notes...</div>
       </div>
     );
   }
@@ -163,7 +163,7 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
             <AlertCircle size={20} />
             <span className="font-medium">Failed to load notes</span>
           </div>
-          <p className="text-sm text-gray-600 text-center">
+          <p className="text-sm text-stone-600 text-center">
             {(error as any)?.response?.data?.detail || error.message || 'An unexpected error occurred'}
           </p>
           <button
@@ -181,8 +181,8 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
   if (!data || data.notes.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-8 text-center">
-        <FileText size={48} className="mx-auto text-gray-300 mb-3" />
-        <p className="text-gray-500 text-lg font-medium">
+        <FileText size={48} className="mx-auto text-stone-300 mb-3" />
+        <p className="text-stone-500 text-lg font-medium">
           No notes yet. Create your first note!
         </p>
       </div>
@@ -193,25 +193,25 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
     <div className="space-y-3">
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" size={18} />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search notes by title, content, or tags..."
-          className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          className="w-full pl-10 pr-4 py-2.5 border-2 border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
         />
       </div>
 
       {/* Notes List */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-stone-200">
         {filteredNotes.length === 0 ? (
           <div className="p-8 text-center">
-            <Search size={32} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-gray-500">No notes match your search</p>
+            <Search size={32} className="mx-auto text-stone-300 mb-2" />
+            <p className="text-stone-500">No notes match your search</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-stone-200">
             {filteredNotes.map((note) => (
               <div
                 key={note.id}
@@ -219,7 +219,7 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
                 className={`p-5 cursor-pointer transition-all ${
                   selectedNoteId === note.id
                     ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500'
-                    : 'hover:bg-gray-50 border-l-4 border-transparent'
+                    : 'hover:bg-stone-50 border-l-4 border-transparent'
                 }`}
               >
                 <div className="flex justify-between items-start gap-4">
@@ -248,11 +248,11 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
                         />
                       </form>
                     ) : (
-                      <h3 className="text-lg font-semibold text-gray-900 truncate mb-1">
+                      <h3 className="text-lg font-semibold text-stone-900 truncate mb-1">
                         {note.title}
                       </h3>
                     )}
-                    <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                    <p className="text-sm text-stone-600 line-clamp-2 leading-relaxed">
                       {extractPreviewText(note.content)}
                     </p>
                     {note.tags_rel && note.tags_rel.length > 0 && (
@@ -267,7 +267,7 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
                         ))}
                       </div>
                     )}
-                    <p className="mt-3 text-xs text-gray-500 font-medium">
+                    <p className="mt-3 text-xs text-stone-500 font-medium">
                       Updated {new Date(note.updated_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -280,17 +280,17 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
                   <div className="relative flex-shrink-0" ref={openMenuId === note.id ? menuRef : null}>
                     <button
                       onClick={(e) => handleMenuToggle(e, note.id)}
-                      className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
                       title="More options"
                     >
                       <MoreVertical size={18} />
                     </button>
 
                     {openMenuId === note.id && (
-                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-stone-200 rounded-lg shadow-lg z-10">
                         <button
                           onClick={(e) => handleEdit(e, note)}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg transition-colors"
+                          className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-100 rounded-t-lg transition-colors"
                         >
                           Edit
                         </button>

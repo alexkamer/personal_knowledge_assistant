@@ -131,7 +131,7 @@ export function ToolbarPlugin() {
   return (
     <div
       ref={toolbarRef}
-      className="fixed z-50 bg-gray-900 text-white rounded-lg shadow-xl p-1 flex gap-1 items-center"
+      className="fixed z-50 bg-stone-900 text-white rounded-lg shadow-xl p-1 flex gap-1 items-center"
     >
       <ToolbarButton
         onClick={() => formatText('bold')}
@@ -157,7 +157,7 @@ export function ToolbarPlugin() {
         title="Strikethrough (Cmd+Shift+X)"
         icon={<Strikethrough size={18} />}
       />
-      <div className="w-px h-6 bg-gray-700 mx-1" />
+      <div className="w-px h-6 bg-stone-700 mx-1" />
       <ToolbarButton
         onClick={() => formatText('code')}
         active={isCode}
@@ -187,8 +187,8 @@ function ToolbarButton({ onClick, active, title, icon }: ToolbarButtonProps) {
       onClick={onClick}
       title={title}
       className={`
-        p-2 rounded hover:bg-gray-800 transition-colors
-        ${active ? 'bg-blue-600 text-white' : 'text-gray-300'}
+        p-2 rounded hover:bg-stone-800 transition-colors
+        ${active ? 'bg-blue-600 text-white' : 'text-stone-300'}
       `}
     >
       {icon}

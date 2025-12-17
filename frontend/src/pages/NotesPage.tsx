@@ -87,7 +87,7 @@ function NotesPage() {
           {/* Notes List with header */}
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
-              <h2 className="text-xl font-semibold text-gray-800 pl-3">Notes</h2>
+              <h2 className="text-xl font-semibold text-stone-800 pl-3">Notes</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCreateNew}
@@ -97,7 +97,7 @@ function NotesPage() {
                 </button>
                 <button
                   onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                  className="p-1 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded transition-colors"
                   title="Hide sidebar"
                 >
                   <ChevronLeft size={20} />
@@ -118,7 +118,7 @@ function NotesPage() {
         {isSidebarCollapsed && (
           <button
             onClick={() => setIsSidebarCollapsed(false)}
-            className="absolute top-3 left-2 p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors z-10"
+            className="absolute top-3 left-2 p-1 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded transition-colors z-10"
             title="Show sidebar"
           >
             <ChevronRight size={20} />
@@ -136,7 +136,7 @@ function NotesPage() {
             onNavigateToNote={handleNavigateToNoteById}
           />
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-500 h-full flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-md p-8 text-center text-stone-500 h-full flex items-center justify-center">
             <div>
               <p className="text-xl">Select a note to edit or create a new one</p>
             </div>

@@ -27,10 +27,10 @@ function Navigation() {
   const currentPath = location.pathname;
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-sm">
+    <header className="bg-white dark:bg-stone-900 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-stone-900 dark:text-white">
             Personal Knowledge Assistant
           </h1>
           <nav className="flex gap-2">
@@ -41,7 +41,7 @@ function Navigation() {
                 ${
                   currentPath === '/chat'
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
                 }
               `}
             >
@@ -55,7 +55,7 @@ function Navigation() {
                 ${
                   currentPath === '/notes'
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
                 }
               `}
             >
@@ -69,7 +69,7 @@ function Navigation() {
                 ${
                   currentPath === '/documents'
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
                 }
               `}
             >
@@ -83,7 +83,7 @@ function Navigation() {
                 ${
                   currentPath === '/youtube'
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
                 }
               `}
             >
@@ -97,7 +97,7 @@ function Navigation() {
                 ${
                   currentPath === '/settings'
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
                 }
               `}
             >
@@ -116,7 +116,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+          <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
             <Navigation />
             <main>
               <Routes>

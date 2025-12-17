@@ -25,8 +25,8 @@ export function DocumentsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Documents</h1>
-        <p className="text-gray-600">
+        <h1 className="text-3xl font-bold text-stone-900 mb-2">Documents</h1>
+        <p className="text-stone-600">
           Upload and manage your documents for AI-powered search
         </p>
       </div>
@@ -44,21 +44,21 @@ export function DocumentsPage() {
           {selectedDocument ? (
             <>
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <div className="px-6 py-4 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <FileText className="text-blue-600" size={20} />
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">
+                      <h2 className="text-lg font-semibold text-stone-900">
                         {selectedDocument.filename}
                       </h2>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-stone-500">
                         {selectedDocument.file_type.toUpperCase()} • {(selectedDocument.file_size / 1024).toFixed(1)} KB
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={handleClosePreview}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                    className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors"
                     aria-label="Close preview"
                   >
                     <X size={20} />
@@ -72,12 +72,12 @@ export function DocumentsPage() {
                     </div>
                   ) : documentContent ? (
                     <div className="prose prose-sm max-w-none">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans bg-gray-50 p-4 rounded-md border border-gray-200 max-h-96 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap text-sm text-stone-700 font-sans bg-stone-50 p-4 rounded-md border border-stone-200 max-h-96 overflow-y-auto">
                         {documentContent.content}
                       </pre>
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-12">
+                    <p className="text-stone-500 text-center py-12">
                       Failed to load document content
                     </p>
                   )}
@@ -94,8 +94,8 @@ export function DocumentsPage() {
             </>
           ) : (
             <div className="bg-white rounded-lg shadow-md p-12 text-center">
-              <FileText className="mx-auto mb-4 text-gray-300" size={64} />
-              <p className="text-gray-500">
+              <FileText className="mx-auto mb-4 text-stone-300" size={64} />
+              <p className="text-stone-500">
                 Select a document to preview its content
               </p>
             </div>

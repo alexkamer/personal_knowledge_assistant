@@ -148,7 +148,7 @@ describe('MessageList', () => {
       render(<MessageList messages={mockMessages} />);
 
       const userMessage = screen.getByText('What is TypeScript?').closest('.py-8');
-      expect(userMessage).toHaveClass('bg-gray-50');
+      expect(userMessage).toHaveClass('bg-stone-50');
     });
 
     it('should display assistant message with Bot icon', () => {

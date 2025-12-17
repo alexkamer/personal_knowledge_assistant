@@ -68,7 +68,7 @@ describe('MetadataBadges', () => {
     it('should render with correct color classes for paragraph', () => {
       const { container } = render(<MetadataBadges contentType="paragraph" />);
 
-      const badge = container.querySelector('.bg-gray-100');
+      const badge = container.querySelector('.bg-stone-100');
       expect(badge).toBeInTheDocument();
     });
 

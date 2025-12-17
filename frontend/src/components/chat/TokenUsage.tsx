@@ -53,7 +53,7 @@ export function TokenUsage({ conversationId, model = 'qwen2.5:14b' }: TokenUsage
 
   if (error) {
     return (
-      <div className="text-xs text-gray-500 dark:text-gray-400">
+      <div className="text-xs text-stone-500 dark:text-stone-400">
         {error}
       </div>
     );
@@ -82,7 +82,7 @@ export function TokenUsage({ conversationId, model = 'qwen2.5:14b' }: TokenUsage
     <div className="flex items-center gap-3">
       {/* Token usage bar */}
       <div className="flex-1 min-w-[120px]">
-        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+        <div className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-400 mb-1">
           <span>Context</span>
           <span className={textColorClass}>
             {usage.usage_percent.toFixed(1)}%
@@ -97,9 +97,9 @@ export function TokenUsage({ conversationId, model = 'qwen2.5:14b' }: TokenUsage
       </div>
 
       {/* Token count details */}
-      <div className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+      <div className="text-xs text-stone-600 dark:text-stone-400 whitespace-nowrap">
         <span className="font-medium">{usage.total_tokens.toLocaleString()}</span>
-        <span className="text-gray-400 dark:text-gray-500"> / </span>
+        <span className="text-stone-400 dark:text-stone-500"> / </span>
         <span>{usage.limit.toLocaleString()}</span>
       </div>
 

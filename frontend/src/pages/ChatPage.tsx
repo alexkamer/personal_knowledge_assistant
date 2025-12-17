@@ -536,21 +536,21 @@ export function ChatPage() {
   useKeyboardShortcuts(shortcuts);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="h-screen flex flex-col bg-stone-50 dark:bg-stone-950">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+      <header className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MessageSquare className="text-blue-600 dark:text-blue-400" size={28} />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Chat</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Ask questions about your knowledge base</p>
+              <h1 className="text-2xl font-bold text-stone-900 dark:text-white">AI Chat</h1>
+              <p className="text-sm text-stone-600 dark:text-stone-400">Ask questions about your knowledge base</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
               title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
@@ -569,15 +569,15 @@ export function ChatPage() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar - Conversation List */}
-        <aside className={`bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300 ease-in-out relative ${
+        <aside className={`bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 flex flex-col transition-all duration-300 ease-in-out relative ${
           isSidebarCollapsed ? 'w-0' : 'w-80'
         }`}>
           <div className={`${isSidebarCollapsed ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 flex flex-col h-full`}>
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900 dark:text-white">Conversations</h2>
+            <div className="px-4 py-3 border-b border-stone-200 dark:border-stone-800 flex-shrink-0 flex items-center justify-between">
+              <h2 className="font-semibold text-stone-900 dark:text-white">Conversations</h2>
               <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                className="p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors"
                 title="Hide sidebar"
               >
                 <ChevronLeft size={20} />
@@ -585,21 +585,21 @@ export function ChatPage() {
             </div>
 
             {/* Search Input */}
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+            <div className="px-4 py-3 border-b border-stone-200 dark:border-stone-800 flex-shrink-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 dark:text-stone-500" size={18} />
                 <input
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search conversations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-2 border border-stone-300 dark:border-stone-700 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
                   >
                     <X size={18} />
                   </button>
@@ -610,13 +610,13 @@ export function ChatPage() {
             <div className="flex-1 overflow-y-auto min-h-0">
             {conversationsData && conversationsData.conversations.length > 0 ? (
               filteredConversations.length > 0 ? (
-                <div className="divide-y divide-gray-200 dark:divide-gray-800">
+                <div className="divide-y divide-stone-200 dark:divide-stone-800">
                   {filteredConversations.map((conv) => (
                   <div
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv.id)}
                     className={`
-                      p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
+                      p-4 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors
                       ${selectedConversationId === conv.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600' : ''}
                     `}
                   >
@@ -641,18 +641,18 @@ export function ChatPage() {
                                   handleCancelEdit(e as any, conv.title);
                                 }
                               }}
-                              className="w-full px-2 py-1 text-sm font-medium border-2 border-blue-500 dark:border-blue-400 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1 text-sm font-medium border-2 border-blue-500 dark:border-blue-400 rounded bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                               onClick={(e) => e.stopPropagation()}
                             />
                           </form>
                         ) : (
-                          <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+                          <h3 className="text-sm font-medium text-stone-900 dark:text-white truncate flex items-center gap-1.5">
                             {conv.is_pinned && <Pin size={12} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />}
                             <span className="truncate">{conv.title}</span>
                           </h3>
                         )}
                         <div className="flex items-center gap-2 mt-1">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                          <p className="text-xs text-stone-500 dark:text-stone-400">
                             {new Date(conv.updated_at).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
@@ -660,7 +660,7 @@ export function ChatPage() {
                             })}
                           </p>
                           {conv.message_count !== undefined && (
-                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                            <span className="text-xs text-stone-400 dark:text-stone-500">
                               • {conv.message_count} {conv.message_count === 1 ? 'message' : 'messages'}
                             </span>
                           )}
@@ -671,30 +671,30 @@ export function ChatPage() {
                       <div className="relative flex-shrink-0" ref={openMenuId === conv.id ? menuRef : null}>
                         <button
                           onClick={(e) => handleMenuToggle(e, conv.id)}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 rounded transition-colors"
                           title="More options"
                         >
                           <MoreVertical size={16} />
                         </button>
 
                         {openMenuId === conv.id && (
-                          <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                          <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-10">
                             <button
                               onClick={(e) => handleTogglePin(e, conv.id, conv.is_pinned)}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg transition-colors flex items-center gap-2"
+                              className="w-full px-4 py-2 text-left text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-t-lg transition-colors flex items-center gap-2"
                             >
                               {conv.is_pinned ? <PinOff size={14} /> : <Pin size={14} />}
                               {conv.is_pinned ? 'Unpin' : 'Pin'}
                             </button>
                             <button
                               onClick={(e) => handleEditConversation(e, conv)}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              className="w-full px-4 py-2 text-left text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
                             >
                               Edit
                             </button>
                             <button
                               onClick={(e) => handleExportConversation(e, conv.id)}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                              className="w-full px-4 py-2 text-left text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors flex items-center gap-2"
                             >
                               <Download size={14} />
                               Export as MD
@@ -714,8 +714,8 @@ export function ChatPage() {
                 ))}
               </div>
               ) : (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Search className="mx-auto mb-3 text-gray-400 dark:text-gray-500" size={32} />
+                <div className="p-8 text-center text-stone-500 dark:text-stone-400">
+                  <Search className="mx-auto mb-3 text-stone-400 dark:text-stone-500" size={32} />
                   <p className="text-sm font-medium">No conversations found</p>
                   <p className="text-xs mt-2">Try a different search term</p>
                   <button
@@ -727,7 +727,7 @@ export function ChatPage() {
                 </div>
               )
             ) : (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+              <div className="p-8 text-center text-stone-500 dark:text-stone-400">
                 <p className="text-sm">No conversations yet</p>
                 <p className="text-xs mt-2">Start a new chat to begin</p>
               </div>
@@ -739,7 +739,7 @@ export function ChatPage() {
           {isSidebarCollapsed && (
             <button
               onClick={() => setIsSidebarCollapsed(false)}
-              className="absolute top-3 left-2 p-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors z-10"
+              className="absolute top-3 left-2 p-1 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors z-10"
               title="Show sidebar"
             >
               <ChevronRight size={20} />
@@ -748,7 +748,7 @@ export function ChatPage() {
         </aside>
 
         {/* Chat Area */}
-        <main className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-950">
+        <main className="flex-1 flex flex-col bg-stone-50 dark:bg-stone-950">
           {/* Error Banner */}
           {errorMessage && (
             <div className="mx-6 mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
@@ -769,7 +769,7 @@ export function ChatPage() {
           {/* Loading Status - shows during streaming */}
           {isStreaming && streamingStatus && !streamingMessage && (
             <div className="px-6 py-4">
-              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-3 text-stone-600 dark:text-stone-400">
                 <div className="flex gap-1">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -808,7 +808,7 @@ export function ChatPage() {
               <div className="flex justify-center pb-0.5">
                 <button
                   onClick={handleClearChat}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"
                 >
                   <RotateCcw size={12} />
                   Clear Chat
@@ -824,7 +824,7 @@ export function ChatPage() {
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                   webSearchEnabled
                     ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-300 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-700'
                 }`}
               >
                 <Globe size={13} />
@@ -837,7 +837,7 @@ export function ChatPage() {
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                   includeNotes
                     ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-700'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-300 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-700'
                 }`}
               >
                 <MessageSquare size={13} />
@@ -850,7 +850,7 @@ export function ChatPage() {
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                   socraticMode
                     ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-300 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-700'
                 }`}
                 title="Enable Socratic Learning Mode: AI teaches through guided questions instead of direct answers"
               >
@@ -862,7 +862,7 @@ export function ChatPage() {
             {/* Learning Tools - Only show when conversation has messages */}
             {messages.length > 0 && (
               <div className="pt-1">
-                <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-1.5 px-1">
+                <div className="text-[10px] uppercase tracking-wider text-stone-500 dark:text-stone-400 font-semibold mb-1.5 px-1">
                   Learning Tools
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">

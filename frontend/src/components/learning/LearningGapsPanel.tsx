@@ -58,32 +58,32 @@ export function LearningGapsPanel({
       case 'helpful':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 border-blue-300 dark:border-blue-700';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200 border-gray-300 dark:border-gray-700';
+        return 'bg-stone-100 text-stone-800 dark:bg-stone-900/50 dark:text-stone-200 border-stone-300 dark:border-stone-700';
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-stone-800 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-stone-200 dark:border-stone-700">
           <div className="flex items-center gap-3">
             <AlertCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold text-stone-900 dark:text-white">
                 Learning Gaps Detected
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">
                 Missing foundational knowledge for: "{userQuestion}"
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors"
             aria-label="Close panel"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-stone-500" />
           </button>
         </div>
 
@@ -92,27 +92,27 @@ export function LearningGapsPanel({
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
               <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-stone-600 dark:text-stone-400">
                 Analyzing knowledge gaps...
               </p>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
               <AlertCircle className="w-16 h-16 text-red-600 dark:text-red-400" />
-              <p className="text-lg font-medium text-gray-900 dark:text-white">
+              <p className="text-lg font-medium text-stone-900 dark:text-white">
                 Analysis Failed
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md">
+              <p className="text-sm text-stone-600 dark:text-stone-400 text-center max-w-md">
                 {error}
               </p>
             </div>
           ) : gaps.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
               <CheckCircle className="w-16 h-16 text-green-600 dark:text-green-400" />
-              <p className="text-lg font-medium text-gray-900 dark:text-white">
+              <p className="text-lg font-medium text-stone-900 dark:text-white">
                 No Gaps Detected!
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md">
+              <p className="text-sm text-stone-600 dark:text-stone-400 text-center max-w-md">
                 You have the foundational knowledge needed to understand this topic.
               </p>
             </div>
@@ -138,14 +138,14 @@ export function LearningGapsPanel({
                 {gaps.map((gap, index) => (
                   <div
                     key={index}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                    className="border border-stone-200 dark:border-stone-700 rounded-lg overflow-hidden"
                   >
                     {/* Gap Header */}
                     <button
                       onClick={() =>
                         setExpandedGapIndex(expandedGapIndex === index ? null : index)
                       }
-                      className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      className="w-full flex items-center justify-between p-4 hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors"
                     >
                       <div className="flex items-center gap-3 flex-1 text-left">
                         <span
@@ -155,16 +155,16 @@ export function LearningGapsPanel({
                         >
                           {gap.importance.toUpperCase()}
                         </span>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                        <h3 className="font-semibold text-stone-900 dark:text-white">
                           {gap.topic}
                         </h3>
-                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400">
                           <Clock className="w-3 h-3" />
                           <span>{gap.estimated_time}</span>
                         </div>
                       </div>
                       <ChevronRight
-                        className={`w-5 h-5 text-gray-400 transition-transform ${
+                        className={`w-5 h-5 text-stone-400 transition-transform ${
                           expandedGapIndex === index ? 'rotate-90' : ''
                         }`}
                       />
@@ -172,33 +172,33 @@ export function LearningGapsPanel({
 
                     {/* Gap Details (Expanded) */}
                     {expandedGapIndex === index && (
-                      <div className="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+                      <div className="px-4 pb-4 space-y-3 border-t border-stone-200 dark:border-stone-700 pt-3">
                         {/* Description */}
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">
                             What is this?
                           </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <p className="text-sm text-stone-600 dark:text-stone-400">
                             {gap.description}
                           </p>
                         </div>
 
                         {/* Prerequisite For */}
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">
                             Why it matters
                           </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <p className="text-sm text-stone-600 dark:text-stone-400">
                             {gap.prerequisite_for}
                           </p>
                         </div>
 
                         {/* Learning Resources */}
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">
                             How to learn
                           </h4>
-                          <div className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded p-3">
+                          <div className="text-sm text-stone-600 dark:text-stone-400 bg-stone-50 dark:bg-stone-800 rounded p-3">
                             {gap.learning_resources.map((resource, i) => (
                               <p key={i} className="mb-1 last:mb-0">
                                 {resource}
@@ -215,11 +215,11 @@ export function LearningGapsPanel({
               {/* Learning Path Section */}
               {learningPath ? (
                 <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-2 flex items-center gap-2">
                     <Lightbulb className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     Recommended Learning Path
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  <p className="text-sm text-stone-600 dark:text-stone-400 mb-4">
                     Follow this sequence to build complete understanding ({learningPath.total_estimated_time})
                   </p>
                   <ol className="space-y-2">
@@ -228,7 +228,7 @@ export function LearningGapsPanel({
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-600 text-white text-sm font-semibold flex-shrink-0">
                           {index + 1}
                         </span>
-                        <span className="text-sm text-gray-700 dark:text-gray-300 pt-0.5">
+                        <span className="text-sm text-stone-700 dark:text-stone-300 pt-0.5">
                           {step}
                         </span>
                       </li>

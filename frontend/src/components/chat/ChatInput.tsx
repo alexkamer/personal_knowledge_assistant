@@ -43,7 +43,7 @@ export function ChatInput({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-gray-900">
+    <form onSubmit={handleSubmit} className="border-t border-stone-200 dark:border-stone-800 p-4 bg-white dark:bg-stone-900">
       <div className="flex gap-3 items-end">
         <div className="flex-1">
           <textarea
@@ -53,9 +53,9 @@ export function ChatInput({
             placeholder={placeholder}
             disabled={disabled}
             rows={3}
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 border border-stone-300 dark:border-stone-700 rounded-lg resize-none bg-white dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-stone-100 dark:disabled:bg-stone-700 disabled:cursor-not-allowed"
           />
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
             Press Enter to send, Shift+Enter for new line
           </p>
         </div>
@@ -63,7 +63,7 @@ export function ChatInput({
         <button
           type="submit"
           disabled={disabled || !message.trim()}
-          className="flex-shrink-0 p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors"
+          className="flex-shrink-0 p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-stone-300 dark:disabled:bg-stone-700 disabled:cursor-not-allowed transition-colors"
           aria-label="Send message"
         >
           <Send size={20} />

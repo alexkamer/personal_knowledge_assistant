@@ -46,8 +46,8 @@ const MessageItem = React.memo<MessageItemProps>(({
     <div
       className={`py-8 px-6 ${
         message.role === 'user'
-          ? 'bg-gray-50 dark:bg-gray-900'
-          : 'bg-white dark:bg-gray-800'
+          ? 'bg-stone-50 dark:bg-stone-900'
+          : 'bg-white dark:bg-stone-800'
       }`}
     >
       <div className="max-w-3xl mx-auto flex gap-6">
@@ -64,7 +64,7 @@ const MessageItem = React.memo<MessageItemProps>(({
 
         {/* Message Content */}
         <div className="flex-1 min-w-0">
-          <div className="text-gray-900 dark:text-gray-100">
+          <div className="text-stone-900 dark:text-stone-100">
           {message.role === 'user' ? (
             <div className="whitespace-pre-wrap break-words">
               {message.content}
@@ -78,7 +78,7 @@ const MessageItem = React.memo<MessageItemProps>(({
             <div className="mt-4 flex items-center gap-2">
             <button
               onClick={() => onCopyMessage(message.content, message.id)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-700 rounded-md transition-colors"
               title="Copy message"
             >
               {copiedMessageId === message.id ? (
@@ -96,7 +96,7 @@ const MessageItem = React.memo<MessageItemProps>(({
             {onRegenerateMessage && message.id !== 'streaming' && (
               <button
                 onClick={() => onRegenerateMessage(message.id)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-700 rounded-md transition-colors"
                 title="Regenerate response"
               >
                 <RotateCw size={14} />
@@ -106,14 +106,14 @@ const MessageItem = React.memo<MessageItemProps>(({
 
             {/* Feedback buttons */}
             {message.id !== 'streaming' && (
-              <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-300 dark:border-gray-600">
+              <div className="flex items-center gap-1 ml-2 pl-2 border-l border-stone-300 dark:border-stone-600">
                 <button
                   onClick={() => onFeedback(message.id, true)}
                   disabled={feedbackLoading === message.id}
                   className={`p-1.5 rounded-md transition-colors ${
                     message.feedback?.is_positive
                       ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+                      : 'text-stone-600 dark:text-stone-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
                   } ${feedbackLoading === message.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                   title="Helpful response"
                 >
@@ -125,7 +125,7 @@ const MessageItem = React.memo<MessageItemProps>(({
                   className={`p-1.5 rounded-md transition-colors ${
                     message.feedback && !message.feedback.is_positive
                       ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                      : 'text-stone-600 dark:text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
                   } ${feedbackLoading === message.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                   title="Not helpful"
                 >
@@ -141,7 +141,7 @@ const MessageItem = React.memo<MessageItemProps>(({
             <div className="mt-4 text-sm">
             <button
               onClick={() => onToggleSources(message.id)}
-              className="text-gray-700 dark:text-gray-300 font-semibold mb-2.5 flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="text-stone-700 dark:text-stone-300 font-semibold mb-2.5 flex items-center gap-1.5 hover:text-stone-900 dark:hover:text-white transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -159,7 +159,7 @@ const MessageItem = React.memo<MessageItemProps>(({
                 <button
                   key={`${source.source_id}-${source.chunk_index}`}
                   onClick={() => onSourceClick(source)}
-                  className="group text-left p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer"
+                  className="group text-left p-3 bg-white dark:bg-stone-700 rounded-lg border border-stone-200 dark:border-stone-600 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer"
                   title={`Distance: ${source.distance.toFixed(3)} | Chunk: ${source.chunk_index} | Click to preview`}
                 >
                   <div className="flex items-start gap-2.5">
@@ -179,15 +179,15 @@ const MessageItem = React.memo<MessageItemProps>(({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-semibold text-gray-900 dark:text-white">
+                          <div className="text-xs font-semibold text-stone-900 dark:text-white">
                             {source.source_title}
                           </div>
                           {source.section_title && (
-                            <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5 truncate" title={source.section_title}>
+                            <div className="text-[11px] text-stone-600 dark:text-stone-400 mt-0.5 truncate" title={source.section_title}>
                               📍 {source.section_title}
                             </div>
                           )}
-                          <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                          <div className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5">
                             {source.source_type === 'note' ? 'Note' : source.source_type === 'web' ? 'Web' : 'Document'} • Ref [{source.index}]
                           </div>
                         </div>
@@ -211,7 +211,7 @@ const MessageItem = React.memo<MessageItemProps>(({
           {/* Suggested Questions (only for assistant messages) */}
           {message.role === 'assistant' && message.suggested_questions && message.suggested_questions.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 mb-2">
                 Suggested follow-up questions:
               </p>
               <div className="flex flex-wrap gap-2">
@@ -230,7 +230,7 @@ const MessageItem = React.memo<MessageItemProps>(({
           </div>
 
           {/* Timestamp and model info */}
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mt-2 text-xs text-stone-500 dark:text-stone-400">
             {new Date(message.created_at).toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: '2-digit',
@@ -300,9 +300,9 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+      <div className="flex items-center justify-center h-full text-stone-500 dark:text-stone-400">
         <div className="text-center">
-          <Bot className="mx-auto mb-4 text-gray-300 dark:text-gray-600" size={64} />
+          <Bot className="mx-auto mb-4 text-stone-300 dark:text-stone-600" size={64} />
           <p className="text-lg font-medium">Start a conversation</p>
           <p className="text-sm mt-2">
             Ask questions about your notes and documents
@@ -331,20 +331,20 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
       ))}
 
       {isLoading && (
-        <div className="py-8 px-6 bg-white dark:bg-gray-800">
+        <div className="py-8 px-6 bg-white dark:bg-stone-800">
           <div className="max-w-3xl mx-auto flex gap-6">
             <div className="flex-shrink-0 w-8 h-8 rounded-sm bg-green-600 dark:bg-green-700 text-white flex items-center justify-center">
               <Bot size={16} />
             </div>
             <div className="flex-1">
               <div className="flex gap-2">
-                <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-stone-400 dark:bg-stone-500 rounded-full animate-bounce" />
                 <div
-                  className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                  className="w-2 h-2 bg-stone-400 dark:bg-stone-500 rounded-full animate-bounce"
                   style={{ animationDelay: '0.2s' }}
                 />
                 <div
-                  className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                  className="w-2 h-2 bg-stone-400 dark:bg-stone-500 rounded-full animate-bounce"
                   style={{ animationDelay: '0.4s' }}
                 />
               </div>

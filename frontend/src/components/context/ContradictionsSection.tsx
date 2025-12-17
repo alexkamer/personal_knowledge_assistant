@@ -56,7 +56,7 @@ export function ContradictionsSection({ contradictions }: ContradictionsSectionP
       case 'low':
         return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-800';
       default:
-        return 'text-gray-600 bg-gray-50 dark:bg-gray-900/20 border-gray-300 dark:border-gray-800';
+        return 'text-stone-600 bg-stone-50 dark:bg-stone-900/20 border-stone-300 dark:border-stone-800';
     }
   };
 
@@ -69,17 +69,17 @@ export function ContradictionsSection({ contradictions }: ContradictionsSectionP
       case 'low':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200';
+        return 'bg-stone-100 text-stone-800 dark:bg-stone-900/50 dark:text-stone-200';
     }
   };
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+    <div className="border-t border-stone-200 dark:border-stone-700 pt-6">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between hover:opacity-80 transition-opacity"
       >
-        <h4 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white">
+        <h4 className="flex items-center gap-2 text-base font-semibold text-stone-900 dark:text-white">
           <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
           Contradiction Detective
           <span className="ml-1 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 rounded-full">
@@ -87,15 +87,15 @@ export function ContradictionsSection({ contradictions }: ContradictionsSectionP
           </span>
         </h4>
         {isExpanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
+          <ChevronUp className="w-5 h-5 text-stone-400" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
+          <ChevronDown className="w-5 h-5 text-stone-400" />
         )}
       </button>
 
       {isExpanded && (
         <div className="mt-4 space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-stone-600 dark:text-stone-400">
             AI detected potential logical contradictions in your knowledge base.
           </p>
 
@@ -110,17 +110,17 @@ export function ContradictionsSection({ contradictions }: ContradictionsSectionP
                   <span className={`px-2 py-1 text-xs font-semibold rounded ${getSeverityBadgeColor(contradiction.severity)}`}>
                     {contradiction.severity.toUpperCase()}
                   </span>
-                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                  <span className="text-xs text-stone-600 dark:text-stone-400">
                     {contradiction.contradiction_type}
                   </span>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-stone-500 dark:text-stone-400">
                   {Math.round(contradiction.confidence * 100)}% confident
                 </span>
               </div>
 
               {/* Explanation */}
-              <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+              <p className="text-sm font-medium text-stone-900 dark:text-white mb-3">
                 {contradiction.explanation}
               </p>
 
@@ -133,14 +133,14 @@ export function ContradictionsSection({ contradictions }: ContradictionsSectionP
                   {contradiction.source1.title}
                   <ExternalLink className="w-3 h-3" />
                 </button>
-                <p className="text-xs italic text-gray-700 dark:text-gray-300 pl-3 border-l-2 border-gray-300 dark:border-gray-600">
+                <p className="text-xs italic text-stone-700 dark:text-stone-300 pl-3 border-l-2 border-stone-300 dark:border-stone-600">
                   "{contradiction.source1.excerpt}"
                 </p>
               </div>
 
               {/* VS divider */}
               <div className="flex items-center justify-center my-2">
-                <span className="px-3 py-1 text-xs font-bold text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded">
+                <span className="px-3 py-1 text-xs font-bold text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-800 rounded">
                   VS
                 </span>
               </div>
@@ -154,7 +154,7 @@ export function ContradictionsSection({ contradictions }: ContradictionsSectionP
                   {contradiction.source2.title}
                   <ExternalLink className="w-3 h-3" />
                 </button>
-                <p className="text-xs italic text-gray-700 dark:text-gray-300 pl-3 border-l-2 border-gray-300 dark:border-gray-600">
+                <p className="text-xs italic text-stone-700 dark:text-stone-300 pl-3 border-l-2 border-stone-300 dark:border-stone-600">
                   "{contradiction.source2.excerpt}"
                 </p>
               </div>

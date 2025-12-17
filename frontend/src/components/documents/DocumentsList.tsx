@@ -46,7 +46,7 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
     return (
       <div className="bg-white rounded-lg shadow-md p-8 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading documents...</p>
+        <p className="mt-4 text-stone-600">Loading documents...</p>
       </div>
     );
   }
@@ -59,7 +59,7 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
             <AlertCircle size={20} />
             <span className="font-medium">Failed to load documents</span>
           </div>
-          <p className="text-sm text-gray-600 text-center">
+          <p className="text-sm text-stone-600 text-center">
             {(error as any)?.response?.data?.detail || error.message || 'An unexpected error occurred'}
           </p>
           <button
@@ -77,7 +77,7 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
   if (!data || data.documents.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-8">
-        <div className="text-center text-gray-500">
+        <div className="text-center text-stone-500">
           <FileText className="mx-auto mb-4" size={48} />
           <p className="font-medium">No documents yet</p>
           <p className="text-sm mt-2">Upload your first document to get started</p>
@@ -88,19 +88,19 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-        <h2 className="text-lg font-semibold text-gray-900">
+      <div className="px-6 py-4 border-b border-stone-200 bg-stone-50">
+        <h2 className="text-lg font-semibold text-stone-900">
           Documents ({data.total})
         </h2>
       </div>
 
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-stone-200">
         {data.documents.map((document) => (
           <div
             key={document.id}
             onClick={() => onSelectDocument?.(document)}
             className={`
-              p-4 hover:bg-gray-50 transition-colors cursor-pointer
+              p-4 hover:bg-stone-50 transition-colors cursor-pointer
               ${selectedDocumentId === document.id ? 'bg-blue-50' : ''}
             `}
           >
@@ -111,11 +111,11 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
                   size={20}
                 />
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium text-gray-900 truncate">
+                  <h3 className="text-sm font-medium text-stone-900 truncate">
                     {document.filename}
                   </h3>
 
-                  <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                  <div className="mt-2 flex items-center gap-4 text-xs text-stone-500">
                     <span className="flex items-center gap-1">
                       <HardDrive size={14} />
                       {formatFileSize(document.file_size)}
@@ -124,7 +124,7 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
                       <Calendar size={14} />
                       {formatDate(document.created_at)}
                     </span>
-                    <span className="uppercase bg-gray-100 px-2 py-0.5 rounded">
+                    <span className="uppercase bg-stone-100 px-2 py-0.5 rounded">
                       {document.file_type}
                     </span>
                   </div>
@@ -134,7 +134,7 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
               <button
                 onClick={(e) => handleDelete(e, document.id)}
                 disabled={deleteDocument.isPending}
-                className="ml-4 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
+                className="ml-4 p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
                 aria-label="Delete document"
               >
                 <Trash2 size={16} />
