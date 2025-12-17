@@ -7,6 +7,7 @@ import { useLocation } from 'react-router-dom';
 import { MessageSquare, Plus, MoreVertical, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff, GraduationCap, Lightbulb, Brain, Clock, BookOpen } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
+import { GradientMesh } from '@/components/ui/GradientMesh';
 import { TokenUsage } from '@/components/chat/TokenUsage';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 import ActivityTimeline from '@/components/chat/ActivityTimeline';
@@ -536,9 +537,12 @@ export function ChatPage() {
   useKeyboardShortcuts(shortcuts);
 
   return (
-    <div className="h-screen flex flex-col bg-stone-50 dark:bg-stone-950">
+    <div className="h-screen flex flex-col bg-stone-50 dark:bg-stone-950 relative">
+      {/* Gradient Mesh Background */}
+      <GradientMesh />
+
       {/* Header */}
-      <header className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-6 py-4">
+      <header className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-b border-stone-200/50 dark:border-stone-800/50 px-6 py-4 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MessageSquare className="text-blue-600 dark:text-blue-400" size={28} />
@@ -567,9 +571,9 @@ export function ChatPage() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative z-0">
         {/* Sidebar - Conversation List */}
-        <aside className={`bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 flex flex-col transition-all duration-300 ease-in-out relative ${
+        <aside className={`bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-r border-stone-200/50 dark:border-stone-800/50 flex flex-col transition-all duration-300 ease-in-out relative z-10 ${
           isSidebarCollapsed ? 'w-0' : 'w-80'
         }`}>
           <div className={`${isSidebarCollapsed ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 flex flex-col h-full`}>

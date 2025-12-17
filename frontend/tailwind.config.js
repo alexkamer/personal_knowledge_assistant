@@ -110,6 +110,48 @@ export default {
         'glass-light': 'rgba(255, 255, 255, 0.12)',
         'glass-dark': 'rgba(255, 255, 255, 0.08)',
       },
+      // Gradient radial utility
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+      },
+      // Custom animations
+      keyframes: {
+        'float-slow': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(30px, -30px) scale(1.05)' },
+          '66%': { transform: 'translate(-20px, 20px) scale(0.95)' },
+        },
+        'float-medium': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(-25px, 25px) scale(1.03)' },
+          '66%': { transform: 'translate(20px, -15px) scale(0.97)' },
+        },
+        'float-fast': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(20px, 30px) scale(1.02)' },
+          '66%': { transform: 'translate(-30px, -20px) scale(0.98)' },
+        },
+        'slide-in-from-bottom': {
+          '0%': { transform: 'translateY(100%)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'slide-in-from-right': {
+          '0%': { transform: 'translateX(20px)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        'slide-in-from-left': {
+          '0%': { transform: 'translateX(-20px)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+      },
+      animation: {
+        'float-slow': 'float-slow 20s ease-in-out infinite',
+        'float-medium': 'float-medium 15s ease-in-out infinite',
+        'float-fast': 'float-fast 12s ease-in-out infinite',
+        'slide-in-bottom': 'slide-in-from-bottom 0.3s ease-out',
+        'slide-in-right': 'slide-in-from-right 0.3s ease-out',
+        'slide-in-left': 'slide-in-from-left 0.3s ease-out',
+      },
     },
   },
   plugins: [
