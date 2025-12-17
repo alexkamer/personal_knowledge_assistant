@@ -16,6 +16,12 @@ A full-featured knowledge management system with AI-powered question answering, 
   - **Including Personal Notes**: Include your personal notes in search results
 - **Semantic Search**: Find relevant information across all your notes and documents
 - **Document Processing**: Upload and process PDFs, DOCX, TXT, and Markdown files
+- **YouTube Learning**: Process YouTube videos with AI-powered features:
+  - Automatic transcript fetching with timestamps
+  - AI-generated video summaries with key points and topics
+  - Interactive transcript with clickable timestamps
+  - Search within transcripts
+  - Markdown export functionality
 - **Chat Interface**: Natural conversation with your knowledge base
 - **Source Citations**: Every AI answer includes links to source material
 - **Comprehensive Testing**: 474 frontend tests + 351 backend tests (70% coverage)
@@ -220,6 +226,11 @@ CHROMA_COLLECTION_NAME=knowledge_base
 # Embeddings
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
+# YouTube Proxy Configuration (optional)
+# Use rotating residential proxies to bypass YouTube rate limiting
+WEBSHARE_PROXY_USERNAME=
+WEBSHARE_PROXY_PASSWORD=
+
 # App Settings
 APP_NAME=Personal Knowledge Assistant
 ENVIRONMENT=development
@@ -298,6 +309,25 @@ Delete and reinitialize:
 rm -rf backend/chroma_data
 # Restart backend to reinitialize
 ```
+
+### YouTube Rate Limiting
+
+If you encounter "YouTube is blocking requests from your IP" errors:
+
+**Short-term solution**: Wait 15-30 minutes for the rate limit to clear.
+
+**Long-term solution**: Use rotating residential proxies via Webshare:
+
+1. Sign up at https://www.webshare.io/ (free tier available)
+2. Get your proxy credentials
+3. Add them to `backend/.env`:
+   ```env
+   WEBSHARE_PROXY_USERNAME=your_username
+   WEBSHARE_PROXY_PASSWORD=your_password
+   ```
+4. Restart the backend server
+
+The system will automatically use proxies when credentials are configured.
 
 ## Contributing
 
