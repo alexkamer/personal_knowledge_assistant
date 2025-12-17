@@ -7,6 +7,7 @@ import type { Message, SourceCitation } from '@/types/chat';
 import { SourcePreviewModal } from './SourcePreviewModal';
 import { MetadataBadges } from './MetadataBadges';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { FloatingMessageCard } from './FloatingMessageCard';
 import { apiClient } from '@/services/api';
 
 interface MessageListProps {
@@ -313,9 +314,9 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto py-6">
       {messages.map((message) => (
-        <MessageItem
+        <FloatingMessageCard
           key={message.id}
           message={message}
           copiedMessageId={copiedMessageId}
@@ -331,23 +332,18 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
       ))}
 
       {isLoading && (
-        <div className="py-8 px-6 bg-white dark:bg-stone-800">
-          <div className="max-w-3xl mx-auto flex gap-6">
-            <div className="flex-shrink-0 w-8 h-8 rounded-sm bg-green-600 dark:bg-green-700 text-white flex items-center justify-center">
-              <Bot size={16} />
-            </div>
-            <div className="flex-1">
-              <div className="flex gap-2">
-                <div className="w-2 h-2 bg-stone-400 dark:bg-stone-500 rounded-full animate-bounce" />
-                <div
-                  className="w-2 h-2 bg-stone-400 dark:bg-stone-500 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.2s' }}
-                />
-                <div
-                  className="w-2 h-2 bg-stone-400 dark:bg-stone-500 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.4s' }}
-                />
-              </div>
+        <div className="flex justify-start px-4 sm:px-6 mb-6 animate-slide-in-left">
+          <div className="max-w-2xl bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/50 dark:border-stone-800/50 rounded-2xl rounded-bl-md shadow-lg mr-12 px-6 py-4">
+            <div className="flex gap-2">
+              <div className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" />
+              <div
+                className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce"
+                style={{ animationDelay: '0.2s' }}
+              />
+              <div
+                className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce"
+                style={{ animationDelay: '0.4s' }}
+              />
             </div>
           </div>
         </div>

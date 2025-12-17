@@ -4,11 +4,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
-import { MessageSquare, Plus, MoreVertical, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff, GraduationCap, Lightbulb, Brain, Clock, BookOpen } from 'lucide-react';
+import { MessageSquare, Plus, MoreVertical, AlertCircle, Search, X, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { GradientMesh } from '@/components/ui/GradientMesh';
 import { TokenUsage } from '@/components/chat/TokenUsage';
+import { LearningToolsFAB } from '@/components/chat/LearningToolsFAB';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 import ActivityTimeline from '@/components/chat/ActivityTimeline';
 import { LearningGapsPanel } from '@/components/learning/LearningGapsPanel';
@@ -36,6 +37,7 @@ export function ChatPage() {
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(true); // Changed default to true
   const [includeNotes, setIncludeNotes] = useState<boolean>(false); // Default to false - only use reputable sources
   const [socraticMode, setSocraticMode] = useState<boolean>(false); // Default to false - direct answers
+  const [selectedModel, setSelectedModel] = useState<string>('qwen2.5:14b'); // Default model
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [streamingSources, setStreamingSources] = useState<any[]>([]);
@@ -234,13 +236,6 @@ export function ChatPage() {
   const handleNewChat = () => {
     setSelectedConversationId(null);
     setErrorMessage(null);
-  };
-
-  const handleClearChat = () => {
-    if (messages.length > 0 && window.confirm('Clear this conversation? This will start fresh but keep the conversation in history.')) {
-      setSelectedConversationId(null);
-      setErrorMessage(null);
-    }
   };
 
   const handleSelectConversation = (id: string) => {
@@ -805,121 +800,6 @@ export function ChatPage() {
             onQuestionClick={handleSendMessage}
           />
 
-          {/* Settings and Learning Tools - Organized Layout */}
-          <div className="px-6 pb-3 space-y-2.5">
-            {/* Clear Chat Button - shows when there are messages */}
-            {displayMessages.length > 0 && (
-              <div className="flex justify-center pb-0.5">
-                <button
-                  onClick={handleClearChat}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"
-                >
-                  <RotateCcw size={12} />
-                  Clear Chat
-                </button>
-              </div>
-            )}
-
-            {/* Search & Filter Settings - Horizontal */}
-            <div className="flex flex-wrap gap-1.5">
-              {/* Web Search Toggle */}
-              <button
-                onClick={() => setWebSearchEnabled(!webSearchEnabled)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
-                  webSearchEnabled
-                    ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700'
-                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-300 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-700'
-                }`}
-              >
-                <Globe size={13} />
-                <span className="whitespace-nowrap">{webSearchEnabled ? '✓ Web' : 'Docs only'}</span>
-              </button>
-
-              {/* Include Notes Toggle */}
-              <button
-                onClick={() => setIncludeNotes(!includeNotes)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
-                  includeNotes
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-700'
-                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-300 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-700'
-                }`}
-              >
-                <MessageSquare size={13} />
-                <span className="whitespace-nowrap">{includeNotes ? '✓ Notes' : 'Verified only'}</span>
-              </button>
-
-              {/* Socratic Learning Mode Toggle */}
-              <button
-                onClick={() => setSocraticMode(!socraticMode)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
-                  socraticMode
-                    ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700'
-                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-300 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-700'
-                }`}
-                title="Enable Socratic Learning Mode: AI teaches through guided questions instead of direct answers"
-              >
-                <GraduationCap size={13} />
-                <span className="whitespace-nowrap">{socraticMode ? '✓ Socratic' : 'Direct'}</span>
-              </button>
-            </div>
-
-            {/* Learning Tools - Only show when conversation has messages */}
-            {messages.length > 0 && (
-              <div className="pt-1">
-                <div className="text-[10px] uppercase tracking-wider text-stone-500 dark:text-stone-400 font-semibold mb-1.5 px-1">
-                  Learning Tools
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {/* Learning Gaps Detector */}
-                  <button
-                    onClick={() => {
-                      const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-                      if (lastUserMessage) {
-                        handleDetectLearningGaps(lastUserMessage.content);
-                      }
-                    }}
-                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/30 dark:hover:to-yellow-900/30"
-                    title="Detect foundational knowledge gaps"
-                  >
-                    <Lightbulb size={13} />
-                    <span className="whitespace-nowrap">Gaps</span>
-                  </button>
-
-                  {/* Metabolization Quiz */}
-                  <button
-                    onClick={handleGenerateQuiz}
-                    disabled={isLoadingQuiz}
-                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700 hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Test your understanding with questions"
-                  >
-                    <Brain size={13} />
-                    <span className="whitespace-nowrap">{isLoadingQuiz ? 'Loading...' : 'Quiz Me'}</span>
-                  </button>
-
-                  {/* Knowledge Evolution Snapshot */}
-                  <button
-                    onClick={handleCaptureSnapshot}
-                    disabled={createSnapshot.isPending}
-                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700 hover:from-green-100 hover:to-teal-100 dark:hover:from-green-900/30 dark:hover:to-teal-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Capture your current understanding"
-                  >
-                    <BookOpen size={13} />
-                    <span className="whitespace-nowrap">{createSnapshot.isPending ? 'Saving...' : 'Snapshot'}</span>
-                  </button>
-
-                  {/* View Evolution Timeline */}
-                  <button
-                    onClick={() => setShowEvolutionTimeline(true)}
-                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-300 dark:border-indigo-700 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30"
-                    title="View knowledge evolution timeline"
-                  >
-                    <Clock size={13} />
-                    <span className="whitespace-nowrap">Timeline</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Active Agent Indicator */}
           {activeAgent && (
@@ -943,7 +823,33 @@ export function ChatPage() {
             onSend={handleSendMessage}
             disabled={isStreaming}
             initialValue={prefillQuestion}
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+            webSearchEnabled={webSearchEnabled}
+            onWebSearchToggle={() => setWebSearchEnabled(!webSearchEnabled)}
+            includeNotes={includeNotes}
+            onIncludeNotesToggle={() => setIncludeNotes(!includeNotes)}
+            socraticMode={socraticMode}
+            onSocraticModeToggle={() => setSocraticMode(!socraticMode)}
           />
+
+          {/* Learning Tools FAB - Only show when conversation has messages */}
+          {messages.length > 0 && (
+            <LearningToolsFAB
+              onDetectGaps={() => {
+                const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+                if (lastUserMessage) {
+                  handleDetectLearningGaps(lastUserMessage.content);
+                }
+              }}
+              onGenerateQuiz={handleGenerateQuiz}
+              onCaptureSnapshot={handleCaptureSnapshot}
+              onViewTimeline={() => setShowEvolutionTimeline(true)}
+              isLoadingQuiz={isLoadingQuiz}
+              isLoadingSnapshot={createSnapshot.isPending}
+              disabled={isStreaming}
+            />
+          )}
         </main>
       </div>
 
