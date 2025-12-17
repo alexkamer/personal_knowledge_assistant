@@ -306,27 +306,72 @@ async def chat_stream(
                 for msg in messages[:-1]  # Exclude the message we just added
             ][-agent_config.max_conversation_history:]  # Limit based on agent
 
-            # Generate streaming response using agent config
-            llm_service = get_llm_service()
-            stream = await llm_service.generate_answer(
-                query=clean_message,  # Use clean message without @ mention
-                context=context,
-                conversation_history=conversation_history,
-                model=request.model or agent_config.model,  # Use agent's model if not specified
-                stream=True,
-                temperature=agent_config.temperature,  # Use agent's temperature
-                system_prompt=agent_config.system_prompt,  # Use agent's system prompt
-            )
+            # Check if agent uses tools
+            complete_response = ""
+            if agent_config.use_tools:
+                # Use tool orchestrator for multi-step reasoning
+                from app.services.tool_orchestrator import get_tool_orchestrator
 
-            # Collect full response while streaming
-            full_response = []
-            async for chunk in stream:
-                if chunk:
-                    full_response.append(chunk)
-                    yield f'data: {json.dumps({"type": "chunk", "content": chunk})}\n\n'
+                # Store events to emit during orchestration
+                tool_events = []
 
-            # Save complete message to database
-            complete_response = "".join(full_response)
+                def on_tool_call(tool_call_data):
+                    """Capture tool call event."""
+                    tool_events.append(("tool_call", tool_call_data))
+
+                def on_tool_result(tool_name, result_data):
+                    """Capture tool result event."""
+                    tool_events.append(("tool_result", {"tool": tool_name, **result_data}))
+
+                def on_iteration(iteration, status):
+                    """Capture iteration status event."""
+                    tool_events.append(("status", status))
+
+                orchestrator = get_tool_orchestrator()
+                complete_response = await orchestrator.process_with_tools(
+                    query=clean_message,
+                    agent_config=agent_config,
+                    db=db,
+                    max_iterations=agent_config.max_tool_iterations,
+                    on_tool_call=on_tool_call,
+                    on_tool_result=on_tool_result,
+                    on_iteration=on_iteration,
+                )
+
+                # Emit all tool events that occurred
+                for event_type, event_data in tool_events:
+                    if event_type == "tool_call":
+                        yield f'data: {json.dumps({"type": "tool_call", "tool_call": event_data})}\n\n'
+                    elif event_type == "tool_result":
+                        yield f'data: {json.dumps({"type": "tool_result", "tool_result": event_data})}\n\n'
+                    elif event_type == "status":
+                        yield f'data: {json.dumps({"type": "status", "status": event_data})}\n\n'
+
+                # Stream the final response
+                yield f'data: {json.dumps({"type": "chunk", "content": complete_response})}\n\n'
+
+            else:
+                # Standard RAG path without tools
+                llm_service = get_llm_service()
+                stream = await llm_service.generate_answer(
+                    query=clean_message,  # Use clean message without @ mention
+                    context=context,
+                    conversation_history=conversation_history,
+                    model=request.model or agent_config.model,  # Use agent's model if not specified
+                    stream=True,
+                    temperature=agent_config.temperature,  # Use agent's temperature
+                    system_prompt=agent_config.system_prompt,  # Use agent's system prompt
+                )
+
+                # Collect full response while streaming
+                full_response = []
+                async for chunk in stream:
+                    if chunk:
+                        full_response.append(chunk)
+                        yield f'data: {json.dumps({"type": "chunk", "content": chunk})}\n\n'
+
+                # Save complete message to database
+                complete_response = "".join(full_response)
             assistant_message = await ConversationService.add_message(
                 db=db,
                 conversation_id=str(conversation.id),
