@@ -5,6 +5,21 @@ import pytest
 from unittest.mock import Mock, patch
 
 from app.services.embedding_service import EmbeddingService, get_embedding_service
+from app.core.cache import embedding_cache
+from app.core.retry import embedding_circuit_breaker
+
+
+@pytest.fixture(autouse=True)
+def reset_circuit_breaker_and_cache():
+    """Reset circuit breaker and cache before each test."""
+    # Reset circuit breaker state
+    embedding_circuit_breaker.reset()
+    # Clear embedding cache
+    embedding_cache.clear()
+    yield
+    # Clean up after test
+    embedding_circuit_breaker.reset()
+    embedding_cache.clear()
 
 
 class TestEmbeddingService:
@@ -85,7 +100,7 @@ class TestEmbeddingService:
         embedding2 = service.embed_text("Test text")
 
         assert embedding1 == embedding2
-        # Model.encode should only be called once due to caching
+        # With new cache, _generate_embedding is called once, encode is called once
         assert mock_model.encode.call_count == 1
 
     @patch('app.services.embedding_service.SentenceTransformer')
@@ -207,7 +222,7 @@ class TestEmbeddingService:
 
     @patch('app.services.embedding_service.SentenceTransformer')
     def test_embed_text_encoding_error(self, mock_transformer):
-        """Test handling of encoding errors."""
+        """Test handling of encoding errors with retry and circuit breaker."""
         mock_model = Mock()
         mock_model.get_sentence_embedding_dimension.return_value = 384
         mock_model.encode.side_effect = Exception("Encoding failed")
@@ -215,14 +230,20 @@ class TestEmbeddingService:
 
         service = EmbeddingService()
 
+        # After retries, circuit breaker will open
         with pytest.raises(Exception) as exc_info:
             service.embed_text("Test")
 
-        assert "Encoding failed" in str(exc_info.value)
+        # Exception could be original error or circuit breaker error after retries
+        error_message = str(exc_info.value)
+        assert "Encoding failed" in error_message or "Circuit breaker" in error_message
 
     @patch('app.services.embedding_service.SentenceTransformer')
     def test_embed_batch_model_not_initialized(self, mock_transformer):
         """Test embed_batch when model is not initialized."""
+        # Reset circuit breaker at start of test
+        embedding_circuit_breaker.reset()
+
         mock_model = Mock()
         mock_model.get_sentence_embedding_dimension.return_value = 384
         mock_transformer.return_value = mock_model
@@ -239,6 +260,9 @@ class TestEmbeddingService:
     @patch('app.services.embedding_service.SentenceTransformer')
     def test_embed_batch_all_empty_strings(self, mock_transformer):
         """Test batch embedding with all empty strings raises error."""
+        # Reset circuit breaker at start of test
+        embedding_circuit_breaker.reset()
+
         mock_model = Mock()
         mock_model.get_sentence_embedding_dimension.return_value = 384
         mock_transformer.return_value = mock_model
@@ -252,7 +276,7 @@ class TestEmbeddingService:
 
     @patch('app.services.embedding_service.SentenceTransformer')
     def test_embed_batch_encoding_error(self, mock_transformer):
-        """Test handling of batch encoding errors."""
+        """Test handling of batch encoding errors with retry and circuit breaker."""
         mock_model = Mock()
         mock_model.get_sentence_embedding_dimension.return_value = 384
         mock_model.encode.side_effect = Exception("Batch encoding failed")
@@ -260,10 +284,13 @@ class TestEmbeddingService:
 
         service = EmbeddingService()
 
+        # After retries, circuit breaker will open
         with pytest.raises(Exception) as exc_info:
             service.embed_batch(["Text 1", "Text 2"])
 
-        assert "Batch encoding failed" in str(exc_info.value)
+        # Exception could be original error or circuit breaker error after retries
+        error_message = str(exc_info.value)
+        assert "Batch encoding failed" in error_message or "Circuit breaker" in error_message
 
     @patch('app.services.embedding_service.SentenceTransformer')
     def test_embed_batch_with_progress_bar(self, mock_transformer):

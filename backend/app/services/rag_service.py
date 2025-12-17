@@ -7,7 +7,9 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import search_results_cache, create_cache_key
 from app.core.config import settings
+from app.core.retry import retry_with_backoff, vector_db_circuit_breaker
 from app.models.chunk import Chunk
 from app.models.note import Note
 from app.models.document import Document
@@ -493,6 +495,13 @@ class RAGService:
 
         return context, citations
 
+    @retry_with_backoff(
+        max_retries=2,
+        initial_delay=0.5,
+        backoff_factor=2.0,
+        exceptions=(Exception,),
+        circuit_breaker=vector_db_circuit_breaker,
+    )
     async def retrieve_and_assemble(
         self,
         db: AsyncSession,
@@ -507,7 +516,7 @@ class RAGService:
         auto_infer_filters: bool = True,  # Automatically infer filters from query
     ) -> tuple[str, List[dict]]:
         """
-        Convenience method to search and assemble context in one call.
+        Convenience method to search and assemble context in one call with caching and retry logic.
 
         Args:
             db: Database session
@@ -524,6 +533,24 @@ class RAGService:
         Returns:
             Tuple of (assembled context, source citations)
         """
+        # Check cache first
+        cache_key = create_cache_key(
+            "retrieve_and_assemble",
+            query,
+            top_k,
+            max_tokens,
+            include_web_search,
+            exclude_notes,
+            content_type,
+            has_code,
+            section_title,
+            auto_infer_filters,
+        )
+        cached_result = search_results_cache.get(cache_key)
+        if cached_result is not None:
+            logger.info(f"Cache hit for query: {query[:50]}...")
+            return cached_result
+
         # Auto-infer filters from query if enabled and no manual filters provided
         if auto_infer_filters and content_type is None and has_code is None:
             inferred = self._infer_filters_from_query(query)
@@ -607,7 +634,12 @@ class RAGService:
                 logger.error(f"Failed to add web search results: {e}")
                 # Continue without web results if search fails
 
-        return context, citations
+        # Cache the result
+        result = (context, citations)
+        search_results_cache.set(cache_key, result)
+        logger.debug(f"Cached search results for query: {query[:50]}...")
+
+        return result
 
 
 def get_rag_service() -> RAGService:

@@ -54,6 +54,23 @@ class DocumentProcessingError(KnowledgeAssistantException):
         super().__init__(message, status.HTTP_400_BAD_REQUEST)
 
 
+class CircuitBreakerOpenError(KnowledgeAssistantException):
+    """Raised when circuit breaker is open and rejecting requests."""
+
+    def __init__(self, service: str = "service"):
+        super().__init__(
+            f"The {service} is temporarily unavailable due to repeated failures. Please try again later.",
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+
+class RateLimitExceededError(KnowledgeAssistantException):
+    """Raised when rate limit is exceeded."""
+
+    def __init__(self, message: str = "Rate limit exceeded. Please try again later."):
+        super().__init__(message, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
 def create_error_response(message: str, details: Dict[str, Any] | None = None) -> Dict[str, Any]:
     """
     Create a standardized error response.

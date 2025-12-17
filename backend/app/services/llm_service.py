@@ -8,6 +8,7 @@ import ollama
 
 from app.core.config import settings
 from app.core.exceptions import ModelNotFoundError, OllamaConnectionError
+from app.core.retry import retry_with_backoff, ollama_circuit_breaker
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +91,15 @@ class LLMService:
             logger.error(f"Unexpected error generating answer: {e}")
             raise
 
+    @retry_with_backoff(
+        max_retries=3,
+        initial_delay=1.0,
+        backoff_factor=2.0,
+        exceptions=(ollama.RequestError, ollama.ResponseError, Exception),
+        circuit_breaker=ollama_circuit_breaker,
+    )
     async def _generate_response(self, model: str, messages: List[dict], temperature: float) -> str:
-        """Generate a complete response (non-streaming)."""
+        """Generate a complete response (non-streaming) with retry logic."""
         response = await self.client.chat(
             model=model,
             messages=messages,
@@ -105,6 +113,13 @@ class LLMService:
         logger.info(f"Generated answer: {len(answer)} characters")
         return answer
 
+    @retry_with_backoff(
+        max_retries=2,
+        initial_delay=1.0,
+        backoff_factor=2.0,
+        exceptions=(ollama.RequestError, ollama.ResponseError, Exception),
+        circuit_breaker=ollama_circuit_breaker,
+    )
     async def generate_follow_up_questions(
         self,
         query: str,
@@ -113,7 +128,7 @@ class LLMService:
         model: Optional[str] = None,
     ) -> List[str]:
         """
-        Generate 3-4 relevant follow-up questions based on the conversation.
+        Generate 3-4 relevant follow-up questions based on the conversation with retry logic.
 
         Args:
             query: The user's original question

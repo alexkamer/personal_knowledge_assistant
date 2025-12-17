@@ -15,6 +15,7 @@ from app.core.exceptions import (
     http_exception_handler,
     knowledge_assistant_exception_handler,
 )
+from app.core.rate_limit import RateLimitMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -59,6 +60,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Add rate limiting middleware (60 requests per minute default)
+app.add_middleware(
+    RateLimitMiddleware,
+    requests_per_minute=60,
+    burst_size=100,
 )
 
 # Register exception handlers
