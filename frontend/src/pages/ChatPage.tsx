@@ -8,6 +8,7 @@ import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { TokenUsage } from '@/components/chat/TokenUsage';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
+import ActivityTimeline from '@/components/chat/ActivityTimeline';
 import {
   useConversations,
   useConversation,
@@ -18,7 +19,7 @@ import { chatService } from '@/services/chatService';
 import { useTheme } from '@/contexts/ThemeContext';
 import { downloadConversationAsMarkdown } from '@/utils/exportMarkdown';
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
-import type { Message } from '@/types/chat';
+import type { Message, ToolCall, ToolResult } from '@/types/chat';
 
 export function ChatPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -31,6 +32,8 @@ export function ChatPage() {
   const [streamingSources, setStreamingSources] = useState<any[]>([]);
   const [streamingSuggestedQuestions, setStreamingSuggestedQuestions] = useState<string[]>([]);
   const [streamingStatus, setStreamingStatus] = useState<string>('');
+  const [streamingToolCalls, setStreamingToolCalls] = useState<ToolCall[]>([]);
+  const [streamingToolResults, setStreamingToolResults] = useState<ToolResult[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeAgent, setActiveAgent] = useState<{name: string; display_name: string; description: string} | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -103,6 +106,8 @@ export function ChatPage() {
       setStreamingSources([]);
       setStreamingSuggestedQuestions([]);
       setStreamingStatus('');
+      setStreamingToolCalls([]);
+      setStreamingToolResults([]);
       setActiveAgent(null);
 
       // Get preferred model from localStorage
@@ -163,6 +168,14 @@ export function ChatPage() {
         // onStatus
         (status) => {
           setStreamingStatus(status);
+        },
+        // onToolCall
+        (toolCall) => {
+          setStreamingToolCalls((prev) => [...prev, toolCall]);
+        },
+        // onToolResult
+        (toolResult) => {
+          setStreamingToolResults((prev) => [...prev, toolResult]);
         }
       );
     } catch (error: any) {
@@ -593,6 +606,16 @@ export function ChatPage() {
                 </div>
                 <span className="text-sm">{streamingStatus}</span>
               </div>
+            </div>
+          )}
+
+          {/* Tool Activity Timeline - Show when tool calls are active */}
+          {(streamingToolCalls.length > 0 || streamingToolResults.length > 0) && isStreaming && (
+            <div className="px-6 py-4">
+              <ActivityTimeline
+                toolCalls={streamingToolCalls}
+                toolResults={streamingToolResults}
+              />
             </div>
           )}
 

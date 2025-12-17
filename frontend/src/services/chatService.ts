@@ -8,6 +8,8 @@ import type {
   Conversation,
   ConversationListResponse,
   ConversationWithMessages,
+  ToolCall,
+  ToolResult,
 } from '@/types/chat';
 import { apiClient } from './api';
 
@@ -48,7 +50,9 @@ export const chatService = {
     onError: (error: string) => void,
     onSuggestedQuestions?: (questions: string[]) => void,
     onAgent?: (agent: Agent) => void,
-    onStatus?: (status: string) => void
+    onStatus?: (status: string) => void,
+    onToolCall?: (toolCall: ToolCall) => void,
+    onToolResult?: (toolResult: ToolResult) => void
   ): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/chat/stream`, {
       method: 'POST',
@@ -108,6 +112,16 @@ export const chatService = {
                 case 'suggested_questions':
                   if (onSuggestedQuestions && data.questions) {
                     onSuggestedQuestions(data.questions);
+                  }
+                  break;
+                case 'tool_call':
+                  if (onToolCall && data.tool_call) {
+                    onToolCall(data.tool_call);
+                  }
+                  break;
+                case 'tool_result':
+                  if (onToolResult && data.tool_result) {
+                    onToolResult(data.tool_result);
                   }
                   break;
                 case 'done':

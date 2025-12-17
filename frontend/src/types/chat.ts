@@ -84,3 +84,18 @@ export interface ConversationListResponse {
   conversations: Conversation[];
   total: number;
 }
+
+// Tool-related types for agent reasoning
+export interface ToolCall {
+  tool: string;
+  parameters: Record<string, any>;
+  thought?: string;
+}
+
+export interface ToolResult {
+  tool: string;
+  success: boolean;
+  result: any;
+  error?: string;
+  metadata?: Record<string, any>;
+}
