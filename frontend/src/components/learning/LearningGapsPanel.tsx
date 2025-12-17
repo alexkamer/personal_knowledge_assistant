@@ -28,6 +28,9 @@ export interface LearningGapsPanelProps {
   /** Loading state */
   isLoading?: boolean;
 
+  /** Error message if detection failed */
+  error?: string | null;
+
   /** Callback to generate learning path */
   onGeneratePath?: () => void;
 }
@@ -39,6 +42,7 @@ export function LearningGapsPanel({
   gaps,
   learningPath,
   isLoading = false,
+  error = null,
   onGeneratePath,
 }: LearningGapsPanelProps) {
   const [expandedGapIndex, setExpandedGapIndex] = useState<number | null>(null);
@@ -90,6 +94,16 @@ export function LearningGapsPanel({
               <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Analyzing knowledge gaps...
+              </p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+              <AlertCircle className="w-16 h-16 text-red-600 dark:text-red-400" />
+              <p className="text-lg font-medium text-gray-900 dark:text-white">
+                Analysis Failed
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md">
+                {error}
               </p>
             </div>
           ) : gaps.length === 0 ? (

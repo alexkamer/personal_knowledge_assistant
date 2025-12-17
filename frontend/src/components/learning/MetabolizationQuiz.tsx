@@ -5,7 +5,7 @@
  * Innovation 4: Transforms passive consumption into active engagement.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, Brain, ChevronRight, ChevronLeft } from 'lucide-react';
 import type { MetabolizationQuestion, AnswerEvaluationResponse } from '@/services/metabolizationService';
 
@@ -56,12 +56,42 @@ export function MetabolizationQuiz({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Reset state when questions change
+  useEffect(() => {
+    if (questions.length > 0) {
+      setQuestionStates(questions.map(() => ({ answer: '', isSubmitted: false })));
+      setCurrentQuestionIndex(0);
+    }
+  }, [questions]);
+
   if (!isOpen) return null;
+
+  // Early return if no questions yet (loading state)
+  if (questions.length === 0 || questionStates.length === 0) {
+    return (
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-3xl w-full p-6">
+          <div className="flex flex-col items-center justify-center py-12 space-y-3">
+            <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Generating questions...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const currentQuestion = questions[currentQuestionIndex];
   const currentState = questionStates[currentQuestionIndex];
+
+  // Safety check: if currentState is undefined, don't render
+  if (!currentQuestion || !currentState) {
+    return null;
+  }
+
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-  const answeredCount = questionStates.filter((s) => s.isSubmitted).length;
+  const answeredCount = questionStates.filter((s) => s?.isSubmitted).length;
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -285,7 +315,7 @@ export function MetabolizationQuiz({
                   </div>
 
                   {/* Concepts Demonstrated */}
-                  {currentState.evaluation.concepts_demonstrated.length > 0 && (
+                  {currentState.evaluation?.concepts_demonstrated && currentState.evaluation.concepts_demonstrated.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">
                         Concepts You Demonstrated:
@@ -304,7 +334,7 @@ export function MetabolizationQuiz({
                   )}
 
                   {/* Suggestions */}
-                  {currentState.evaluation.suggestions.length > 0 && (
+                  {currentState.evaluation?.suggestions && currentState.evaluation.suggestions.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">
                         Suggestions for Improvement:

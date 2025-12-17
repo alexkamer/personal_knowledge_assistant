@@ -56,6 +56,7 @@ export function ChatPage() {
   const [learningPath, setLearningPath] = useState<LearningPathResponse | undefined>(undefined);
   const [isLoadingGaps, setIsLoadingGaps] = useState(false);
   const [gapsQuestion, setGapsQuestion] = useState('');
+  const [gapsError, setGapsError] = useState<string | null>(null);
 
   // Metabolization Quiz state
   const [showMetabolizationQuiz, setShowMetabolizationQuiz] = useState(false);
@@ -357,6 +358,7 @@ export function ChatPage() {
       setGapsQuestion(question);
       setShowLearningGaps(true);
       setLearningPath(undefined);
+      setGapsError(null);
 
       // Get conversation history for context
       const history = messages.map(m => ({
@@ -370,9 +372,17 @@ export function ChatPage() {
       );
 
       setLearningGaps(result.gaps);
-    } catch (error) {
+      setGapsError(null);
+    } catch (error: any) {
       console.error('Failed to detect learning gaps:', error);
       setLearningGaps([]);
+
+      // Set user-friendly error message
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        setGapsError('The analysis is taking longer than expected. This is a complex question that requires significant processing time. Please try again or simplify your question.');
+      } else {
+        setGapsError('Failed to analyze learning gaps. Please try again later.');
+      }
     } finally {
       setIsLoadingGaps(false);
     }
@@ -791,116 +801,121 @@ export function ChatPage() {
             onQuestionClick={handleSendMessage}
           />
 
-          {/* Clear Chat Button - shows when there are messages */}
-          {displayMessages.length > 0 && (
-            <div className="px-6 pb-2 flex justify-center">
+          {/* Settings and Learning Tools - Organized Layout */}
+          <div className="px-6 pb-3 space-y-2.5">
+            {/* Clear Chat Button - shows when there are messages */}
+            {displayMessages.length > 0 && (
+              <div className="flex justify-center pb-0.5">
+                <button
+                  onClick={handleClearChat}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                >
+                  <RotateCcw size={12} />
+                  Clear Chat
+                </button>
+              </div>
+            )}
+
+            {/* Search & Filter Settings - Horizontal */}
+            <div className="flex flex-wrap gap-1.5">
+              {/* Web Search Toggle */}
               <button
-                onClick={handleClearChat}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
+                  webSearchEnabled
+                    ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
               >
-                <RotateCcw size={14} />
-                Clear Chat
+                <Globe size={13} />
+                <span className="whitespace-nowrap">{webSearchEnabled ? '✓ Web' : 'Docs only'}</span>
+              </button>
+
+              {/* Include Notes Toggle */}
+              <button
+                onClick={() => setIncludeNotes(!includeNotes)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
+                  includeNotes
+                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-700'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <MessageSquare size={13} />
+                <span className="whitespace-nowrap">{includeNotes ? '✓ Notes' : 'Verified only'}</span>
+              </button>
+
+              {/* Socratic Learning Mode Toggle */}
+              <button
+                onClick={() => setSocraticMode(!socraticMode)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
+                  socraticMode
+                    ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+                title="Enable Socratic Learning Mode: AI teaches through guided questions instead of direct answers"
+              >
+                <GraduationCap size={13} />
+                <span className="whitespace-nowrap">{socraticMode ? '✓ Socratic' : 'Direct'}</span>
               </button>
             </div>
-          )}
 
-          {/* Web Search Toggle */}
-          <div className="px-6 pb-2">
-            <button
-              onClick={() => setWebSearchEnabled(!webSearchEnabled)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                webSearchEnabled
-                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              <Globe size={16} />
-              <span>{webSearchEnabled ? '✓ Using web + documents' : 'Documents only (no web search)'}</span>
-            </button>
+            {/* Learning Tools - Only show when conversation has messages */}
+            {messages.length > 0 && (
+              <div className="pt-1">
+                <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-1.5 px-1">
+                  Learning Tools
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {/* Learning Gaps Detector */}
+                  <button
+                    onClick={() => {
+                      const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+                      if (lastUserMessage) {
+                        handleDetectLearningGaps(lastUserMessage.content);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/30 dark:hover:to-yellow-900/30"
+                    title="Detect foundational knowledge gaps"
+                  >
+                    <Lightbulb size={13} />
+                    <span className="whitespace-nowrap">Gaps</span>
+                  </button>
+
+                  {/* Metabolization Quiz */}
+                  <button
+                    onClick={handleGenerateQuiz}
+                    disabled={isLoadingQuiz}
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700 hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Test your understanding with questions"
+                  >
+                    <Brain size={13} />
+                    <span className="whitespace-nowrap">{isLoadingQuiz ? 'Loading...' : 'Quiz Me'}</span>
+                  </button>
+
+                  {/* Knowledge Evolution Snapshot */}
+                  <button
+                    onClick={handleCaptureSnapshot}
+                    disabled={createSnapshot.isPending}
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700 hover:from-green-100 hover:to-teal-100 dark:hover:from-green-900/30 dark:hover:to-teal-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Capture your current understanding"
+                  >
+                    <BookOpen size={13} />
+                    <span className="whitespace-nowrap">{createSnapshot.isPending ? 'Saving...' : 'Snapshot'}</span>
+                  </button>
+
+                  {/* View Evolution Timeline */}
+                  <button
+                    onClick={() => setShowEvolutionTimeline(true)}
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-300 dark:border-indigo-700 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30"
+                    title="View knowledge evolution timeline"
+                  >
+                    <Clock size={13} />
+                    <span className="whitespace-nowrap">Timeline</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Include Notes Toggle */}
-          <div className="px-6 pb-2">
-            <button
-              onClick={() => setIncludeNotes(!includeNotes)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                includeNotes
-                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-700'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              <MessageSquare size={16} />
-              <span>{includeNotes ? '✓ Including personal notes' : 'Reputable sources only (no notes)'}</span>
-            </button>
-          </div>
-
-          {/* Socratic Learning Mode Toggle */}
-          <div className="px-6 pb-2">
-            <button
-              onClick={() => setSocraticMode(!socraticMode)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                socraticMode
-                  ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-              title="Enable Socratic Learning Mode: AI teaches through guided questions instead of direct answers"
-            >
-              <GraduationCap size={16} />
-              <span>{socraticMode ? '✓ Socratic Mode (Learning)' : 'Direct Answers'}</span>
-            </button>
-          </div>
-
-          {/* Learning Features - Only show when conversation has messages */}
-          {messages.length > 0 && (
-            <div className="px-6 pb-2 space-y-2">
-              {/* Learning Gaps Detector */}
-              <button
-                onClick={() => {
-                  const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-                  if (lastUserMessage) {
-                    handleDetectLearningGaps(lastUserMessage.content);
-                  }
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/30 dark:hover:to-yellow-900/30"
-                title="Detect foundational knowledge gaps for your last question"
-              >
-                <Lightbulb size={16} />
-                <span>Detect Learning Gaps</span>
-              </button>
-
-              {/* Metabolization Quiz */}
-              <button
-                onClick={handleGenerateQuiz}
-                disabled={isLoadingQuiz}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700 hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Test your understanding with comprehension questions"
-              >
-                <Brain size={16} />
-                <span>{isLoadingQuiz ? 'Generating Quiz...' : 'Quiz Me'}</span>
-              </button>
-
-              {/* Knowledge Evolution Snapshot */}
-              <button
-                onClick={handleCaptureSnapshot}
-                disabled={createSnapshot.isPending}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700 hover:from-green-100 hover:to-teal-100 dark:hover:from-green-900/30 dark:hover:to-teal-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Capture a snapshot of your current understanding"
-              >
-                <BookOpen size={16} />
-                <span>{createSnapshot.isPending ? 'Capturing...' : 'Capture Snapshot'}</span>
-              </button>
-
-              {/* View Evolution Timeline */}
-              <button
-                onClick={() => setShowEvolutionTimeline(true)}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-300 dark:border-indigo-700 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30"
-                title="View how your knowledge has evolved over time"
-              >
-                <Clock size={16} />
-                <span>View Evolution</span>
-              </button>
-            </div>
-          )}
 
           {/* Active Agent Indicator */}
           {activeAgent && (
@@ -936,6 +951,7 @@ export function ChatPage() {
         gaps={learningGaps}
         learningPath={learningPath}
         isLoading={isLoadingGaps}
+        error={gapsError}
         onGeneratePath={handleGenerateLearningPath}
       />
 

@@ -42,6 +42,9 @@ export const learningGapsService = {
         conversation_history: conversationHistory,
         context,
         model,
+      },
+      {
+        timeout: 120000, // 2 minutes for LLM processing
       }
     );
     return response.data;
@@ -68,6 +71,9 @@ export const learningGapsService = {
           estimated_time: gap.estimated_time,
         })),
         model,
+      },
+      {
+        timeout: 120000, // 2 minutes for LLM processing
       }
     );
     return response.data;
