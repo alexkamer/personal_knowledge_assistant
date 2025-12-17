@@ -4,13 +4,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
-import { MessageSquare, Plus, MoreVertical, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff, GraduationCap, Lightbulb } from 'lucide-react';
+import { MessageSquare, Plus, MoreVertical, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff, GraduationCap, Lightbulb, Brain, Clock, BookOpen } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { TokenUsage } from '@/components/chat/TokenUsage';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 import ActivityTimeline from '@/components/chat/ActivityTimeline';
 import { LearningGapsPanel } from '@/components/learning/LearningGapsPanel';
+import { MetabolizationQuiz } from '@/components/learning/MetabolizationQuiz';
+import { KnowledgeEvolutionTimeline } from '@/components/learning/KnowledgeEvolutionTimeline';
 import {
   useConversations,
   useConversation,
@@ -19,6 +21,8 @@ import {
 } from '@/hooks/useChat';
 import { chatService } from '@/services/chatService';
 import { learningGapsService, type LearningGap, type LearningPathResponse } from '@/services/learningGapsService';
+import { metabolizationService, type MetabolizationQuestion, type AnswerEvaluationResponse } from '@/services/metabolizationService';
+import { useCreateSnapshot } from '@/hooks/useKnowledgeEvolution';
 import { useTheme } from '@/contexts/ThemeContext';
 import { downloadConversationAsMarkdown } from '@/utils/exportMarkdown';
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
@@ -52,6 +56,17 @@ export function ChatPage() {
   const [learningPath, setLearningPath] = useState<LearningPathResponse | undefined>(undefined);
   const [isLoadingGaps, setIsLoadingGaps] = useState(false);
   const [gapsQuestion, setGapsQuestion] = useState('');
+
+  // Metabolization Quiz state
+  const [showMetabolizationQuiz, setShowMetabolizationQuiz] = useState(false);
+  const [quizQuestions, setQuizQuestions] = useState<MetabolizationQuestion[]>([]);
+  const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
+  const [quizContentTitle, setQuizContentTitle] = useState('');
+
+  // Knowledge Evolution Timeline state
+  const [showEvolutionTimeline, setShowEvolutionTimeline] = useState(false);
+
+  const createSnapshot = useCreateSnapshot();
 
   const menuRef = useRef<HTMLDivElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -377,6 +392,83 @@ export function ChatPage() {
       console.error('Failed to generate learning path:', error);
     } finally {
       setIsLoadingGaps(false);
+    }
+  };
+
+  const handleGenerateQuiz = async () => {
+    if (messages.length === 0) return;
+
+    try {
+      setIsLoadingQuiz(true);
+
+      // Get the last few messages to generate quiz from
+      const recentMessages = messages.slice(-6); // Last 3 exchanges
+      const content = recentMessages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+
+      // Use conversation title or first user message as title
+      const title = conversationData?.title || messages.find(m => m.role === 'user')?.content.slice(0, 50) || 'Conversation';
+
+      setQuizContentTitle(title);
+
+      const result = await metabolizationService.generateQuiz({
+        content,
+        content_type: 'note',
+        content_title: title,
+        num_questions: 3,
+      });
+
+      setQuizQuestions(result.questions);
+      setShowMetabolizationQuiz(true);
+    } catch (error) {
+      console.error('Failed to generate quiz:', error);
+    } finally {
+      setIsLoadingQuiz(false);
+    }
+  };
+
+  const handleSubmitQuizAnswer = async (
+    question: MetabolizationQuestion,
+    answer: string
+  ): Promise<AnswerEvaluationResponse> => {
+    // Get conversation content for context
+    const recentMessages = messages.slice(-6);
+    const contentContext = recentMessages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+
+    return await metabolizationService.evaluateAnswer({
+      question,
+      user_answer: answer,
+      content_context: contentContext,
+    });
+  };
+
+  const handleQuizComplete = (score: number) => {
+    console.log('Quiz completed with score:', score);
+    // Could store score in database here
+  };
+
+  const handleCaptureSnapshot = async () => {
+    if (!selectedConversationId || messages.length === 0) return;
+
+    try {
+      // Extract a topic from the conversation
+      const userMessages = messages.filter(m => m.role === 'user');
+      const lastUserMessage = userMessages[userMessages.length - 1];
+      const topic = lastUserMessage?.content.slice(0, 100) || 'Conversation Topic';
+
+      // Create snapshot
+      await createSnapshot.mutateAsync({
+        topic,
+        conversation_messages: messages.map(m => ({
+          role: m.role,
+          content: m.content
+        })),
+        conversation_id: selectedConversationId,
+      });
+
+      // Show success message (could add a toast notification here)
+      console.log('Snapshot captured successfully');
+    } catch (error) {
+      console.error('Failed to capture snapshot:', error);
     }
   };
 
@@ -758,9 +850,10 @@ export function ChatPage() {
             </button>
           </div>
 
-          {/* Learning Gaps Detector Button */}
+          {/* Learning Features - Only show when conversation has messages */}
           {messages.length > 0 && (
-            <div className="px-6 pb-2">
+            <div className="px-6 pb-2 space-y-2">
+              {/* Learning Gaps Detector */}
               <button
                 onClick={() => {
                   const lastUserMessage = messages.filter(m => m.role === 'user').pop();
@@ -768,11 +861,43 @@ export function ChatPage() {
                     handleDetectLearningGaps(lastUserMessage.content);
                   }
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/30 dark:hover:to-yellow-900/30"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/30 dark:hover:to-yellow-900/30"
                 title="Detect foundational knowledge gaps for your last question"
               >
                 <Lightbulb size={16} />
                 <span>Detect Learning Gaps</span>
+              </button>
+
+              {/* Metabolization Quiz */}
+              <button
+                onClick={handleGenerateQuiz}
+                disabled={isLoadingQuiz}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700 hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Test your understanding with comprehension questions"
+              >
+                <Brain size={16} />
+                <span>{isLoadingQuiz ? 'Generating Quiz...' : 'Quiz Me'}</span>
+              </button>
+
+              {/* Knowledge Evolution Snapshot */}
+              <button
+                onClick={handleCaptureSnapshot}
+                disabled={createSnapshot.isPending}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700 hover:from-green-100 hover:to-teal-100 dark:hover:from-green-900/30 dark:hover:to-teal-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Capture a snapshot of your current understanding"
+              >
+                <BookOpen size={16} />
+                <span>{createSnapshot.isPending ? 'Capturing...' : 'Capture Snapshot'}</span>
+              </button>
+
+              {/* View Evolution Timeline */}
+              <button
+                onClick={() => setShowEvolutionTimeline(true)}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-300 dark:border-indigo-700 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30"
+                title="View how your knowledge has evolved over time"
+              >
+                <Clock size={16} />
+                <span>View Evolution</span>
               </button>
             </div>
           )}
@@ -812,6 +937,24 @@ export function ChatPage() {
         learningPath={learningPath}
         isLoading={isLoadingGaps}
         onGeneratePath={handleGenerateLearningPath}
+      />
+
+      {/* Metabolization Quiz */}
+      <MetabolizationQuiz
+        isOpen={showMetabolizationQuiz}
+        onClose={() => setShowMetabolizationQuiz(false)}
+        contentTitle={quizContentTitle}
+        contentType="note"
+        questions={quizQuestions}
+        isLoading={isLoadingQuiz}
+        onSubmitAnswer={handleSubmitQuizAnswer}
+        onComplete={handleQuizComplete}
+      />
+
+      {/* Knowledge Evolution Timeline */}
+      <KnowledgeEvolutionTimeline
+        isOpen={showEvolutionTimeline}
+        onClose={() => setShowEvolutionTimeline(false)}
       />
 
       {/* Keyboard Shortcuts Modal */}
