@@ -4,12 +4,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
-import { MessageSquare, Plus, MoreVertical, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff, GraduationCap } from 'lucide-react';
+import { MessageSquare, Plus, MoreVertical, AlertCircle, RotateCcw, Search, X, Globe, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff, GraduationCap, Lightbulb } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { TokenUsage } from '@/components/chat/TokenUsage';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 import ActivityTimeline from '@/components/chat/ActivityTimeline';
+import { LearningGapsPanel } from '@/components/learning/LearningGapsPanel';
 import {
   useConversations,
   useConversation,
@@ -17,6 +18,7 @@ import {
   useUpdateConversation,
 } from '@/hooks/useChat';
 import { chatService } from '@/services/chatService';
+import { learningGapsService, type LearningGap, type LearningPathResponse } from '@/services/learningGapsService';
 import { useTheme } from '@/contexts/ThemeContext';
 import { downloadConversationAsMarkdown } from '@/utils/exportMarkdown';
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
@@ -43,6 +45,13 @@ export function ChatPage() {
   const [editTitle, setEditTitle] = useState('');
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [prefillQuestion, setPrefillQuestion] = useState<string>('');
+
+  // Learning Gaps state
+  const [showLearningGaps, setShowLearningGaps] = useState(false);
+  const [learningGaps, setLearningGaps] = useState<LearningGap[]>([]);
+  const [learningPath, setLearningPath] = useState<LearningPathResponse | undefined>(undefined);
+  const [isLoadingGaps, setIsLoadingGaps] = useState(false);
+  const [gapsQuestion, setGapsQuestion] = useState('');
 
   const menuRef = useRef<HTMLDivElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -325,6 +334,50 @@ export function ChatPage() {
 
     // Resend the user message
     await handleSendMessage(userMessage.content);
+  };
+
+  const handleDetectLearningGaps = async (question: string) => {
+    try {
+      setIsLoadingGaps(true);
+      setGapsQuestion(question);
+      setShowLearningGaps(true);
+      setLearningPath(undefined);
+
+      // Get conversation history for context
+      const history = messages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      const result = await learningGapsService.detectGaps(
+        question,
+        history
+      );
+
+      setLearningGaps(result.gaps);
+    } catch (error) {
+      console.error('Failed to detect learning gaps:', error);
+      setLearningGaps([]);
+    } finally {
+      setIsLoadingGaps(false);
+    }
+  };
+
+  const handleGenerateLearningPath = async () => {
+    if (learningGaps.length === 0) return;
+
+    try {
+      setIsLoadingGaps(true);
+      const result = await learningGapsService.generateLearningPath(
+        gapsQuestion,
+        learningGaps
+      );
+      setLearningPath(result);
+    } catch (error) {
+      console.error('Failed to generate learning path:', error);
+    } finally {
+      setIsLoadingGaps(false);
+    }
   };
 
   // Define keyboard shortcuts
@@ -705,6 +758,25 @@ export function ChatPage() {
             </button>
           </div>
 
+          {/* Learning Gaps Detector Button */}
+          {messages.length > 0 && (
+            <div className="px-6 pb-2">
+              <button
+                onClick={() => {
+                  const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+                  if (lastUserMessage) {
+                    handleDetectLearningGaps(lastUserMessage.content);
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/30 dark:hover:to-yellow-900/30"
+                title="Detect foundational knowledge gaps for your last question"
+              >
+                <Lightbulb size={16} />
+                <span>Detect Learning Gaps</span>
+              </button>
+            </div>
+          )}
+
           {/* Active Agent Indicator */}
           {activeAgent && (
             <div className="px-6 pb-2">
@@ -730,6 +802,17 @@ export function ChatPage() {
           />
         </main>
       </div>
+
+      {/* Learning Gaps Panel */}
+      <LearningGapsPanel
+        isOpen={showLearningGaps}
+        onClose={() => setShowLearningGaps(false)}
+        userQuestion={gapsQuestion}
+        gaps={learningGaps}
+        learningPath={learningPath}
+        isLoading={isLoadingGaps}
+        onGeneratePath={handleGenerateLearningPath}
+      />
 
       {/* Keyboard Shortcuts Modal */}
       <KeyboardShortcutsModal
