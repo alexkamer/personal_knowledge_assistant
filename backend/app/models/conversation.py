@@ -27,6 +27,11 @@ class Conversation(Base, UUIDMixin, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="Message.created_at",
     )
+    conceptual_snapshots: Mapped[list["ConceptualSnapshot"]] = relationship(
+        "ConceptualSnapshot",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Conversation(id={self.id}, title='{self.title}')>"
