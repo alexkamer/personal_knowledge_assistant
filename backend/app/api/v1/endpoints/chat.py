@@ -126,6 +126,7 @@ async def chat(
                 query=request.message,
                 top_k=request.top_k,
                 include_web_search=request.include_web_search,
+                exclude_notes=not request.include_notes,  # Invert: include_notes=True means exclude_notes=False
             )
         else:
             logger.info("Detected conversational query, skipping RAG retrieval")
@@ -257,20 +258,36 @@ async def chat_stream(
             citations = []
             metadata = {}
             if not is_conversational and agent_config.use_rag:
+                # Send status: analyzing query
+                yield f'data: {json.dumps({"type": "status", "status": "Analyzing your question..."})}\n\n'
+
+                # Send status: searching documents
+                yield f'data: {json.dumps({"type": "status", "status": "Searching knowledge base..."})}\n\n'
+
                 orchestrator = get_rag_orchestrator()
                 context, citations, metadata = await orchestrator.process_query(
                     db=db,
                     query=clean_message,  # Use clean message without @ mention
                     force_web_search=request.include_web_search if request.include_web_search is not None else None,
                     top_k=agent_config.rag_top_k,  # Use agent's RAG settings
+                    exclude_notes=not request.include_notes,  # Invert: include_notes=True means exclude_notes=False
                 )
+
+                # Send status: processing results
+                if citations:
+                    yield f'data: {json.dumps({"type": "status", "status": f"Found {len(citations)} relevant sources..."})}\n\n'
+
+                # Send status: generating answer
+                yield f'data: {json.dumps({"type": "status", "status": "Generating answer..."})}\n\n'
             else:
                 if is_conversational:
                     logger.info("Detected conversational query, skipping RAG retrieval")
                     metadata = {"query_type": "conversational"}
+                    yield f'data: {json.dumps({"type": "status", "status": "Generating answer..."})}\n\n'
                 else:
                     logger.info(f"Agent {agent_config.name} has RAG disabled")
                     metadata = {"query_type": "no_rag"}
+                    yield f'data: {json.dumps({"type": "status", "status": "Generating answer..."})}\n\n'
 
             # Send sources with metadata
             sources_data = {

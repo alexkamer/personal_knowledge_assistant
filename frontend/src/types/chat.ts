@@ -68,6 +68,7 @@ export interface ChatRequest {
   model?: string;
   top_k?: number;
   include_web_search?: boolean;
+  include_notes?: boolean;
 }
 
 export interface ChatResponse {

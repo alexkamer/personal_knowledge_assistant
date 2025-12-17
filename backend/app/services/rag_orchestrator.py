@@ -28,6 +28,7 @@ class RAGOrchestrator:
         query: str,
         force_web_search: bool = None,
         top_k: int = None,
+        exclude_notes: bool = True,
     ) -> Tuple[str, List[dict], Dict[str, Any]]:
         """
         Process a query through the intelligent RAG pipeline.
@@ -37,6 +38,7 @@ class RAGOrchestrator:
             query: User's question
             force_web_search: Force web search on/off (overrides analysis)
             top_k: Override for number of chunks to retrieve (for agent config)
+            exclude_notes: Exclude notes from search (default: True for reputable sources only)
 
         Returns:
             Tuple of (context, citations, metadata)
@@ -78,7 +80,7 @@ class RAGOrchestrator:
             db=db,
             query=query,
             top_k=top_k_initial,
-            exclude_notes=True
+            exclude_notes=exclude_notes
         )
 
         logger.info(f"Retrieved {len(chunks)} initial chunks")

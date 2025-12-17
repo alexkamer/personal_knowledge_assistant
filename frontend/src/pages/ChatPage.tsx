@@ -26,10 +26,12 @@ export function ChatPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(true); // Changed default to true
+  const [includeNotes, setIncludeNotes] = useState<boolean>(false); // Default to false - only use reputable sources
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [streamingSources, setStreamingSources] = useState<any[]>([]);
   const [streamingSuggestedQuestions, setStreamingSuggestedQuestions] = useState<string[]>([]);
+  const [streamingStatus, setStreamingStatus] = useState<string>('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeAgent, setActiveAgent] = useState<{name: string; display_name: string; description: string} | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -103,6 +105,7 @@ export function ChatPage() {
       setStreamingMessage('');
       setStreamingSources([]);
       setStreamingSuggestedQuestions([]);
+      setStreamingStatus('');
       setActiveAgent(null);
 
       // Get preferred model from localStorage
@@ -117,6 +120,7 @@ export function ChatPage() {
           conversation_title: selectedConversationId ? undefined : `Chat: ${message.slice(0, 50)}`,
           model: preferredModel,
           include_web_search: webSearchEnabled,
+          include_notes: includeNotes,
         },
         // onChunk
         (chunk) => {
@@ -158,6 +162,10 @@ export function ChatPage() {
         // onAgent
         (agent) => {
           setActiveAgent(agent);
+        },
+        // onStatus
+        (status) => {
+          setStreamingStatus(status);
         }
       );
     } catch (error: any) {
@@ -577,6 +585,20 @@ export function ChatPage() {
             </div>
           )}
 
+          {/* Loading Status - shows during streaming */}
+          {isStreaming && streamingStatus && !streamingMessage && (
+            <div className="px-6 py-4">
+              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+                <span className="text-sm">{streamingStatus}</span>
+              </div>
+            </div>
+          )}
+
           <MessageList
             messages={displayMessages}
             isLoading={isLoadingConversation}
@@ -613,6 +635,21 @@ export function ChatPage() {
             >
               <Globe size={16} />
               <span>{webSearchEnabled ? '✓ Using web + documents' : 'Documents only (no web search)'}</span>
+            </button>
+          </div>
+
+          {/* Include Notes Toggle */}
+          <div className="px-6 pb-2">
+            <button
+              onClick={() => setIncludeNotes(!includeNotes)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                includeNotes
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-700'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              <MessageSquare size={16} />
+              <span>{includeNotes ? '✓ Including personal notes' : 'Reputable sources only (no notes)'}</span>
             </button>
           </div>
 

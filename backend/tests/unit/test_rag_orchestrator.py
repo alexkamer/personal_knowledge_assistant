@@ -488,3 +488,146 @@ class TestRAGOrchestrator:
 
         # Rerank should not be called for empty chunks
         mock_rag.rerank_chunks.assert_not_called()
+
+    @patch('app.services.rag_orchestrator.settings')
+    @patch('app.services.rag_orchestrator.get_query_analyzer')
+    @patch('app.services.rag_orchestrator.get_rag_service')
+    @pytest.mark.asyncio
+    async def test_process_query_exclude_notes_true_by_default(
+        self, mock_get_rag, mock_get_analyzer, mock_settings
+    ):
+        """Test that exclude_notes defaults to True (reputable sources only)."""
+        mock_analyzer = Mock()
+        mock_analyzer.analyze.return_value = {
+            "query_type": QueryType.FACTUAL,
+            "complexity": QueryComplexity.SIMPLE,
+            "needs_retrieval": True,
+            "needs_web_search": False,
+            "retrieval_params": {"initial_k": 10, "top_k": 3, "max_final_chunks": 3},
+        }
+        mock_get_analyzer.return_value = mock_analyzer
+
+        mock_rag = Mock()
+        mock_chunk = Mock()
+        mock_chunk.distance = 0.1
+        mock_rag.search_relevant_chunks = AsyncMock(return_value=[mock_chunk])
+        mock_rag.rerank_chunks.return_value = [mock_chunk]
+        mock_rag.assemble_context.return_value = ("Context", [])
+        mock_get_rag.return_value = mock_rag
+
+        mock_settings.rerank_enabled = False
+        mock_settings.max_context_tokens = 1000
+        mock_settings.web_search_confidence_threshold = 0.3
+
+        orchestrator = RAGOrchestrator()
+        mock_db = AsyncMock()
+
+        # Call without specifying exclude_notes
+        context, citations, metadata = await orchestrator.process_query(
+            db=mock_db,
+            query="Test query"
+        )
+
+        # Should use default exclude_notes=True
+        mock_rag.search_relevant_chunks.assert_called_once_with(
+            db=mock_db,
+            query="Test query",
+            top_k=10,
+            exclude_notes=True
+        )
+
+    @patch('app.services.rag_orchestrator.settings')
+    @patch('app.services.rag_orchestrator.get_query_analyzer')
+    @patch('app.services.rag_orchestrator.get_rag_service')
+    @pytest.mark.asyncio
+    async def test_process_query_with_exclude_notes_false(
+        self, mock_get_rag, mock_get_analyzer, mock_settings
+    ):
+        """Test that exclude_notes=False includes notes in search."""
+        mock_analyzer = Mock()
+        mock_analyzer.analyze.return_value = {
+            "query_type": QueryType.FACTUAL,
+            "complexity": QueryComplexity.SIMPLE,
+            "needs_retrieval": True,
+            "needs_web_search": False,
+            "retrieval_params": {"initial_k": 10, "top_k": 3, "max_final_chunks": 3},
+        }
+        mock_get_analyzer.return_value = mock_analyzer
+
+        mock_rag = Mock()
+        mock_chunk = Mock()
+        mock_chunk.distance = 0.1
+        mock_rag.search_relevant_chunks = AsyncMock(return_value=[mock_chunk])
+        mock_rag.rerank_chunks.return_value = [mock_chunk]
+        mock_rag.assemble_context.return_value = ("Context with notes", [])
+        mock_get_rag.return_value = mock_rag
+
+        mock_settings.rerank_enabled = False
+        mock_settings.max_context_tokens = 1000
+        mock_settings.web_search_confidence_threshold = 0.3
+
+        orchestrator = RAGOrchestrator()
+        mock_db = AsyncMock()
+
+        # Call with exclude_notes=False (include notes)
+        context, citations, metadata = await orchestrator.process_query(
+            db=mock_db,
+            query="Test query",
+            exclude_notes=False
+        )
+
+        # Should pass exclude_notes=False to search
+        mock_rag.search_relevant_chunks.assert_called_once_with(
+            db=mock_db,
+            query="Test query",
+            top_k=10,
+            exclude_notes=False
+        )
+
+    @patch('app.services.rag_orchestrator.settings')
+    @patch('app.services.rag_orchestrator.get_query_analyzer')
+    @patch('app.services.rag_orchestrator.get_rag_service')
+    @pytest.mark.asyncio
+    async def test_process_query_with_exclude_notes_true_explicit(
+        self, mock_get_rag, mock_get_analyzer, mock_settings
+    ):
+        """Test explicitly setting exclude_notes=True."""
+        mock_analyzer = Mock()
+        mock_analyzer.analyze.return_value = {
+            "query_type": QueryType.FACTUAL,
+            "complexity": QueryComplexity.SIMPLE,
+            "needs_retrieval": True,
+            "needs_web_search": False,
+            "retrieval_params": {"initial_k": 10, "top_k": 3, "max_final_chunks": 3},
+        }
+        mock_get_analyzer.return_value = mock_analyzer
+
+        mock_rag = Mock()
+        mock_chunk = Mock()
+        mock_chunk.distance = 0.1
+        mock_rag.search_relevant_chunks = AsyncMock(return_value=[mock_chunk])
+        mock_rag.rerank_chunks.return_value = [mock_chunk]
+        mock_rag.assemble_context.return_value = ("Context without notes", [])
+        mock_get_rag.return_value = mock_rag
+
+        mock_settings.rerank_enabled = False
+        mock_settings.max_context_tokens = 1000
+        mock_settings.web_search_confidence_threshold = 0.3
+
+        orchestrator = RAGOrchestrator()
+        mock_db = AsyncMock()
+
+        # Call with explicit exclude_notes=True
+        context, citations, metadata = await orchestrator.process_query(
+            db=mock_db,
+            query="Test query",
+            exclude_notes=True
+        )
+
+        # Should pass exclude_notes=True to search
+        mock_rag.search_relevant_chunks.assert_called_once_with(
+            db=mock_db,
+            query="Test query",
+            top_k=10,
+            exclude_notes=True
+        )

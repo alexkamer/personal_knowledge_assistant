@@ -38,14 +38,21 @@ A personal knowledge assistant webapp that combines note-taking with AI-powered 
 5. Embeddings stored in ChromaDB
 6. Chunk metadata links to PostgreSQL
 
-**Retrieval (RAG)**:
-1. User asks question
-2. Question embedded using same model
-3. ChromaDB vector search (top K=10)
-4. Full chunks fetched from PostgreSQL
-5. Context assembled with sources
-6. Sent to Azure OpenAI GPT-4
-7. Response returned with citations
+**Retrieval (RAG)** - with real-time status updates:
+1. User asks question via chat interface
+2. User can toggle "Include Personal Notes" (default: OFF for reputable sources only)
+3. **Status: "Analyzing your question..."** - Query analyzer determines query type, complexity, and retrieval strategy
+4. **Status: "Searching knowledge base..."** - Question embedded using sentence-transformers
+5. ChromaDB hybrid search (semantic + BM25) retrieves top K chunks (default: 10)
+6. Chunks filtered based on `include_notes` parameter:
+   - `include_notes=false` (default): Only documents and web sources
+   - `include_notes=true`: Includes personal notes in results
+7. **Status: "Found X relevant sources..."** - Results re-ranked using cross-encoder
+8. Full chunks fetched from PostgreSQL with metadata
+9. **Status: "Generating answer..."** - Context assembled with source deduplication
+10. Context + query sent to Ollama (local LLM)
+11. Response streamed back in real-time with citations
+12. Sources displayed with links to original content
 
 ## Development Workflow
 
@@ -74,16 +81,25 @@ alembic upgrade head
 
 ### Testing
 
-Backend:
+Backend (351 tests, 70% coverage):
 ```bash
 cd backend
-pytest --cov=app tests/
+uv run python -m pytest tests/ -v
 ```
 
-Frontend:
+Frontend (474 tests):
 ```bash
 cd frontend
 npm test
+```
+
+Run specific test suites:
+```bash
+# Backend - RAG orchestrator tests (includes include_notes tests)
+uv run python -m pytest tests/unit/test_rag_orchestrator.py -v
+
+# Frontend - ChatPage tests (includes loading states and notes toggle tests)
+npm test -- ChatPage.test.tsx
 ```
 
 ## Key Design Decisions
@@ -234,10 +250,16 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 - Code reviews before merge (when team grows)
 
 ### Testing
-- Unit tests for services and utilities
-- Integration tests for API endpoints
-- Component tests for React
-- Mock external dependencies (Azure OpenAI, ChromaDB in tests)
+- **Backend**: 351 tests with 70% coverage
+  - Unit tests for all services (RAG, orchestrator, agents, embeddings, etc.)
+  - Integration tests for API endpoints
+  - Mock external dependencies (Ollama, ChromaDB in tests)
+- **Frontend**: 474 tests
+  - Component tests for all UI components
+  - Service tests for API client
+  - Hook tests for React Query integration
+  - Feature tests for loading states and notes toggle
+- **Test Quality**: Comprehensive coverage of happy paths, edge cases, and error handling
 
 ### Documentation
 - Docstrings on all public functions
@@ -490,12 +512,41 @@ This project has access to several Model Context Protocol (MCP) servers that ext
 4. Implement in project
 ```
 
+## Recent Features (2025-12-16)
+
+### Real-Time RAG Pipeline Feedback
+- **What**: Live status updates during query processing
+- **Why**: Improves user experience by showing what's happening behind the scenes
+- **How**:
+  - Backend sends `onStatus` callbacks through SSE streaming
+  - Frontend displays status messages with animated loading dots
+  - Status updates: "Analyzing..." → "Searching..." → "Found X sources..." → "Generating..."
+- **Files**:
+  - Backend: `app/api/v1/endpoints/chat.py:372-373` (stream_chat_response)
+  - Frontend: `src/pages/ChatPage.tsx:78-80, 164-172`
+- **Tests**: `frontend/src/pages/ChatPage.test.tsx:94-221` (3 tests)
+
+### Configurable Source Filtering (Notes Toggle)
+- **What**: Users can choose to include or exclude personal notes from search results
+- **Why**: Separates verified/reputable sources (documents, web) from personal thoughts (notes)
+- **Default**: Notes excluded (reputable sources only)
+- **How**:
+  - Frontend toggle button controls `include_notes` parameter
+  - Backend `exclude_notes` parameter filters chunks by source type
+  - Filters applied at vector search level (ChromaDB + PostgreSQL)
+- **Files**:
+  - Backend: `app/services/rag_orchestrator.py:31, 83`, `app/services/rag_service.py:93-103`
+  - Frontend: `src/pages/ChatPage.tsx:60-62, 201-209`
+- **Tests**:
+  - Frontend: `frontend/src/pages/ChatPage.test.tsx:223-348` (5 tests)
+  - Backend: `backend/tests/unit/test_rag_orchestrator.py:492-633` (3 tests)
+
 ## Project Status
 
 - [x] Phase 1: Foundation - Infrastructure setup
-- [ ] Phase 2: Note Management - CRUD operations
-- [ ] Phase 3: Document Processing - Upload and embedding pipeline
-- [ ] Phase 4: RAG & Chat - AI-powered Q&A
+- [x] Phase 2: Note Management - CRUD operations
+- [x] Phase 3: Document Processing - Upload and embedding pipeline
+- [x] Phase 4: RAG & Chat - AI-powered Q&A with real-time feedback
 - [ ] Phase 5: Polish - UI/UX improvements and optimization
 
-Last updated: 2025-12-15
+Last updated: 2025-12-16

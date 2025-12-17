@@ -6,10 +6,19 @@ A full-featured knowledge management system with AI-powered question answering, 
 
 - **Note Management**: Create, edit, and organize notes with Markdown support
 - **AI-Powered Q&A**: Ask questions about your knowledge base using RAG (Retrieval-Augmented Generation)
+- **Real-Time Pipeline Feedback**: See live status updates as the RAG pipeline processes your question
+  - "Analyzing your question..."
+  - "Searching knowledge base..."
+  - "Found X relevant sources..."
+  - "Generating answer..."
+- **Configurable Source Filtering**: Toggle between:
+  - **Reputable Sources Only** (default): Search only documents and web sources
+  - **Including Personal Notes**: Include your personal notes in search results
 - **Semantic Search**: Find relevant information across all your notes and documents
 - **Document Processing**: Upload and process PDFs, DOCX, TXT, and Markdown files
 - **Chat Interface**: Natural conversation with your knowledge base
 - **Source Citations**: Every AI answer includes links to source material
+- **Comprehensive Testing**: 474 frontend tests + 351 backend tests (70% coverage)
 
 ## Tech Stack
 
@@ -136,16 +145,25 @@ personal_knowledge_assistant/
 
 ### Running Tests
 
-Backend:
+Backend (351 tests, 70% coverage):
 ```bash
 cd backend
-pytest --cov=app tests/
+uv run python -m pytest tests/ -v
 ```
 
-Frontend:
+Frontend (474 tests):
 ```bash
 cd frontend
 npm test
+```
+
+Run specific test files:
+```bash
+# Frontend - specific test file
+npm test -- ChatPage.test.tsx
+
+# Backend - specific test file
+uv run python -m pytest tests/unit/test_rag_orchestrator.py -v
 ```
 
 ### Code Quality
@@ -223,12 +241,20 @@ Once the backend is running, visit http://localhost:8000/docs for interactive AP
 
 ### RAG Pipeline
 
-1. **Ingestion**: Documents are uploaded and processed
-2. **Chunking**: Text is split into 512-token chunks with 50-token overlap
-3. **Embedding**: Chunks are embedded using sentence-transformers
-4. **Storage**: Embeddings stored in ChromaDB, metadata in PostgreSQL
-5. **Retrieval**: User queries are embedded and matched against stored embeddings
-6. **Generation**: Top results are sent to Azure OpenAI for answer generation
+**Ingestion**:
+1. Documents are uploaded and processed
+2. Text is split into 512-token chunks with 50-token overlap
+3. Chunks are embedded using sentence-transformers
+4. Embeddings stored in ChromaDB, metadata in PostgreSQL
+
+**Retrieval** (with real-time status updates):
+1. **"Analyzing your question..."** - Query is analyzed for type and complexity
+2. **"Searching knowledge base..."** - Query is embedded and semantic search is performed
+3. **"Found X relevant sources..."** - Top results are retrieved and re-ranked
+4. **"Generating answer..."** - Context is assembled from chunks
+5. Sources are filtered based on user preference (documents only or including notes)
+6. Top results are sent to Ollama (local LLM) for answer generation
+7. Response is streamed back with source citations
 
 ### Key Components
 

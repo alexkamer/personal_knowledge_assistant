@@ -47,7 +47,8 @@ export const chatService = {
     onDone: (messageId: string) => void,
     onError: (error: string) => void,
     onSuggestedQuestions?: (questions: string[]) => void,
-    onAgent?: (agent: Agent) => void
+    onAgent?: (agent: Agent) => void,
+    onStatus?: (status: string) => void
   ): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/chat/stream`, {
       method: 'POST',
@@ -91,6 +92,11 @@ export const chatService = {
                 case 'agent':
                   if (onAgent && data.agent) {
                     onAgent(data.agent);
+                  }
+                  break;
+                case 'status':
+                  if (onStatus && data.status) {
+                    onStatus(data.status);
                   }
                   break;
                 case 'sources':
