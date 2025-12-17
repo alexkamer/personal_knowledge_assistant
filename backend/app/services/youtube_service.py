@@ -4,6 +4,7 @@ YouTube video processing service.
 Handles transcript extraction, metadata fetching, and video processing.
 """
 import logging
+import os
 import re
 from typing import Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
@@ -17,6 +18,10 @@ from youtube_transcript_api._errors import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Check if proxy credentials are configured
+WEBSHARE_PROXY_USERNAME = os.getenv("WEBSHARE_PROXY_USERNAME")
+WEBSHARE_PROXY_PASSWORD = os.getenv("WEBSHARE_PROXY_PASSWORD")
 
 
 class YouTubeService:
@@ -91,8 +96,25 @@ class YouTubeService:
             languages = ['en']
 
         try:
-            # Fetch transcript directly
-            api = YouTubeTranscriptApi()
+            # Configure proxy if credentials are available
+            proxy_config = None
+            if WEBSHARE_PROXY_USERNAME and WEBSHARE_PROXY_PASSWORD:
+                try:
+                    from youtube_transcript_api.proxies import WebshareProxyConfig
+                    proxy_config = WebshareProxyConfig(
+                        proxy_username=WEBSHARE_PROXY_USERNAME,
+                        proxy_password=WEBSHARE_PROXY_PASSWORD,
+                    )
+                    logger.info("Using Webshare rotating proxy for YouTube transcript")
+                except ImportError:
+                    logger.warning("Webshare proxy config not available, proceeding without proxy")
+
+            # Fetch transcript with or without proxy
+            if proxy_config:
+                api = YouTubeTranscriptApi(proxy_config=proxy_config)
+            else:
+                api = YouTubeTranscriptApi()
+
             fetched = api.fetch(video_id, languages=languages)
 
             # Convert snippet dataclasses to dicts
