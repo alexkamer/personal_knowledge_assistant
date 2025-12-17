@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Youtube, Search, FileText, Sparkles, AlertCircle, Loader2, CheckCircle, X, Copy, Check, User, Eye } from 'lucide-react';
+import { Youtube, Search, FileText, Sparkles, AlertCircle, Loader2, CheckCircle, X, Copy, Check, User, Eye, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { youtubeService, TranscriptData, VideoSummary, VideoMetadata } from '@/services/youtubeService';
 
 export function YouTubePage() {
@@ -20,8 +20,18 @@ export function YouTubePage() {
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [copiedTranscript, setCopiedTranscript] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    overview: true,
+    keyPoints: true,
+    topics: true,
+  });
 
   const transcriptRefs = useRef<{ [key: number]: HTMLButtonElement | null }>({});
+
+  // Toggle section expansion
+  const toggleSection = (section: 'overview' | 'keyPoints' | 'topics') => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   // Load video from URL params on mount
   useEffect(() => {
@@ -138,6 +148,48 @@ export function YouTubePage() {
     await navigator.clipboard.writeText(text);
     setCopiedSummary(true);
     setTimeout(() => setCopiedSummary(false), 2000);
+  };
+
+  // Download summary as markdown
+  const handleDownloadSummary = () => {
+    if (!summary || !metadata) return;
+
+    const markdownContent = `# ${metadata.title}
+
+**Channel**: ${metadata.channel}
+**Views**: ${youtubeService.formatViewCount(metadata.view_count)}
+**Published**: ${youtubeService.formatUploadDate(metadata.upload_date)}
+**Video URL**: https://www.youtube.com/watch?v=${metadata.video_id}
+
+---
+
+## Summary
+
+${summary.summary}
+
+## Key Points
+
+${summary.key_points.map(p => `- ${p}`).join('\n')}
+
+## Topics Covered
+
+${summary.topics.map(t => `- ${t}`).join('\n')}
+
+---
+
+*Generated with Personal Knowledge Assistant*
+`;
+
+    // Create a blob and download
+    const blob = new Blob([markdownContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${metadata.video_id}-summary.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Get filtered transcript entries
@@ -361,61 +413,103 @@ export function YouTubePage() {
 
                 {/* Summary Display */}
                 {summary && !summarizing && (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* Overall Summary */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                        Overview
-                      </h4>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {summary.summary}
-                      </p>
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => toggleSection('overview')}
+                        className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      >
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                          Overview
+                        </h4>
+                        {expandedSections.overview ? (
+                          <ChevronUp className="w-4 h-4 text-gray-500" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-500" />
+                        )}
+                      </button>
+                      {expandedSections.overview && (
+                        <div className="px-3 pb-3">
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                            {summary.summary}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Key Points */}
                     {summary.key_points.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                          Key Points
-                        </h4>
-                        <ul className="space-y-2">
-                          {summary.key_points.map((point, idx) => (
-                            <li
-                              key={idx}
-                              className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
-                            >
-                              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                              <span>{point}</span>
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => toggleSection('keyPoints')}
+                          className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                            Key Points ({summary.key_points.length})
+                          </h4>
+                          {expandedSections.keyPoints ? (
+                            <ChevronUp className="w-4 h-4 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                          )}
+                        </button>
+                        {expandedSections.keyPoints && (
+                          <div className="px-3 pb-3">
+                            <ul className="space-y-2">
+                              {summary.key_points.map((point, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+                                >
+                                  <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                                  <span>{point}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Topics */}
                     {summary.topics.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                          Topics Covered
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {summary.topics.map((topic, idx) => (
-                            <span
-                              key={idx}
-                              className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-xs font-medium"
-                            >
-                              {topic}
-                            </span>
-                          ))}
-                        </div>
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => toggleSection('topics')}
+                          className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                            Topics Covered ({summary.topics.length})
+                          </h4>
+                          {expandedSections.topics ? (
+                            <ChevronUp className="w-4 h-4 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                          )}
+                        </button>
+                        {expandedSections.topics && (
+                          <div className="px-3 pb-3">
+                            <div className="flex flex-wrap gap-2">
+                              {summary.topics.map((topic, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-xs font-medium"
+                                >
+                                  {topic}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={handleCopySummary}
-                        className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                       >
                         {copiedSummary ? (
                           <>
@@ -425,13 +519,21 @@ export function YouTubePage() {
                         ) : (
                           <>
                             <Copy className="w-4 h-4" />
-                            Copy Summary
+                            Copy
                           </>
                         )}
                       </button>
                       <button
+                        onClick={handleDownloadSummary}
+                        className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        title="Download as Markdown"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download
+                      </button>
+                      <button
                         onClick={handleSummarize}
-                        className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors"
+                        className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                       >
                         Regenerate
                       </button>
