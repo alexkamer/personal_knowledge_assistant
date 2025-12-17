@@ -27,6 +27,10 @@ class AgentConfig:
     system_prompt: str
     use_rag: bool = True
     max_conversation_history: int = 10
+    # Tool-related configuration
+    use_tools: bool = False
+    tool_access_list: Optional[list[str]] = None  # None = all tools, [] = no tools
+    max_tool_iterations: int = 5
 
 
 # Core 4 Agent Configurations
@@ -39,6 +43,8 @@ AGENTS = {
         temperature=0.3,
         rag_top_k=3,
         max_conversation_history=5,
+        use_tools=False,  # Quick agent doesn't use tools for speed
+        tool_access_list=[],
         system_prompt="""You are a quick-response assistant. Give concise, accurate answers.
 
 Rules:
@@ -59,6 +65,9 @@ You prioritize speed and clarity over depth."""
         temperature=0.5,
         rag_top_k=20,
         max_conversation_history=15,
+        use_tools=True,  # Deep agent has access to all tools
+        tool_access_list=None,  # None = all tools available
+        max_tool_iterations=10,  # More iterations for deep research
         system_prompt="""You are a research assistant providing comprehensive, well-reasoned answers.
 
 Rules:
@@ -80,6 +89,9 @@ You prioritize depth, accuracy, and comprehensive understanding."""
         temperature=0.2,
         rag_top_k=10,
         max_conversation_history=10,
+        use_tools=True,  # Code agent can use code_executor, web_search, document_search
+        tool_access_list=["code_executor", "web_search", "document_search"],
+        max_tool_iterations=7,
         system_prompt="""You are a programming assistant. Help with code, debugging, and technical implementation.
 
 Rules:
@@ -101,6 +113,8 @@ You prioritize correctness, clarity, and practical solutions."""
         temperature=0.4,
         rag_top_k=30,  # Get more context for summarization
         max_conversation_history=3,  # Less history needed
+        use_tools=False,  # Summarize agent doesn't need tools
+        tool_access_list=[],
         system_prompt="""You are a summarization assistant. Extract key information and create concise summaries.
 
 Rules:
