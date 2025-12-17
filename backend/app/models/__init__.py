@@ -5,6 +5,7 @@ from app.models.note import Note
 from app.models.document import Document
 from app.models.chunk import Chunk
 from app.models.youtube_video import YouTubeVideo
+from app.models.conceptual_snapshot import ConceptualSnapshot
 from app.models.conversation import Conversation, Message
 from app.models.message_feedback import MessageFeedback
 from app.models.tag import Tag
@@ -15,6 +16,7 @@ __all__ = [
     "Document",
     "Chunk",
     "YouTubeVideo",
+    "ConceptualSnapshot",
     "Conversation",
     "Message",
     "MessageFeedback",

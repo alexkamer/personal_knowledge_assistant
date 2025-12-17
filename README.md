@@ -24,7 +24,136 @@ A full-featured knowledge management system with AI-powered question answering, 
   - Markdown export functionality
 - **Chat Interface**: Natural conversation with your knowledge base
 - **Source Citations**: Every AI answer includes links to source material
+- **5 Unique Learning Innovations**: Cutting-edge features that don't exist in other knowledge tools (see below)
 - **Comprehensive Testing**: 474 frontend tests + 351 backend tests (70% coverage)
+
+## 🚀 5 Unique Learning Innovations
+
+These innovations transform passive knowledge consumption into active, deep learning. No other knowledge management tool offers these features.
+
+### 1. 🔍 Contradiction Detective
+
+**What**: Automatically detects logical contradictions between your sources.
+
+**Why it's innovative**: Most tools just retrieve information. This analyzes **consistency** across your knowledge base, identifying when sources disagree.
+
+**How it works**:
+- Uses semantic search to find related content
+- AI analyzes pairs of sources for logical conflicts
+- Categorizes contradictions by type: factual, methodological, conceptual, temporal
+- Displays severity levels (high/medium/low) and confidence scores
+
+**Where to find it**: Appears automatically in the Context Panel when viewing notes or documents with contradictory information.
+
+**Example**: If one source says "Python is dynamically typed" and another says "Python requires type declarations", the Contradiction Detective flags this with an explanation.
+
+---
+
+### 2. 🎓 Socratic Learning Mode
+
+**What**: Teaches through guided questions instead of providing direct answers.
+
+**Why it's innovative**: Other AI assistants just answer questions. This **teaches you to think** by asking strategic questions that guide discovery.
+
+**How it works**:
+- Toggle Socratic Mode in the chat interface
+- AI responds with probing questions instead of answers
+- 4-level progressive hint system if you get stuck (subtle → direct)
+- Develops critical thinking and problem-solving skills
+
+**Where to find it**: Purple toggle button in chat interface labeled "🎓 Socratic Mode".
+
+**Example**:
+- **You ask**: "What is the capital of France?"
+- **Socratic Mode**: "What country are we talking about? What do you know about its geography and major cities?"
+- **Direct Mode**: "The capital of France is Paris."
+
+---
+
+### 3. 💡 Learning Gaps Detector
+
+**What**: Analyzes your questions to identify missing foundational knowledge.
+
+**Why it's innovative**: Other tools assume you have the background knowledge. This **identifies prerequisites** you need to learn first.
+
+**How it works**:
+- Click "Detect Learning Gaps" after asking a question
+- AI analyzes your question for assumed knowledge
+- Generates personalized learning path with:
+  - Topics you need to learn (prioritized by importance: critical/important/helpful)
+  - Clear explanations of why each gap matters
+  - Learning resources and estimated time for each
+  - Sequenced learning path from fundamentals to advanced
+
+**Where to find it**: Orange/yellow gradient button in chat interface (appears when conversation has messages).
+
+**Example**: You ask about "How does backpropagation work?" → Detector identifies gaps in linear algebra, calculus derivatives, and neural network basics, then creates a learning path starting with prerequisites.
+
+---
+
+### 4. 🧠 Cognitive Metabolization
+
+**What**: Interactive comprehension quizzes that ensure you truly understand content (not just read it).
+
+**Why it's innovative**: Most apps let you passively consume content. This **forces active engagement** and tests real understanding.
+
+**How it works**:
+- Click "Quiz Me" after a conversation
+- AI generates 3-5 comprehension questions covering:
+  - **Recall**: Remember key facts
+  - **Comprehension**: Explain concepts in your own words
+  - **Application**: Apply knowledge to new situations
+  - **Synthesis**: Connect ideas and identify gaps
+- AI evaluates your answers and provides feedback
+- Must score 80%+ to mark content as "metabolized"
+
+**Where to find it**: Purple/blue gradient "Quiz Me" button in chat interface.
+
+**Example**: After learning about React hooks, quiz asks: "How would you explain useState to someone unfamiliar with React?" Then evaluates your answer for accuracy and understanding depth.
+
+---
+
+### 5. ⏱️ Knowledge Evolution Timeline
+
+**What**: Tracks how your understanding of topics evolves over time, showing "thought diffs" like git diffs but for concepts.
+
+**Why it's innovative**: No other tool tracks **learning progress** or shows **how understanding changes**. This creates awareness of intellectual growth.
+
+**How it works**:
+- Click "Capture Snapshot" to save your current understanding
+- Snapshots include: key concepts understood, misconceptions, confidence level, questions asked
+- Click "View Evolution" to see timeline of all learning sessions
+- See "thought diffs" showing:
+  - ✅ New concepts learned (green)
+  - ❌ Misconceptions corrected (red strikethrough)
+  - 📈 Confidence changes over time
+  - 💡 Learning velocity and insights
+
+**Where to find it**:
+- Green/teal "Capture Snapshot" button (saves current understanding)
+- Indigo/purple "View Evolution" button (opens timeline)
+
+**Example**: Your first snapshot on "machine learning" shows 40% confidence with misconception about neural networks. Second snapshot two weeks later shows 75% confidence, misconception corrected, 5 new concepts learned.
+
+---
+
+## 🎯 Why These Innovations Matter
+
+**Traditional knowledge tools** (Notion, Obsidian, Roam):
+- ❌ Let you passively store and retrieve information
+- ❌ Don't check for consistency or contradictions
+- ❌ Don't identify knowledge gaps
+- ❌ Don't test comprehension
+- ❌ Don't track learning progress
+
+**This Personal Knowledge Assistant**:
+- ✅ **Active Learning**: Forces engagement through quizzes and Socratic questioning
+- ✅ **Quality Control**: Detects contradictions in your knowledge base
+- ✅ **Gap Analysis**: Identifies missing prerequisites
+- ✅ **Progress Tracking**: Shows how understanding evolves
+- ✅ **Metacognition**: Makes you aware of what you know and don't know
+
+**Result**: Transform from information hoarder to actual learner with measurable progress.
 
 ## Tech Stack
 

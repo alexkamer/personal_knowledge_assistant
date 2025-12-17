@@ -25,7 +25,7 @@ class ConceptualSnapshot(Base):
 
     __tablename__ = "conceptual_snapshots"
 
-    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
     topic = Column(String(500), nullable=False, index=True)  # What topic this snapshot is about
     understanding = Column(Text, nullable=False)  # LLM-generated summary of understanding
     key_concepts = Column(ARRAY(String), nullable=False, default=list)  # Concepts understood
@@ -34,8 +34,8 @@ class ConceptualSnapshot(Base):
     questions_asked = Column(ARRAY(String), nullable=False, default=list)  # Questions they asked
 
     # Relationships
-    conversation_id = Column(PGUUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False)
-    conversation = relationship("Conversation", back_populates="conceptual_snapshots")
+    conversation_id = Column(String(36), ForeignKey("conversations.id"), nullable=False)
+    conversation = relationship("Conversation")
 
     # Timestamps
     timestamp = Column(DateTime(timezone=True), nullable=False)  # When understanding was captured
