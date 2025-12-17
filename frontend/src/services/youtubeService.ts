@@ -31,6 +31,13 @@ export interface TranscriptSearchResponse {
   total_matches: number;
 }
 
+export interface VideoSummary {
+  video_id: string;
+  summary: string;
+  key_points: string[];
+  topics: string[];
+}
+
 export const youtubeService = {
   /**
    * Fetch transcript for a YouTube video.
@@ -114,5 +121,16 @@ export const youtubeService = {
       return `${baseUrl}&t=${Math.floor(startTime)}s`;
     }
     return baseUrl;
+  },
+
+  /**
+   * Generate AI summary of a YouTube video.
+   */
+  async summarizeVideo(videoId: string, languages?: string[]): Promise<VideoSummary> {
+    const response = await apiClient.post<VideoSummary>('/youtube/summarize', {
+      video_id: videoId,
+      languages,
+    });
+    return response.data;
   },
 };

@@ -2,8 +2,8 @@
  * YouTube learning page for interactive video learning with transcripts.
  */
 import { useState } from 'react';
-import { Youtube, Search, FileText, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
-import { youtubeService, TranscriptData } from '@/services/youtubeService';
+import { Youtube, Search, FileText, Sparkles, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { youtubeService, TranscriptData, VideoSummary } from '@/services/youtubeService';
 
 export function YouTubePage() {
   const [url, setUrl] = useState('');
@@ -12,6 +12,9 @@ export function YouTubePage() {
   const [transcriptData, setTranscriptData] = useState<TranscriptData | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [summary, setSummary] = useState<VideoSummary | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const handleLoadVideo = async () => {
     if (!url.trim()) {
@@ -22,6 +25,8 @@ export function YouTubePage() {
     setLoading(true);
     setError(null);
     setTranscriptData(null);
+    setSummary(null);
+    setSummaryError(null);
 
     try {
       const data = await youtubeService.getTranscript(url.trim());
@@ -35,6 +40,25 @@ export function YouTubePage() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSummarize = async () => {
+    if (!transcriptData) return;
+
+    setSummarizing(true);
+    setSummaryError(null);
+
+    try {
+      const summaryData = await youtubeService.summarizeVideo(transcriptData.video_id);
+      setSummary(summaryData);
+    } catch (err: any) {
+      console.error('Failed to generate summary:', err);
+      setSummaryError(
+        err.response?.data?.detail || 'Failed to generate summary. Please try again.'
+      );
+    } finally {
+      setSummarizing(false);
     }
   };
 
@@ -155,17 +179,115 @@ export function YouTubePage() {
                 </div>
               </div>
 
-              {/* AI Features Placeholder */}
+              {/* AI Summary Section */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <div className="text-center py-8">
-                  <Sparkles className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    AI Learning Features
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Coming soon: AI summaries, key concepts, and Q&A
-                  </p>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      AI Summary
+                    </h3>
+                  </div>
+                  {!summary && !summarizing && (
+                    <button
+                      onClick={handleSummarize}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Generate Summary
+                    </button>
+                  )}
                 </div>
+
+                {/* Loading State */}
+                {summarizing && (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-8 h-8 text-purple-600 dark:text-purple-400 mx-auto mb-3 animate-spin" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Analyzing video with AI...
+                    </p>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {summaryError && (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-600 dark:text-red-300">{summaryError}</p>
+                  </div>
+                )}
+
+                {/* Summary Display */}
+                {summary && !summarizing && (
+                  <div className="space-y-4">
+                    {/* Overall Summary */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                        Overview
+                      </h4>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {summary.summary}
+                      </p>
+                    </div>
+
+                    {/* Key Points */}
+                    {summary.key_points.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                          Key Points
+                        </h4>
+                        <ul className="space-y-2">
+                          {summary.key_points.map((point, idx) => (
+                            <li
+                              key={idx}
+                              className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+                            >
+                              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                              <span>{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Topics */}
+                    {summary.topics.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                          Topics Covered
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {summary.topics.map((topic, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-xs font-medium"
+                            >
+                              {topic}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Regenerate Button */}
+                    <button
+                      onClick={handleSummarize}
+                      className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Regenerate Summary
+                    </button>
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {!summary && !summarizing && !summaryError && (
+                  <div className="text-center py-8">
+                    <Sparkles className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Click "Generate Summary" to get AI-powered insights
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
