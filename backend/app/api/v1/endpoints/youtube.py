@@ -424,23 +424,35 @@ def _parse_summary_response(response: str) -> dict:
         elif current_section == "key_points":
             # Handle both bulleted and numbered points
             if line.startswith(("-", "•", "*", "1.", "2.", "3.", "4.", "5.", "6.")):
-                # Remove bullet/number prefix
+                # Remove bullet prefix first
                 clean_line = line.lstrip("-•* ")
-                # Remove leading numbers like "1. " or "1) "
+                # Remove numbered list prefix (e.g., "1. " or "1) ") only at the start
+                # Match pattern: digit(s) followed by . or ) at the beginning
                 if clean_line and clean_line[0].isdigit():
-                    clean_line = clean_line.split(".", 1)[-1].strip()
-                    clean_line = clean_line.split(")", 1)[-1].strip()
+                    # Find the first non-digit character
+                    i = 0
+                    while i < len(clean_line) and clean_line[i].isdigit():
+                        i += 1
+                    # Check if it's followed by ". " or ") "
+                    if i < len(clean_line) and clean_line[i] in ".)" and i + 1 < len(clean_line) and clean_line[i + 1] == " ":
+                        clean_line = clean_line[i + 2:].strip()
                 if clean_line:
                     sections["key_points"].append(clean_line)
         elif current_section == "topics":
             # Handle both bulleted and numbered topics
             if line.startswith(("-", "•", "*", "1.", "2.", "3.", "4.", "5.", "6.")):
-                # Remove bullet/number prefix
+                # Remove bullet prefix first
                 clean_line = line.lstrip("-•* ")
-                # Remove leading numbers
+                # Remove numbered list prefix (e.g., "1. " or "1) ") only at the start
+                # Match pattern: digit(s) followed by . or ) at the beginning
                 if clean_line and clean_line[0].isdigit():
-                    clean_line = clean_line.split(".", 1)[-1].strip()
-                    clean_line = clean_line.split(")", 1)[-1].strip()
+                    # Find the first non-digit character
+                    i = 0
+                    while i < len(clean_line) and clean_line[i].isdigit():
+                        i += 1
+                    # Check if it's followed by ". " or ") "
+                    if i < len(clean_line) and clean_line[i] in ".)" and i + 1 < len(clean_line) and clean_line[i + 1] == " ":
+                        clean_line = clean_line[i + 2:].strip()
                 if clean_line:
                     sections["topics"].append(clean_line)
 
