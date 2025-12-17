@@ -1,8 +1,8 @@
 /**
  * YouTube learning page for interactive video learning with transcripts.
  */
-import { useState } from 'react';
-import { Youtube, Search, FileText, Sparkles, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Youtube, Search, FileText, Sparkles, AlertCircle, Loader2, CheckCircle, X, Copy, Check } from 'lucide-react';
 import { youtubeService, TranscriptData, VideoSummary } from '@/services/youtubeService';
 
 export function YouTubePage() {
@@ -15,6 +15,11 @@ export function YouTubePage() {
   const [summary, setSummary] = useState<VideoSummary | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [videoTitle, setVideoTitle] = useState<string>('');
+  const [copiedTranscript, setCopiedTranscript] = useState(false);
+  const [copiedSummary, setCopiedSummary] = useState(false);
+
+  const transcriptRefs = useRef<{ [key: number]: HTMLButtonElement | null }>({});
 
   const handleLoadVideo = async () => {
     if (!url.trim()) {
@@ -27,11 +32,15 @@ export function YouTubePage() {
     setTranscriptData(null);
     setSummary(null);
     setSummaryError(null);
+    setVideoTitle('');
 
     try {
       const data = await youtubeService.getTranscript(url.trim());
       setTranscriptData(data);
       setCurrentTime(0);
+
+      // Extract video title from iframe (will be set after load)
+      setVideoTitle('Loading video...');
     } catch (err: any) {
       console.error('Failed to load transcript:', err);
       setError(
@@ -42,6 +51,65 @@ export function YouTubePage() {
       setLoading(false);
     }
   };
+
+  // Find current transcript entry based on currentTime
+  const getCurrentTranscriptIndex = () => {
+    if (!transcriptData) return -1;
+
+    for (let i = 0; i < transcriptData.transcript.length; i++) {
+      const entry = transcriptData.transcript[i];
+      const nextEntry = transcriptData.transcript[i + 1];
+
+      if (currentTime >= entry.start && (!nextEntry || currentTime < nextEntry.start)) {
+        return i;
+      }
+    }
+    return -1;
+  };
+
+  // Auto-scroll to active transcript entry
+  useEffect(() => {
+    const currentIndex = getCurrentTranscriptIndex();
+    if (currentIndex >= 0 && transcriptRefs.current[currentIndex]) {
+      transcriptRefs.current[currentIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [currentTime, transcriptData]);
+
+  // Copy transcript to clipboard
+  const handleCopyTranscript = async () => {
+    if (!transcriptData) return;
+
+    const text = transcriptData.transcript
+      .map(entry => `[${youtubeService.formatTimestamp(entry.start)}] ${entry.text}`)
+      .join('\n');
+
+    await navigator.clipboard.writeText(text);
+    setCopiedTranscript(true);
+    setTimeout(() => setCopiedTranscript(false), 2000);
+  };
+
+  // Copy summary to clipboard
+  const handleCopySummary = async () => {
+    if (!summary) return;
+
+    const text = `## Summary\n\n${summary.summary}\n\n## Key Points\n\n${summary.key_points.map(p => `- ${p}`).join('\n')}\n\n## Topics\n\n${summary.topics.map(t => `- ${t}`).join('\n')}`;
+
+    await navigator.clipboard.writeText(text);
+    setCopiedSummary(true);
+    setTimeout(() => setCopiedSummary(false), 2000);
+  };
+
+  // Get filtered transcript entries
+  const filteredTranscript = transcriptData?.transcript.filter((entry) =>
+    searchQuery
+      ? entry.text.toLowerCase().includes(searchQuery.toLowerCase())
+      : true
+  ) || [];
+
+  const currentTranscriptIndex = getCurrentTranscriptIndex();
 
   const handleSummarize = async () => {
     if (!transcriptData) return;
@@ -161,8 +229,8 @@ export function YouTubePage() {
 
               {/* Video Info */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex-1">
                     <h2 className="font-semibold text-gray-900 dark:text-white">
                       Video Transcript
                     </h2>
@@ -173,8 +241,22 @@ export function YouTubePage() {
                       {transcriptData.is_generated && ' (Auto-generated)'}
                     </p>
                   </div>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                    <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <button
+                    onClick={handleCopyTranscript}
+                    className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                    title="Copy transcript to clipboard"
+                  >
+                    {copiedTranscript ? (
+                      <>
+                        <Check className="w-4 h-4 text-green-600" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        Copy
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -269,13 +351,31 @@ export function YouTubePage() {
                       </div>
                     )}
 
-                    {/* Regenerate Button */}
-                    <button
-                      onClick={handleSummarize}
-                      className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Regenerate Summary
-                    </button>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCopySummary}
+                        className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        {copiedSummary ? (
+                          <>
+                            <Check className="w-4 h-4 text-green-600" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            Copy Summary
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleSummarize}
+                        className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Regenerate
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -302,36 +402,85 @@ export function YouTubePage() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search transcript..."
-                      className="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                      className="w-full px-4 py-2 pr-20 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
                     />
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    {searchQuery ? (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                        title="Clear search"
+                      >
+                        <X className="w-4 h-4 text-gray-500" />
+                      </button>
+                    ) : (
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    )}
                   </div>
+                  {searchQuery && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      {filteredTranscript.length} {filteredTranscript.length === 1 ? 'result' : 'results'}
+                    </p>
+                  )}
                 </div>
 
                 {/* Transcript Entries */}
                 <div className="h-[600px] overflow-y-auto">
-                  {transcriptData.transcript
-                    .filter((entry) =>
-                      searchQuery
-                        ? entry.text.toLowerCase().includes(searchQuery.toLowerCase())
-                        : true
-                    )
-                    .map((entry, index) => (
+                  {filteredTranscript.map((entry, index) => {
+                    const originalIndex = transcriptData.transcript.indexOf(entry);
+                    const isActive = originalIndex === currentTranscriptIndex;
+
+                    return (
                       <button
                         key={index}
+                        ref={(el) => {
+                          if (el) transcriptRefs.current[originalIndex] = el;
+                        }}
                         onClick={() => handleTimestampClick(entry.start)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 transition-colors group"
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 transition-all group ${
+                          isActive
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-600'
+                            : ''
+                        }`}
                       >
                         <div className="flex items-start gap-3">
-                          <span className="text-xs font-mono text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0 group-hover:underline">
+                          <span
+                            className={`text-xs font-mono mt-0.5 flex-shrink-0 group-hover:underline ${
+                              isActive
+                                ? 'text-blue-700 dark:text-blue-300 font-semibold'
+                                : 'text-blue-600 dark:text-blue-400'
+                            }`}
+                          >
                             {youtubeService.formatTimestamp(entry.start)}
                           </span>
-                          <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-                            {entry.text}
+                          <span
+                            className={`text-sm flex-1 ${
+                              isActive
+                                ? 'text-gray-900 dark:text-white font-medium'
+                                : 'text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            {searchQuery ? (
+                              // Highlight search term
+                              entry.text.split(new RegExp(`(${searchQuery})`, 'gi')).map((part, i) =>
+                                part.toLowerCase() === searchQuery.toLowerCase() ? (
+                                  <mark
+                                    key={i}
+                                    className="bg-yellow-200 dark:bg-yellow-700 text-gray-900 dark:text-white rounded px-0.5"
+                                  >
+                                    {part}
+                                  </mark>
+                                ) : (
+                                  <span key={i}>{part}</span>
+                                )
+                              )
+                            ) : (
+                              entry.text
+                            )}
                           </span>
                         </div>
                       </button>
-                    ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
