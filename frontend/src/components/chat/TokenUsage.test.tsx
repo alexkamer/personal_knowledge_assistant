@@ -25,6 +25,20 @@ describe('TokenUsage', () => {
     is_warning: false,
     is_critical: false,
     messages_count: 4,
+    message_tokens: [
+      {
+        message_id: 'msg-1',
+        role: 'user',
+        tokens: 250,
+        created_at: '2025-01-01T12:00:00Z',
+      },
+      {
+        message_id: 'msg-2',
+        role: 'assistant',
+        tokens: 750,
+        created_at: '2025-01-01T12:01:00Z',
+      },
+    ],
   };
 
   beforeEach(() => {

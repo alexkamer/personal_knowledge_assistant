@@ -37,12 +37,14 @@ describe('MessageList', () => {
   const mockMessages: Message[] = [
     {
       id: 'msg-1',
+      conversation_id: 'conv-1',
       role: 'user',
       content: 'What is TypeScript?',
       created_at: '2025-01-01T12:00:00Z',
     },
     {
       id: 'msg-2',
+      conversation_id: 'conv-1',
       role: 'assistant',
       content: 'TypeScript is a typed superset of JavaScript',
       created_at: '2025-01-01T12:01:00Z',
@@ -303,7 +305,7 @@ describe('MessageList', () => {
 
     it.skip('should submit positive feedback', async () => {
       const user = userEvent.setup();
-      const mockPost = vi.mocked(apiClient.post).mockResolvedValue({} as any);
+      vi.mocked(apiClient.post).mockResolvedValue({} as any);
 
       render(
         <MessageList
@@ -316,7 +318,7 @@ describe('MessageList', () => {
       await user.click(thumbsUpButton);
 
       await waitFor(() => {
-        expect(mockPost).toHaveBeenCalledWith('/chat/messages/msg-2/feedback', {
+        expect(apiClient.post).toHaveBeenCalledWith('/chat/messages/msg-2/feedback', {
           is_positive: true,
         });
       });
@@ -325,7 +327,7 @@ describe('MessageList', () => {
 
     it.skip('should submit negative feedback', async () => {
       const user = userEvent.setup();
-      const mockPost = vi.mocked(apiClient.post).mockResolvedValue({} as any);
+      vi.mocked(apiClient.post).mockResolvedValue({} as any);
 
       render(
         <MessageList
@@ -338,7 +340,7 @@ describe('MessageList', () => {
       await user.click(thumbsDownButton);
 
       await waitFor(() => {
-        expect(mockPost).toHaveBeenCalledWith('/chat/messages/msg-2/feedback', {
+        expect(apiClient.post).toHaveBeenCalledWith('/chat/messages/msg-2/feedback', {
           is_positive: false,
         });
       });
@@ -350,13 +352,15 @@ describe('MessageList', () => {
         {
           ...mockMessages[1],
           feedback: {
+            id: 'feedback-1',
+            message_id: 'msg-2',
             is_positive: true,
             created_at: '2025-01-01T12:02:00Z',
           },
         },
       ];
 
-      const { container } = render(<MessageList messages={messagesWithFeedback} />);
+      render(<MessageList messages={messagesWithFeedback} />);
 
       const thumbsUpButton = screen.getByTitle('Helpful response');
       expect(thumbsUpButton).toHaveClass('text-green-600');
@@ -367,13 +371,15 @@ describe('MessageList', () => {
         {
           ...mockMessages[1],
           feedback: {
+            id: 'feedback-1',
+            message_id: 'msg-2',
             is_positive: false,
             created_at: '2025-01-01T12:02:00Z',
           },
         },
       ];
 
-      const { container } = render(<MessageList messages={messagesWithFeedback} />);
+      render(<MessageList messages={messagesWithFeedback} />);
 
       const thumbsDownButton = screen.getByTitle('Not helpful');
       expect(thumbsDownButton).toHaveClass('text-red-600');
@@ -381,9 +387,7 @@ describe('MessageList', () => {
 
     it.skip('should disable feedback buttons while loading', async () => {
       const user = userEvent.setup();
-      const mockPost = vi
-        .mocked(apiClient.post)
-        .mockImplementation(() => new Promise(() => {})); // Never resolves
+      vi.mocked(apiClient.post).mockImplementation(() => new Promise(() => {})); // Never resolves
 
       render(<MessageList messages={mockMessages} />);
 
@@ -584,6 +588,7 @@ describe('MessageList', () => {
       const messageWithWhitespace: Message[] = [
         {
           id: 'msg-1',
+          conversation_id: 'conv-1',
           role: 'user',
           content: 'Line 1\nLine 2\n  Indented',
           created_at: '2025-01-01T12:00:00Z',
@@ -683,24 +688,28 @@ describe('MessageList', () => {
       const multipleMessages: Message[] = [
         {
           id: 'msg-1',
+          conversation_id: 'conv-1',
           role: 'user',
           content: 'First question',
           created_at: '2025-01-01T12:00:00Z',
         },
         {
           id: 'msg-2',
+          conversation_id: 'conv-1',
           role: 'assistant',
           content: 'First answer',
           created_at: '2025-01-01T12:01:00Z',
         },
         {
           id: 'msg-3',
+          conversation_id: 'conv-1',
           role: 'user',
           content: 'Second question',
           created_at: '2025-01-01T12:02:00Z',
         },
         {
           id: 'msg-4',
+          conversation_id: 'conv-1',
           role: 'assistant',
           content: 'Second answer',
           created_at: '2025-01-01T12:03:00Z',

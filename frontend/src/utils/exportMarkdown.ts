@@ -1,7 +1,7 @@
 /**
  * Utility functions for exporting conversations as Markdown.
  */
-import type { Message, SourceCitation, ConversationWithMessages } from '@/types/chat';
+import type { Message, ConversationWithMessages } from '@/types/chat';
 
 /**
  * Format a message as Markdown.

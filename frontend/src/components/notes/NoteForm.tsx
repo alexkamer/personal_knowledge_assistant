@@ -17,7 +17,7 @@ interface NoteFormProps {
   onNavigateToNote?: (noteId: string) => void;
 }
 
-function NoteForm({ note, onSave, onCancel, onNavigateToNote }: NoteFormProps) {
+function NoteForm({ note, onNavigateToNote }: NoteFormProps) {
   const [content, setContent] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -126,7 +126,8 @@ function NoteForm({ note, onSave, onCancel, onNavigateToNote }: NoteFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content, tags]);
 
-  const isLoading = createNote.isPending || updateNote.isPending;
+  // Track loading state (for potential future use in UI feedback)
+  // const isLoading = createNote.isPending || updateNote.isPending;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden h-full flex flex-col">

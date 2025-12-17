@@ -5,6 +5,7 @@ export { apiClient } from './api';
 export { chatService } from './chatService';
 
 // Re-export commonly used functions
+import { chatService as chat } from './chatService';
 export const {
   getAgents,
   sendMessage,
@@ -15,4 +16,4 @@ export const {
   deleteConversation,
   getTokenUsage,
   getChunkDetail,
-} = chatService;
+} = chat;

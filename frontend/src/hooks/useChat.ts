@@ -50,7 +50,7 @@ export function useUpdateConversation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { title?: string; summary?: string } }) =>
+    mutationFn: ({ id, data }: { id: string; data: { title?: string; summary?: string; is_pinned?: boolean } }) =>
       chatService.updateConversation(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });

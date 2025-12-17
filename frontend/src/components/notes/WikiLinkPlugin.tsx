@@ -8,11 +8,8 @@ import {
   $getSelection,
   $isRangeSelection,
   $isTextNode,
-  COMMAND_PRIORITY_LOW,
-  KEY_ENTER_COMMAND,
-  TextNode,
 } from 'lexical';
-import { $createWikiLinkNode, WikiLinkNode } from './WikiLinkNode';
+import { $createWikiLinkNode } from './WikiLinkNode';
 import { useNotes } from '../../hooks/useNotes';
 
 const WIKI_LINK_REGEX = /\[\[([^\]]+)\]\]/g;
@@ -119,7 +116,7 @@ export function WikiLinkPlugin() {
 
   // Detect [[ trigger for autocomplete
   useEffect(() => {
-    return editor.registerTextContentListener((textContent) => {
+    return editor.registerTextContentListener((_textContent) => {
       editor.getEditorState().read(() => {
         const selection = $getSelection();
         if (!$isRangeSelection(selection)) {

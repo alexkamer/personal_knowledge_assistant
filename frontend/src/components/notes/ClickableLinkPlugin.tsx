@@ -3,7 +3,6 @@
  */
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { useEffect } from 'react';
-import { $isLinkNode } from '@lexical/link';
 
 export function ClickableLinkPlugin(): null {
   const [editor] = useLexicalComposerContext();

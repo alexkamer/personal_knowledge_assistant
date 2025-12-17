@@ -33,7 +33,6 @@ function ImageComponent({
   altText,
   width,
   height,
-  nodeKey,
   onResize,
 }: {
   src: string;
@@ -71,13 +70,16 @@ function ImageComponent({
 
       if (img.complete) {
         handleLoad();
+        return undefined;
       } else {
         img.addEventListener('load', handleLoad);
         return () => img.removeEventListener('load', handleLoad);
       }
     } else if (width && height) {
       setDimensions({ width, height });
+      return undefined;
     }
+    return undefined;
   }, [src, width, height]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -89,7 +91,7 @@ function ImageComponent({
   };
 
   React.useEffect(() => {
-    if (!isResizing) return;
+    if (!isResizing) return undefined;
 
     let currentSize = dimensions;
 
@@ -239,7 +241,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     return span;
   }
 
-  updateDOM(): false {
+  updateDOM(): boolean {
     return false;
   }
 

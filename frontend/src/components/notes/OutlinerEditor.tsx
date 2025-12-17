@@ -6,10 +6,9 @@
  * - Slash commands for formatting
  * - Text selection formatting toolbar
  */
-import { useState, useRef, useEffect, KeyboardEvent, MouseEvent } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { SlashCommandMenu } from './SlashCommandMenu';
 import { FormattingToolbar } from './FormattingToolbar';
-import { FormatRenderer } from './FormatRenderer';
 
 interface Block {
   id: string;
@@ -27,7 +26,7 @@ export function OutlinerEditor({ initialBlocks = [], onChange, placeholder }: Ou
   const [blocks, setBlocks] = useState<Block[]>(
     initialBlocks.length > 0 ? initialBlocks : [{ id: generateId(), content: '', indent: 0 }]
   );
-  const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
+  const [_focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const inputRefs = useRef<{ [key: string]: HTMLTextAreaElement }>({});
 
   // Slash command menu state
@@ -139,12 +138,12 @@ export function OutlinerEditor({ initialBlocks = [], onChange, placeholder }: Ou
       if (element) {
         element.focus();
         // Move cursor to end
-        const range = document.createRange();
+        const _range = document.createRange();
         const sel = window.getSelection();
-        range.selectNodeContents(element);
-        range.collapse(false);
+        _range.selectNodeContents(element);
+        _range.collapse(false);
         sel?.removeAllRanges();
-        sel?.addRange(range);
+        sel?.addRange(_range);
       }
     }, 50);
   };
@@ -159,8 +158,7 @@ export function OutlinerEditor({ initialBlocks = [], onChange, placeholder }: Ou
         e.preventDefault();
         const selection = window.getSelection();
         if (selection && selection.toString().length > 0) {
-          // Get selection range
-          const range = selection.getRangeAt(0);
+          // Get selection range - we only need start/end for setSelectedText
           const start = 0; // We'll work with the full selection
           const end = selection.toString().length;
           setSelectedText({ blockId, start, end });
@@ -175,10 +173,10 @@ export function OutlinerEditor({ initialBlocks = [], onChange, placeholder }: Ou
     // Detect "/" for slash command menu
     if (e.key === '/') {
       setTimeout(() => {
-        const rect = element.getBoundingClientRect();
+        const _rect = element.getBoundingClientRect();
         setSlashMenuPosition({
-          top: rect.top + window.scrollY,
-          left: rect.left + window.scrollX,
+          top: _rect.top + window.scrollY,
+          left: _rect.left + window.scrollX,
         });
         setSlashMenuBlockId(blockId);
       }, 0);
@@ -270,27 +268,27 @@ export function OutlinerEditor({ initialBlocks = [], onChange, placeholder }: Ou
   };
 
   // Handle text selection for formatting toolbar
-  const handleMouseUp = (e: MouseEvent<HTMLTextAreaElement>, blockId: string) => {
-    const textarea = e.currentTarget;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-
-    if (start !== end) {
-      // Text is selected
-      const rect = textarea.getBoundingClientRect();
-      const selectionRect = window.getSelection()?.getRangeAt(0).getBoundingClientRect();
-
-      if (selectionRect) {
-        setToolbarPosition({
-          top: selectionRect.top + window.scrollY,
-          left: selectionRect.left + window.scrollX + selectionRect.width / 2,
-        });
-        setSelectedText({ blockId, start, end });
-      }
-    } else {
-      // No selection, hide toolbar
+  const handleMouseUp = (_e: React.MouseEvent<HTMLDivElement>, blockId: string) => {
+    const selection = window.getSelection();
+    if (!selection || selection.toString().length === 0) {
       setToolbarPosition(null);
       setSelectedText(null);
+      return;
+    }
+
+    const selectionText = selection.toString();
+    const start = 0;
+    const end = selectionText.length;
+
+    // Get selection position for toolbar
+    const selectionRect = selection.getRangeAt(0).getBoundingClientRect();
+
+    if (selectionRect) {
+      setToolbarPosition({
+        top: selectionRect.top + window.scrollY,
+        left: selectionRect.left + window.scrollX + selectionRect.width / 2,
+      });
+      setSelectedText({ blockId, start, end });
     }
   };
 

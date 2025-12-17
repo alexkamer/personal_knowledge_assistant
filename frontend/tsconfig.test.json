@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    /* Relax linting rules for test files */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false
+  },
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**/*"]
+}

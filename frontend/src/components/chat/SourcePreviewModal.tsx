@@ -1,7 +1,7 @@
 /**
  * Modal component for previewing source content
  */
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, FileText, StickyNote, Globe, ExternalLink, Loader2 } from 'lucide-react';
 import type { SourceCitation, ChunkDetail } from '@/types/chat';
 import { apiClient } from '@/services/api';

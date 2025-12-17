@@ -11,7 +11,6 @@ import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 import {
   useConversations,
   useConversation,
-  useSendMessage,
   useDeleteConversation,
   useUpdateConversation,
 } from '@/hooks/useChat';
@@ -49,7 +48,6 @@ export function ChatPage() {
   const { data: conversationData, isLoading: isLoadingConversation } = useConversation(
     selectedConversationId
   );
-  const sendMessage = useSendMessage();
   const deleteConversation = useDeleteConversation();
   const updateConversation = useUpdateConversation();
 
@@ -67,7 +65,6 @@ export function ChatPage() {
           sources: streamingSources.length > 0 ? streamingSources : undefined,
           suggested_questions: streamingSuggestedQuestions.length > 0 ? streamingSuggestedQuestions : undefined,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         },
       ]
     : messages;
@@ -138,7 +135,7 @@ export function ChatPage() {
           }
         },
         // onDone
-        (messageId) => {
+        (_messageId) => {
           setIsStreaming(false);
           setStreamingMessage('');
           setStreamingSources([]);

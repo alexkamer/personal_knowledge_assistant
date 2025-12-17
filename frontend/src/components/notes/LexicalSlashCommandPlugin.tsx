@@ -8,24 +8,15 @@ import {
   $getSelection,
   $isRangeSelection,
   TextNode,
-  COMMAND_PRIORITY_LOW,
-  COMMAND_PRIORITY_HIGH,
-  KEY_ARROW_DOWN_COMMAND,
-  KEY_ARROW_UP_COMMAND,
-  KEY_ENTER_COMMAND,
-  KEY_ESCAPE_COMMAND,
 } from 'lexical';
 import { $setBlocksType } from '@lexical/selection';
 import { $createHeadingNode } from '@lexical/rich-text';
 import {
   INSERT_UNORDERED_LIST_COMMAND,
   INSERT_ORDERED_LIST_COMMAND,
-  REMOVE_LIST_COMMAND,
-  $isListNode,
 } from '@lexical/list';
-import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, Code, Link as LinkIcon } from 'lucide-react';
+import { Heading1, Heading2, Heading3, List, ListOrdered, Code } from 'lucide-react';
 import { $createCodeNode } from '@lexical/code';
-import { $createLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
 
 interface Command {
   id: string;

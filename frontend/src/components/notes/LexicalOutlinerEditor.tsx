@@ -2,7 +2,7 @@
  * Lexical-based outliner editor - RemNote-style WYSIWYG
  * True rich text editing with no raw markdown visible
  */
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
@@ -19,16 +19,13 @@ import {
   TextNode,
   LineBreakNode,
   FORMAT_TEXT_COMMAND,
-  COMMAND_PRIORITY_LOW,
 } from 'lexical';
-import { HeadingNode, QuoteNode, $createHeadingNode } from '@lexical/rich-text';
+import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { CodeNode, CodeHighlightNode } from '@lexical/code';
-import { LinkNode, AutoLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
+import { LinkNode, AutoLinkNode } from '@lexical/link';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $setBlocksType } from '@lexical/selection';
-import { $getSelection, $isRangeSelection } from 'lexical';
 import { LexicalSlashCommandPlugin } from './LexicalSlashCommandPlugin';
 import { ImageNode } from './ImageNode';
 import { ImagePlugin } from './ImagePlugin';
@@ -147,7 +144,7 @@ function KeyboardShortcutsPlugin() {
       return false;
     };
 
-    return editor.registerRootListener((rootElement, prevRootElement) => {
+    return editor.registerRootListener((rootElement: any, prevRootElement: any) => {
       if (prevRootElement) {
         prevRootElement.removeEventListener('keydown', handleKeyDown);
       }
@@ -162,9 +159,9 @@ function KeyboardShortcutsPlugin() {
 
 // Plugin to serialize editor state to JSON string
 function OnChangeSerializerPlugin({ onChange }: { onChange: (content: string) => void }) {
-  const [editor] = useLexicalComposerContext();
+  const [_editor] = useLexicalComposerContext();
 
-  const handleChange = (editorState: EditorState, editor: LexicalEditor) => {
+  const handleChange = (editorState: EditorState, _editor: LexicalEditor) => {
     editorState.read(() => {
       const json = editorState.toJSON();
       const jsonString = JSON.stringify(json);

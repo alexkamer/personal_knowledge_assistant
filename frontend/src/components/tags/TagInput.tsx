@@ -2,7 +2,7 @@
  * TagInput component with autocomplete.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useTags } from '../../hooks/useTags';
 

@@ -1,7 +1,7 @@
 /**
  * Floating formatting toolbar for text selection
  */
-import { Bold, Italic, Underline as UnderlineIcon, Palette, Highlighter, Type } from 'lucide-react';
+import { Bold, Italic, Underline as UnderlineIcon, Palette, Highlighter } from 'lucide-react';
 
 interface FormattingToolbarProps {
   position: { top: number; left: number };
@@ -9,7 +9,7 @@ interface FormattingToolbarProps {
   onClose: () => void;
 }
 
-export function FormattingToolbar({ position, onFormat, onClose }: FormattingToolbarProps) {
+export function FormattingToolbar({ position, onFormat }: FormattingToolbarProps) {
   const colors = [
     { name: 'Red', value: '#ef4444' },
     { name: 'Orange', value: '#f97316' },

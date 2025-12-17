@@ -149,11 +149,11 @@ export const chatService = {
   },
 
   /**
-   * Update a conversation (title or summary).
+   * Update a conversation (title, summary, or pinned status).
    */
   async updateConversation(
     id: string,
-    data: { title?: string; summary?: string }
+    data: { title?: string; summary?: string; is_pinned?: boolean }
   ): Promise<Conversation> {
     const response = await apiClient.patch<Conversation>(
       `/chat/conversations/${id}`,
