@@ -218,9 +218,19 @@ def get_tool_registry() -> ToolRegistry:
 
 def _register_builtin_tools() -> None:
     """Register all built-in tools."""
-    # Tools will be registered here as they're implemented
-    # Example:
-    # from app.services.tools.web_search_tool import WebSearchTool
-    # registry = get_tool_registry()
-    # registry.register(WebSearchTool, access_level="all")
-    pass
+    from app.services.tools import (
+        CalculatorTool,
+        CodeExecutorTool,
+        DocumentSearchTool,
+        WebSearchTool,
+    )
+
+    registry = get_tool_registry()
+
+    # Register all core tools with "all" access level
+    registry.register(WebSearchTool, access_level="all")
+    registry.register(CalculatorTool, access_level="all")
+    registry.register(CodeExecutorTool, access_level="all")
+    registry.register(DocumentSearchTool, access_level="all")
+
+    logger.info(f"Registered {len(registry.list_tools())} built-in tools")
