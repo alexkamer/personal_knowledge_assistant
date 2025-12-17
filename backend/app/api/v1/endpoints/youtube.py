@@ -208,6 +208,48 @@ async def extract_video_id(url: str):
     return {"video_id": video_id, "url": url}
 
 
+class VideoMetadataResponse(BaseModel):
+    """Video metadata response."""
+
+    video_id: str
+    title: str
+    channel: str
+    channel_id: str
+    view_count: int
+    duration: int
+    upload_date: str
+    thumbnail: str
+    description: str
+
+
+@router.get("/metadata/{video_id}", response_model=VideoMetadataResponse)
+async def get_video_metadata(video_id: str):
+    """
+    Get metadata for a YouTube video.
+
+    Args:
+        video_id: YouTube video ID
+
+    Returns:
+        Video metadata including title, channel, views, etc.
+
+    Raises:
+        HTTPException: If metadata cannot be fetched
+    """
+    youtube_service = get_youtube_service()
+
+    try:
+        metadata = youtube_service.get_video_metadata(video_id)
+        return metadata
+
+    except Exception as e:
+        logger.error(f"Error fetching video metadata: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch video metadata: {str(e)}",
+        )
+
+
 class VideoSummarizeRequest(BaseModel):
     """Request to summarize a YouTube video."""
 
@@ -269,28 +311,29 @@ async def summarize_video(
         summarize_agent = agent_service.get_agent("summarize")
 
         # Build summarization prompt
-        prompt = f"""Analyze this YouTube video transcript and provide:
-
-1. A comprehensive summary (2-3 paragraphs)
-2. Key points and takeaways (list the most important points)
-3. Main topics covered (categorize the content)
+        prompt = f"""Analyze this YouTube video transcript and provide a structured summary.
 
 Transcript ({transcript_data['entry_count']} entries, {transcript_data['total_duration']:.1f}s):
 {transcript_text}
 
-Please structure your response as:
+Please provide your response in exactly this format (without markdown formatting):
+
 SUMMARY:
-[Your summary here]
+Write a clear 2-3 paragraph summary of the video content.
 
 KEY POINTS:
-- [Point 1]
-- [Point 2]
-...
+- First key point or takeaway
+- Second key point or takeaway
+- Third key point or takeaway
+(list 3-6 most important points)
 
 TOPICS:
-- [Topic 1]
-- [Topic 2]
-..."""
+- First main topic
+- Second main topic
+- Third main topic
+(list 2-5 main topics covered)
+
+Important: Do not use markdown bold (**) or other formatting. Keep it plain text."""
 
         # Generate summary using @summarize agent
         summary_response = await llm_service.generate_answer(
@@ -335,6 +378,9 @@ def _parse_summary_response(response: str) -> dict:
     Returns:
         Dict with summary, key_points, and topics
     """
+    # Remove markdown formatting
+    response = response.replace("**", "")
+
     sections = {
         "summary": "",
         "key_points": [],
@@ -347,34 +393,67 @@ def _parse_summary_response(response: str) -> dict:
     for line in lines:
         line = line.strip()
 
-        # Detect section headers
-        if "SUMMARY:" in line.upper():
-            current_section = "summary"
+        # Skip empty lines
+        if not line:
             continue
-        elif "KEY POINTS:" in line.upper() or "KEY TAKEAWAYS:" in line.upper():
+
+        # Detect section headers (case insensitive)
+        line_upper = line.upper()
+        if "SUMMARY" in line_upper and ":" in line:
+            current_section = "summary"
+            # Check if there's content after the colon on the same line
+            if ":" in line:
+                content_after = line.split(":", 1)[1].strip()
+                if content_after:
+                    sections["summary"] += content_after + " "
+            continue
+        elif ("KEY POINTS" in line_upper or "KEY TAKEAWAYS" in line_upper) and ":" in line:
             current_section = "key_points"
             continue
-        elif "TOPICS:" in line.upper() or "MAIN TOPICS:" in line.upper():
+        elif ("TOPICS" in line_upper or "MAIN TOPICS" in line_upper) and ":" in line:
             current_section = "topics"
             continue
 
-        # Skip empty lines
-        if not line:
+        # Skip instructional text in parentheses
+        if line.startswith("(") and line.endswith(")"):
             continue
 
         # Add content to appropriate section
         if current_section == "summary":
             sections["summary"] += line + " "
-        elif current_section == "key_points" and line.startswith(("-", "•", "*")):
-            sections["key_points"].append(line.lstrip("-•* ").strip())
-        elif current_section == "topics" and line.startswith(("-", "•", "*")):
-            sections["topics"].append(line.lstrip("-•* ").strip())
+        elif current_section == "key_points":
+            # Handle both bulleted and numbered points
+            if line.startswith(("-", "•", "*", "1.", "2.", "3.", "4.", "5.", "6.")):
+                # Remove bullet/number prefix
+                clean_line = line.lstrip("-•* ")
+                # Remove leading numbers like "1. " or "1) "
+                if clean_line and clean_line[0].isdigit():
+                    clean_line = clean_line.split(".", 1)[-1].strip()
+                    clean_line = clean_line.split(")", 1)[-1].strip()
+                if clean_line:
+                    sections["key_points"].append(clean_line)
+        elif current_section == "topics":
+            # Handle both bulleted and numbered topics
+            if line.startswith(("-", "•", "*", "1.", "2.", "3.", "4.", "5.", "6.")):
+                # Remove bullet/number prefix
+                clean_line = line.lstrip("-•* ")
+                # Remove leading numbers
+                if clean_line and clean_line[0].isdigit():
+                    clean_line = clean_line.split(".", 1)[-1].strip()
+                    clean_line = clean_line.split(")", 1)[-1].strip()
+                if clean_line:
+                    sections["topics"].append(clean_line)
 
-    # Clean up summary
-    sections["summary"] = sections["summary"].strip()
+    # Clean up summary (remove extra spaces)
+    sections["summary"] = " ".join(sections["summary"].split())
 
     # If parsing failed, return basic fallback
     if not sections["summary"]:
-        sections["summary"] = response[:500] + "..." if len(response) > 500 else response
+        # Try to extract first few paragraphs
+        paragraphs = [p.strip() for p in response.split("\n\n") if p.strip()]
+        if paragraphs:
+            sections["summary"] = paragraphs[0][:1000]
+        else:
+            sections["summary"] = response[:500] + "..." if len(response) > 500 else response
 
     return sections

@@ -38,6 +38,18 @@ export interface VideoSummary {
   topics: string[];
 }
 
+export interface VideoMetadata {
+  video_id: string;
+  title: string;
+  channel: string;
+  channel_id: string;
+  view_count: number;
+  duration: number;
+  upload_date: string;
+  thumbnail: string;
+  description: string;
+}
+
 export const youtubeService = {
   /**
    * Fetch transcript for a YouTube video.
@@ -132,5 +144,38 @@ export const youtubeService = {
       languages,
     });
     return response.data;
+  },
+
+  /**
+   * Fetch metadata for a YouTube video.
+   */
+  async getVideoMetadata(videoId: string): Promise<VideoMetadata> {
+    const response = await apiClient.get<VideoMetadata>(`/youtube/metadata/${videoId}`);
+    return response.data;
+  },
+
+  /**
+   * Format view count as human-readable string (e.g., "1.2M views").
+   */
+  formatViewCount(viewCount: number): string {
+    if (viewCount >= 1000000) {
+      return `${(viewCount / 1000000).toFixed(1)}M views`;
+    } else if (viewCount >= 1000) {
+      return `${(viewCount / 1000).toFixed(1)}K views`;
+    } else {
+      return `${viewCount} views`;
+    }
+  },
+
+  /**
+   * Format upload date from YYYYMMDD to human-readable format.
+   */
+  formatUploadDate(uploadDate: string): string {
+    if (!uploadDate || uploadDate.length !== 8) return '';
+    const year = uploadDate.substring(0, 4);
+    const month = uploadDate.substring(4, 6);
+    const day = uploadDate.substring(6, 8);
+    const date = new Date(`${year}-${month}-${day}`);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   },
 };

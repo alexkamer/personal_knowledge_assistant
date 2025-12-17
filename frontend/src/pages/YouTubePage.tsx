@@ -2,45 +2,60 @@
  * YouTube learning page for interactive video learning with transcripts.
  */
 import { useState, useEffect, useRef } from 'react';
-import { Youtube, Search, FileText, Sparkles, AlertCircle, Loader2, CheckCircle, X, Copy, Check } from 'lucide-react';
-import { youtubeService, TranscriptData, VideoSummary } from '@/services/youtubeService';
+import { useSearchParams } from 'react-router-dom';
+import { Youtube, Search, FileText, Sparkles, AlertCircle, Loader2, CheckCircle, X, Copy, Check, User, Eye } from 'lucide-react';
+import { youtubeService, TranscriptData, VideoSummary, VideoMetadata } from '@/services/youtubeService';
 
 export function YouTubePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transcriptData, setTranscriptData] = useState<TranscriptData | null>(null);
+  const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [summary, setSummary] = useState<VideoSummary | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [videoTitle, setVideoTitle] = useState<string>('');
   const [copiedTranscript, setCopiedTranscript] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
 
   const transcriptRefs = useRef<{ [key: number]: HTMLButtonElement | null }>({});
 
-  const handleLoadVideo = async () => {
-    if (!url.trim()) {
-      setError('Please enter a YouTube URL');
-      return;
+  // Load video from URL params on mount
+  useEffect(() => {
+    const videoId = searchParams.get('v');
+    if (videoId) {
+      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      setUrl(videoUrl);
+      loadVideoById(videoId);
     }
+  }, []);
 
+  // Helper to load video by ID
+  const loadVideoById = async (videoId: string) => {
     setLoading(true);
     setError(null);
     setTranscriptData(null);
+    setMetadata(null);
     setSummary(null);
     setSummaryError(null);
-    setVideoTitle('');
 
     try {
-      const data = await youtubeService.getTranscript(url.trim());
+      // Fetch transcript
+      const data = await youtubeService.getTranscript(videoId);
       setTranscriptData(data);
       setCurrentTime(0);
 
-      // Extract video title from iframe (will be set after load)
-      setVideoTitle('Loading video...');
+      // Fetch metadata
+      try {
+        const metadataData = await youtubeService.getVideoMetadata(data.video_id);
+        setMetadata(metadataData);
+      } catch (metaErr) {
+        console.warn('Failed to fetch video metadata:', metaErr);
+        // Non-fatal: continue even if metadata fails
+      }
     } catch (err: any) {
       console.error('Failed to load transcript:', err);
       setError(
@@ -50,6 +65,29 @@ export function YouTubePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLoadVideo = async () => {
+    if (!url.trim()) {
+      setError('Please enter a YouTube URL');
+      return;
+    }
+
+    // Extract video ID from URL
+    const extractedId = youtubeService.extractVideoId ?
+      await youtubeService.extractVideoId(url.trim()).then(res => res.video_id).catch(() => null) :
+      null;
+
+    if (!extractedId) {
+      setError('Invalid YouTube URL');
+      return;
+    }
+
+    // Update URL params
+    setSearchParams({ v: extractedId });
+
+    // Load video
+    await loadVideoById(extractedId);
   };
 
   // Find current transcript entry based on currentTime
@@ -226,6 +264,28 @@ export function YouTubePage() {
                   />
                 </div>
               </div>
+
+              {/* Video Metadata */}
+              {metadata && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                    {metadata.title}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      <span className="font-medium">{metadata.channel}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Eye className="w-4 h-4" />
+                      <span>{youtubeService.formatViewCount(metadata.view_count)}</span>
+                    </div>
+                    {metadata.upload_date && (
+                      <span>• {youtubeService.formatUploadDate(metadata.upload_date)}</span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Video Info */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">

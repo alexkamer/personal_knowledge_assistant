@@ -8,6 +8,7 @@ import re
 from typing import Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
+import yt_dlp
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import (
     NoTranscriptFound,
@@ -200,6 +201,49 @@ class YouTubeService:
                 })
 
         return results
+
+    @staticmethod
+    def get_video_metadata(video_id: str) -> Dict:
+        """
+        Fetch video metadata using yt-dlp.
+
+        Args:
+            video_id: YouTube video ID
+
+        Returns:
+            Dict with video metadata (title, channel, views, duration, etc.)
+
+        Raises:
+            Exception: If metadata cannot be fetched
+        """
+        try:
+            # Configure yt-dlp to extract info only (no download)
+            ydl_opts = {
+                'quiet': True,
+                'no_warnings': True,
+                'extract_flat': False,
+            }
+
+            url = f"https://www.youtube.com/watch?v={video_id}"
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+
+                return {
+                    "video_id": video_id,
+                    "title": info.get("title", "Unknown Title"),
+                    "channel": info.get("uploader", "Unknown Channel"),
+                    "channel_id": info.get("channel_id", ""),
+                    "view_count": info.get("view_count", 0),
+                    "duration": info.get("duration", 0),
+                    "upload_date": info.get("upload_date", ""),
+                    "thumbnail": info.get("thumbnail", ""),
+                    "description": info.get("description", ""),
+                }
+
+        except Exception as e:
+            logger.error(f"Error fetching metadata for {video_id}: {e}")
+            raise
 
 
 # Global service instance
