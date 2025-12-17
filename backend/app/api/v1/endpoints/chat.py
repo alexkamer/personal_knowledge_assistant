@@ -308,6 +308,7 @@ async def chat_stream(
 
             # Check if agent uses tools
             complete_response = ""
+            llm_service = get_llm_service()  # Initialize for both paths
             if agent_config.use_tools:
                 # Use tool orchestrator for multi-step reasoning
                 from app.services.tool_orchestrator import get_tool_orchestrator
@@ -352,7 +353,6 @@ async def chat_stream(
 
             else:
                 # Standard RAG path without tools
-                llm_service = get_llm_service()
                 stream = await llm_service.generate_answer(
                     query=clean_message,  # Use clean message without @ mention
                     context=context,

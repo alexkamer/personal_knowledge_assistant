@@ -85,7 +85,7 @@ You prioritize depth, accuracy, and comprehensive understanding."""
         name="code",
         display_name="💻 Code",
         description="Programming help with code examples",
-        model="qwen2.5-coder:14b",
+        model="qwen2.5:14b",  # Using general model since coder variant not available
         temperature=0.2,
         rag_top_k=10,
         max_conversation_history=10,
