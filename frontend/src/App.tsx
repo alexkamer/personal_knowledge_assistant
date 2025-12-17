@@ -3,10 +3,11 @@
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { FileText, MessageSquare, Settings, StickyNote } from 'lucide-react';
+import { FileText, MessageSquare, Settings, StickyNote, Youtube } from 'lucide-react';
 import NotesPage from './pages/NotesPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { ChatPage } from './pages/ChatPage';
+import { YouTubePage } from './pages/YouTubePage';
 import SettingsPage from './pages/SettingsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -76,6 +77,20 @@ function Navigation() {
               Documents
             </Link>
             <Link
+              to="/youtube"
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-md transition-colors
+                ${
+                  currentPath === '/youtube'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }
+              `}
+            >
+              <Youtube size={18} />
+              YouTube
+            </Link>
+            <Link
               to="/settings"
               className={`
                 flex items-center gap-2 px-4 py-2 rounded-md transition-colors
@@ -127,6 +142,14 @@ function App() {
                   element={
                     <ErrorBoundary fallbackTitle="Documents Error">
                       <DocumentsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/youtube"
+                  element={
+                    <ErrorBoundary fallbackTitle="YouTube Error">
+                      <YouTubePage />
                     </ErrorBoundary>
                   }
                 />
