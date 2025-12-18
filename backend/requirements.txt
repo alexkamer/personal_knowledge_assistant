@@ -27,11 +27,14 @@ pypdf==4.0.0
 python-docx==1.1.0
 langchain-text-splitters==0.0.1
 markdown==3.5.1
+beautifulsoup4==4.12.3
+trafilatura==1.7.0
 
 # Utilities
 python-dotenv==1.0.0
 httpx==0.25.2
 aiofiles==23.2.1
+ddgs==9.10.0
 
 # Testing & Quality
 pytest==7.4.4

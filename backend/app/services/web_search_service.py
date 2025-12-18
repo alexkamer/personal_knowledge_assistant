@@ -4,7 +4,7 @@ Web search service using DuckDuckGo.
 import logging
 from typing import List, Dict
 
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class WebSearchService:
 
     def __init__(self):
         """Initialize web search service."""
-        self.ddgs = DDGS()
+        pass
 
     async def search(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
         """
@@ -33,11 +33,17 @@ class WebSearchService:
             # DuckDuckGo search is synchronous, but we wrap it in async context
             results = []
 
+            # Create fresh DDGS instance for each search
+            ddgs = DDGS()
+
             # Perform text search
-            search_results = self.ddgs.text(
-                query=query,
+            search_results = list(ddgs.text(
+                query,
                 max_results=max_results,
-            )
+            ))
+
+            logger.info(f"Raw search results count: {len(search_results)}")
+            logger.info(f"First result sample: {search_results[0] if search_results else 'None'}")
 
             for result in search_results:
                 results.append({

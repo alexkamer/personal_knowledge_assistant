@@ -3,11 +3,12 @@
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { FileText, MessageSquare, Settings, StickyNote, Youtube } from 'lucide-react';
+import { FileText, MessageSquare, Settings, StickyNote, Youtube, Search } from 'lucide-react';
 import NotesPage from './pages/NotesPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { ChatPage } from './pages/ChatPage';
 import { YouTubePage } from './pages/YouTubePage';
+import { ResearchPage } from './pages/ResearchPage';
 import SettingsPage from './pages/SettingsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -28,8 +29,9 @@ function Navigation() {
 
   const navItems = [
     { path: '/chat', icon: MessageSquare, label: 'Chat', color: 'from-blue-500 to-blue-600' },
+    { path: '/research', icon: Search, label: 'Research', color: 'from-purple-500 to-purple-600' },
     { path: '/notes', icon: StickyNote, label: 'Notes', color: 'from-indigo-500 to-indigo-600' },
-    { path: '/documents', icon: FileText, label: 'Documents', color: 'from-purple-500 to-purple-600' },
+    { path: '/documents', icon: FileText, label: 'Documents', color: 'from-green-500 to-green-600' },
     { path: '/youtube', icon: Youtube, label: 'YouTube', color: 'from-red-500 to-red-600' },
     { path: '/settings', icon: Settings, label: 'Settings', color: 'from-stone-500 to-stone-600' },
   ];
@@ -113,6 +115,14 @@ function App() {
                   element={
                     <ErrorBoundary fallbackTitle="YouTube Error">
                       <YouTubePage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/research"
+                  element={
+                    <ErrorBoundary fallbackTitle="Research Error">
+                      <ResearchPage />
                     </ErrorBoundary>
                   }
                 />
