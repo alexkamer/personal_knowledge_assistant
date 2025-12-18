@@ -111,6 +111,7 @@ class ResearchSourceResponse(BaseModel):
     status: str
     failure_reason: Optional[str]
     document_id: Optional[str]
+    content: Optional[str] = None  # Full scraped content
     created_at: datetime
 
     class Config:

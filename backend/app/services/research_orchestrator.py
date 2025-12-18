@@ -17,6 +17,7 @@ from app.services.web_scraper_service import get_web_scraper_service
 from app.services.credibility_service import get_credibility_service
 from app.services.chunk_processing_service import get_chunk_processing_service
 from app.services.llm_service import get_llm_service
+from app.services.content_formatter_service import get_content_formatter_service
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class ResearchOrchestrator:
         self.credibility = get_credibility_service()
         self.chunk_service = get_chunk_processing_service()
         self.llm_service = get_llm_service()
+        self.content_formatter = get_content_formatter_service()
 
     async def deep_research(
         self,
@@ -178,13 +180,25 @@ class ResearchOrchestrator:
                         skipped_count += 1
                         continue
 
+                    # Format content into clean markdown
+                    try:
+                        formatted_content = await self.content_formatter.format_content(
+                            raw_content=content,
+                            url=source["url"],
+                            title=source["title"],
+                        )
+                        logger.info(f"Formatted content for {source['url']}")
+                    except Exception as e:
+                        logger.warning(f"Failed to format content for {source['url']}: {e}, using raw content")
+                        formatted_content = content
+
                     # Create document
                     document = await self._create_document_from_web(
                         db,
                         task_id=task_id,
                         url=source["url"],
                         title=source["title"],
-                        content=content,
+                        content=formatted_content,
                         credibility_score=source["credibility_score"],
                         source_type=source["source_type"],
                     )

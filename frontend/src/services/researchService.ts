@@ -70,6 +70,7 @@ export interface ResearchSource {
   status: string;
   failure_reason: string | null;
   document_id: string | null;
+  content: string | null;
   created_at: string;
 }
 

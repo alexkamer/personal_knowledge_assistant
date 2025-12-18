@@ -1,7 +1,10 @@
 /**
  * Research results panel component - displays completed research.
  */
-import { CheckCircle, ExternalLink, Star, AlertTriangle, Lightbulb, FileText } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle, ExternalLink, Star, AlertTriangle, Lightbulb, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ResearchResults } from '@/services/researchService';
 
 interface ResearchResultsPanelProps {
@@ -9,10 +12,25 @@ interface ResearchResultsPanelProps {
 }
 
 export function ResearchResultsPanel({ results }: ResearchResultsPanelProps) {
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
+
   const getStars = (score: number | null) => {
     if (!score) return 0;
     return Math.round(score * 5);
   };
+
+  const toggleSource = (sourceId: string) => {
+    setExpandedSources((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(sourceId)) {
+        newSet.delete(sourceId);
+      } else {
+        newSet.add(sourceId);
+      }
+      return newSet;
+    });
+  };
+
 
   return (
     <div className="bg-white dark:bg-stone-900 rounded-lg shadow-sm border border-stone-200 dark:border-stone-800 overflow-hidden">
@@ -181,6 +199,55 @@ export function ResearchResultsPanel({ results }: ResearchResultsPanelProps) {
                     <ExternalLink size={18} />
                   </a>
                 </div>
+
+                {/* Expandable Content */}
+                {source.content && (
+                  <div className="mt-3 border-t border-stone-200 dark:border-stone-800 pt-3">
+                    <button
+                      onClick={() => toggleSource(source.id)}
+                      className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                    >
+                      {expandedSources.has(source.id) ? (
+                        <>
+                          <ChevronUp size={16} />
+                          Hide content
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown size={16} />
+                          Read full content
+                        </>
+                      )}
+                    </button>
+
+                    {expandedSources.has(source.id) && (
+                      <div className="mt-3 p-4 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700 max-h-96 overflow-y-auto">
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              code: ({ inline, className, children, ...props }: any) => {
+                                return !inline ? (
+                                  <pre className="bg-stone-900 dark:bg-black rounded p-3 overflow-x-auto">
+                                    <code className={`text-green-400 text-xs font-mono ${className}`} {...props}>
+                                      {children}
+                                    </code>
+                                  </pre>
+                                ) : (
+                                  <code className="bg-stone-200 dark:bg-stone-800 px-1 py-0.5 rounded text-xs font-mono" {...props}>
+                                    {children}
+                                  </code>
+                                );
+                              },
+                            }}
+                          >
+                            {source.content}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

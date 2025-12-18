@@ -237,10 +237,14 @@ async def get_research_results(
             detail=f"Research task is not yet complete (status: {task.status})",
         )
 
-    # Get sources
+    # Get sources with documents
+    from sqlalchemy.orm import selectinload
+    from app.models.document import Document
+
     sources_result = await db.execute(
         select(ResearchSource)
         .where(ResearchSource.research_task_id == task_id)
+        .options(selectinload(ResearchSource.document))
         .order_by(desc(ResearchSource.credibility_score))
     )
     sources = sources_result.scalars().all()
@@ -263,6 +267,7 @@ async def get_research_results(
                 status=source.status,
                 failure_reason=source.failure_reason,
                 document_id=str(source.document_id) if source.document_id else None,
+                content=source.document.content if source.document else None,
                 created_at=source.created_at,
             )
             for source in sources
