@@ -70,6 +70,37 @@ def _extract_metadata(soup: BeautifulSoup, url: str) -> dict:
         "source_type": "web",
     }
 
+    # Identify source credibility level based on domain
+    domain = url.split('/')[2]
+    if 'plato.stanford.edu' in domain:
+        metadata['source_credibility'] = 'high'
+        metadata['source_name'] = 'Stanford Encyclopedia of Philosophy'
+        metadata['source_category'] = 'academic'
+    elif 'iep.utm.edu' in domain:
+        metadata['source_credibility'] = 'high'
+        metadata['source_name'] = 'Internet Encyclopedia of Philosophy'
+        metadata['source_category'] = 'academic'
+    elif 'britannica.com' in domain:
+        metadata['source_credibility'] = 'high'
+        metadata['source_name'] = 'Encyclopedia Britannica'
+        metadata['source_category'] = 'encyclopedia'
+    elif 'nasa.gov' in domain:
+        metadata['source_credibility'] = 'high'
+        metadata['source_name'] = 'NASA'
+        metadata['source_category'] = 'government'
+    elif 'nih.gov' in domain or 'ncbi.nlm.nih.gov' in domain or 'genome.gov' in domain:
+        metadata['source_credibility'] = 'high'
+        metadata['source_name'] = 'National Institutes of Health'
+        metadata['source_category'] = 'government'
+    elif 'cdc.gov' in domain:
+        metadata['source_credibility'] = 'high'
+        metadata['source_name'] = 'Centers for Disease Control'
+        metadata['source_category'] = 'government'
+    elif 'wikipedia.org' in domain:
+        metadata['source_credibility'] = 'medium'
+        metadata['source_name'] = 'Wikipedia'
+        metadata['source_category'] = 'encyclopedia'
+
     # Title
     title_tag = soup.find('title')
     if title_tag:
@@ -106,37 +137,67 @@ def _extract_main_content(soup: BeautifulSoup) -> str:
     """
     Extract the main text content from the page.
 
-    Tries multiple strategies to find the main content area.
+    Tries multiple strategies to find the main content area,
+    including specialized extractors for academic sources.
     """
-    # Strategy 1: Look for article tag
+    # Strategy 1: Stanford Encyclopedia of Philosophy
+    sep_entry = soup.find(id='aueditable')
+    if sep_entry:
+        return _clean_text(sep_entry.get_text())
+
+    # Strategy 2: Internet Encyclopedia of Philosophy
+    iep_content = soup.find(id='post')
+    if iep_content:
+        return _clean_text(iep_content.get_text())
+
+    # Strategy 3: Britannica articles
+    britannica_content = soup.find(class_=lambda x: x and 'article-content' in ' '.join(x).lower())
+    if britannica_content:
+        return _clean_text(britannica_content.get_text())
+
+    # Strategy 4: NASA articles
+    nasa_content = soup.find(class_=lambda x: x and 'wysiwyg-content' in ' '.join(x).lower())
+    if nasa_content:
+        return _clean_text(nasa_content.get_text())
+
+    # Strategy 5: NIH/NCBI articles
+    ncbi_content = soup.find(class_='article')
+    if ncbi_content:
+        return _clean_text(ncbi_content.get_text())
+
+    # Strategy 6: Look for article tag
     article = soup.find('article')
     if article:
         return _clean_text(article.get_text())
 
-    # Strategy 2: Look for main tag
+    # Strategy 7: Look for main tag
     main = soup.find('main')
     if main:
         return _clean_text(main.get_text())
 
-    # Strategy 3: Look for div with id/class containing 'content', 'article', 'post'
-    content_indicators = ['content', 'article', 'post', 'entry', 'text', 'body']
+    # Strategy 8: Look for div with id/class containing 'content', 'article', 'post'
+    content_indicators = ['content', 'article', 'post', 'entry', 'text', 'body', 'main-content']
     for indicator in content_indicators:
         # Try ID
         content_div = soup.find(id=lambda x: x and indicator in x.lower())
         if content_div:
-            return _clean_text(content_div.get_text())
+            text = _clean_text(content_div.get_text())
+            if len(text.strip()) > 500:  # Only use if substantial content
+                return text
 
         # Try class
         content_div = soup.find(class_=lambda x: x and indicator in ' '.join(x).lower())
         if content_div:
-            return _clean_text(content_div.get_text())
+            text = _clean_text(content_div.get_text())
+            if len(text.strip()) > 500:  # Only use if substantial content
+                return text
 
-    # Strategy 4: Fall back to body
+    # Strategy 9: Fall back to body
     body = soup.find('body')
     if body:
         return _clean_text(body.get_text())
 
-    # Strategy 5: Get all text as last resort
+    # Strategy 10: Get all text as last resort
     return _clean_text(soup.get_text())
 
 
