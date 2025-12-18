@@ -11,6 +11,7 @@ export interface Document {
   created_at: string;
   updated_at: string;
   metadata_: string | null;
+  category: string | null;
 }
 
 export interface DocumentContent {

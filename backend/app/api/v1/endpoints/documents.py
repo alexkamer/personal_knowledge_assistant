@@ -12,6 +12,8 @@ from app.schemas.document import (
     DocumentContentResponse,
     DocumentListResponse,
     DocumentResponse,
+    DocumentFromURLRequest,
+    DocumentFromURLResponse,
 )
 from app.services.document_service import DocumentService
 from app.schemas.document import DocumentCreate
@@ -20,6 +22,9 @@ from app.utils.file_handler import (
     extract_text_from_file,
     save_upload_file,
 )
+from app.utils.url_extractor import extract_text_from_url
+from app.services.categorization_service import categorize_document, get_all_categories
+import json
 
 router = APIRouter()
 
@@ -85,6 +90,13 @@ async def upload_document(
             detail=f"Failed to extract text: {str(e)}",
         )
 
+    # Auto-categorize the document
+    category = categorize_document(
+        filename=file.filename,
+        content=content,
+        file_type=file_type,
+    )
+
     # Create document record in database
     document_data = DocumentCreate(
         filename=file.filename,
@@ -93,6 +105,7 @@ async def upload_document(
         file_size=file_size,
         content=content,
         metadata_=None,
+        category=category,
     )
 
     try:
@@ -107,18 +120,97 @@ async def upload_document(
         )
 
 
+@router.post("/from-url", response_model=DocumentFromURLResponse, status_code=status.HTTP_201_CREATED)
+async def create_document_from_url(
+    request: DocumentFromURLRequest,
+    db: AsyncSession = Depends(get_db),
+) -> DocumentFromURLResponse:
+    """
+    Create a document by fetching content from a URL.
+
+    Fetches the webpage, extracts main content, and stores it as a document.
+    Supports most web pages including articles, blog posts, and documentation.
+    """
+    # Extract content from URL
+    try:
+        content, metadata = await extract_text_from_url(request.url)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch URL: {str(e)}",
+        )
+
+    # Generate filename from URL or title
+    filename = metadata.get('title', metadata.get('source_url', 'unknown'))
+    # Clean filename (remove invalid chars)
+    filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_')).strip()
+    if not filename:
+        filename = "web_document"
+    filename = f"{filename[:100]}.html"  # Truncate if too long
+
+    # Auto-categorize the document
+    category = categorize_document(
+        filename=filename,
+        content=content,
+        metadata_json=json.dumps(metadata),
+        file_type="html",
+    )
+
+    # Create document record in database
+    document_data = DocumentCreate(
+        filename=filename,
+        file_path=request.url,  # Store URL as file_path for web documents
+        file_type="html",
+        file_size=len(content.encode('utf-8')),
+        content=content,
+        metadata_=json.dumps(metadata),
+        category=category,
+    )
+
+    try:
+        document = await DocumentService.create_document(db, document_data)
+        return DocumentFromURLResponse.model_validate(document)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create document record: {str(e)}",
+        )
+
+
 @router.get("/", response_model=DocumentListResponse)
 async def list_documents(
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    category: Annotated[str | None, Query()] = None,
+    sort_by: Annotated[str, Query()] = "created_at",
+    sort_order: Annotated[str, Query()] = "desc",
     db: AsyncSession = Depends(get_db),
 ) -> DocumentListResponse:
     """
-    List all documents with pagination.
+    List all documents with pagination, filtering, and sorting.
 
-    Returns documents ordered by creation date (newest first).
+    Args:
+        skip: Number of documents to skip
+        limit: Maximum number of documents to return
+        category: Filter by category (optional)
+        sort_by: Field to sort by (created_at, filename, file_size, category)
+        sort_order: Sort order (asc or desc)
+
+    Returns documents based on filters and sorting.
     """
-    documents, total = await DocumentService.list_documents(db, skip=skip, limit=limit)
+    documents, total = await DocumentService.list_documents(
+        db,
+        skip=skip,
+        limit=limit,
+        category=category,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
 
     return DocumentListResponse(
         documents=[DocumentResponse.model_validate(doc) for doc in documents],
@@ -143,6 +235,14 @@ async def get_document(
         )
 
     return DocumentContentResponse.model_validate(document)
+
+
+@router.get("/categories/list", response_model=list[str])
+async def list_categories() -> list[str]:
+    """
+    Get list of all available document categories.
+    """
+    return get_all_categories()
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

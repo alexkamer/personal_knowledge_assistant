@@ -73,29 +73,48 @@ class DocumentService:
         db: AsyncSession,
         skip: int = 0,
         limit: int = 100,
+        category: str | None = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
     ) -> tuple[list[Document], int]:
         """
-        List documents with pagination.
+        List documents with pagination, filtering, and sorting.
 
         Args:
             db: Database session
             skip: Number of documents to skip
             limit: Maximum number of documents to return
+            category: Filter by category (optional)
+            sort_by: Field to sort by
+            sort_order: Sort order (asc or desc)
 
         Returns:
             Tuple of (documents list, total count)
         """
-        # Get total count
-        count_result = await db.execute(select(func.count(Document.id)))
+        # Build query
+        query = select(Document)
+
+        # Apply category filter
+        if category:
+            query = query.where(Document.category == category)
+
+        # Get total count with filters
+        count_query = select(func.count()).select_from(query.subquery())
+        count_result = await db.execute(count_query)
         total = count_result.scalar_one()
 
-        # Get documents
-        result = await db.execute(
-            select(Document)
-            .order_by(Document.created_at.desc())
-            .offset(skip)
-            .limit(limit)
-        )
+        # Apply sorting
+        sort_column = getattr(Document, sort_by, Document.created_at)
+        if sort_order == "asc":
+            query = query.order_by(sort_column.asc())
+        else:
+            query = query.order_by(sort_column.desc())
+
+        # Apply pagination
+        query = query.offset(skip).limit(limit)
+
+        # Execute query
+        result = await db.execute(query)
         documents = list(result.scalars().all())
 
         return documents, total

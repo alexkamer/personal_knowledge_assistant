@@ -21,6 +21,7 @@ class DocumentCreate(DocumentBase):
     file_size: int = Field(..., ge=0, description="File size in bytes")
     content: str = Field(..., description="Extracted text content")
     metadata_: Optional[str] = Field(None, description="Additional metadata as JSON")
+    category: Optional[str] = Field(None, description="Document category")
 
 
 class DocumentResponse(DocumentBase):
@@ -31,6 +32,7 @@ class DocumentResponse(DocumentBase):
     file_size: int
     created_at: datetime
     updated_at: datetime
+    category: Optional[str] = None
 
     # Optional fields
     metadata_: Optional[str] = None
@@ -57,3 +59,15 @@ class DocumentContentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DocumentFromURLRequest(BaseModel):
+    """Schema for creating a document from a URL."""
+
+    url: str = Field(..., description="URL to fetch content from")
+
+
+class DocumentFromURLResponse(DocumentResponse):
+    """Schema for document created from URL."""
+
+    pass

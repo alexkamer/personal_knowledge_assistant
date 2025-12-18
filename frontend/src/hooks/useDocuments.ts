@@ -5,12 +5,26 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { documentService } from '@/services/documentService';
 
 /**
- * Hook to get list of documents.
+ * Hook to get list of documents with filtering and sorting.
  */
-export function useDocuments() {
+export function useDocuments(
+  category?: string,
+  sortBy: string = 'created_at',
+  sortOrder: string = 'desc'
+) {
   return useQuery({
-    queryKey: ['documents'],
-    queryFn: () => documentService.getDocuments(),
+    queryKey: ['documents', category, sortBy, sortOrder],
+    queryFn: () => documentService.getDocuments(0, 100, category, sortBy, sortOrder),
+  });
+}
+
+/**
+ * Hook to get list of categories.
+ */
+export function useCategories() {
+  return useQuery({
+    queryKey: ['categories'],
+    queryFn: () => documentService.getCategories(),
   });
 }
 
@@ -47,6 +61,20 @@ export function useDeleteDocument() {
 
   return useMutation({
     mutationFn: (id: string) => documentService.deleteDocument(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+}
+
+/**
+ * Hook to create a document from a URL.
+ */
+export function useCreateDocumentFromURL() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (url: string) => documentService.createDocumentFromURL(url),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
     },

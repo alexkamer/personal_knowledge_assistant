@@ -10,6 +10,8 @@ from app.models.conversation import Conversation, Message
 from app.models.message_feedback import MessageFeedback
 from app.models.tag import Tag
 from app.models.note_tag import NoteTag
+from app.models.research_task import ResearchTask
+from app.models.research_source import ResearchSource
 
 __all__ = [
     "Note",
@@ -22,4 +24,6 @@ __all__ = [
     "MessageFeedback",
     "Tag",
     "NoteTag",
+    "ResearchTask",
+    "ResearchSource",
 ]

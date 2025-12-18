@@ -1,9 +1,9 @@
 /**
  * Documents list component showing uploaded documents.
  */
-import React from 'react';
-import { FileText, Trash2, Calendar, HardDrive, AlertCircle, RefreshCw } from 'lucide-react';
-import { useDocuments, useDeleteDocument } from '@/hooks/useDocuments';
+import React, { useState } from 'react';
+import { FileText, Trash2, Calendar, HardDrive, AlertCircle, RefreshCw, Filter, ArrowUpDown, Tag } from 'lucide-react';
+import { useDocuments, useDeleteDocument, useCategories } from '@/hooks/useDocuments';
 import type { Document } from '@/types/document';
 
 interface DocumentsListProps {
@@ -12,7 +12,13 @@ interface DocumentsListProps {
 }
 
 export function DocumentsList({ onSelectDocument, selectedDocumentId }: DocumentsListProps) {
-  const { data, isLoading, error, refetch } = useDocuments();
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [showFilters, setShowFilters] = useState(false);
+
+  const { data, isLoading, error, refetch } = useDocuments(selectedCategory, sortBy, sortOrder);
+  const { data: categories } = useCategories();
   const deleteDocument = useDeleteDocument();
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -44,27 +50,27 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-stone-600">Loading documents...</p>
+      <div className="bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/50 dark:border-stone-800/50 rounded-2xl shadow-lg p-8 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-500 mx-auto"></div>
+        <p className="mt-4 text-stone-600 dark:text-stone-400">Loading documents...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-8">
+      <div className="bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/50 dark:border-stone-800/50 rounded-2xl shadow-lg p-8">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center gap-2 text-red-600">
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
             <AlertCircle size={20} />
             <span className="font-medium">Failed to load documents</span>
           </div>
-          <p className="text-sm text-stone-600 text-center">
+          <p className="text-sm text-stone-600 dark:text-stone-400 text-center">
             {(error as any)?.response?.data?.detail || error.message || 'An unexpected error occurred'}
           </p>
           <button
             onClick={() => refetch()}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all"
           >
             <RefreshCw size={16} />
             Retry
@@ -76,10 +82,10 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
 
   if (!data || data.documents.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-8">
-        <div className="text-center text-stone-500">
-          <FileText className="mx-auto mb-4" size={48} />
-          <p className="font-medium">No documents yet</p>
+      <div className="bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/50 dark:border-stone-800/50 rounded-2xl shadow-lg p-8">
+        <div className="text-center text-stone-500 dark:text-stone-400">
+          <FileText className="mx-auto mb-4 text-stone-300 dark:text-stone-600" size={48} />
+          <p className="font-medium text-lg">No documents yet</p>
           <p className="text-sm mt-2">Upload your first document to get started</p>
         </div>
       </div>
@@ -87,35 +93,145 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="px-6 py-4 border-b border-stone-200 bg-stone-50">
-        <h2 className="text-lg font-semibold text-stone-900">
+    <div className="space-y-4">
+      {/* Header with count and controls */}
+      <div className="flex items-center justify-between px-3">
+        <h2 className="text-xl font-semibold text-stone-800 dark:text-white">
           Documents ({data.total})
         </h2>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 px-3 py-2 text-sm bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-300/50 dark:border-stone-700/50 rounded-lg hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors"
+        >
+          <Filter size={16} />
+          {showFilters ? 'Hide' : 'Show'} Filters
+        </button>
       </div>
 
-      <div className="divide-y divide-stone-200">
+      {/* Filters and Sorting Panel */}
+      {showFilters && (
+        <div className="bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-300/50 dark:border-stone-700/50 rounded-xl shadow-lg p-4 space-y-4">
+          {/* Category Filter */}
+          <div>
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2 flex items-center gap-2">
+              <Tag size={16} />
+              Category
+            </label>
+            <select
+              value={selectedCategory || ''}
+              onChange={(e) => setSelectedCategory(e.target.value || undefined)}
+              className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-stone-900 dark:text-white"
+            >
+              <option value="">All Categories</option>
+              {categories?.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort Controls */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2 flex items-center gap-2">
+                <ArrowUpDown size={16} />
+                Sort By
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-stone-900 dark:text-white"
+              >
+                <option value="created_at">Date Created</option>
+                <option value="filename">Name</option>
+                <option value="file_size">Size</option>
+                <option value="category">Category</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+                Order
+              </label>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-stone-900 dark:text-white"
+              >
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Active Filters Summary */}
+          {(selectedCategory || sortBy !== 'created_at' || sortOrder !== 'desc') && (
+            <div className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400">
+              <span className="font-medium">Active:</span>
+              {selectedCategory && (
+                <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded">
+                  {selectedCategory}
+                </span>
+              )}
+              {(sortBy !== 'created_at' || sortOrder !== 'desc') && (
+                <span className="px-2 py-1 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded">
+                  {sortBy} ({sortOrder})
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  setSelectedCategory(undefined);
+                  setSortBy('created_at');
+                  setSortOrder('desc');
+                }}
+                className="ml-auto text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-3">
         {data.documents.map((document) => (
           <div
             key={document.id}
             onClick={() => onSelectDocument?.(document)}
             className={`
-              p-4 hover:bg-stone-50 transition-colors cursor-pointer
-              ${selectedDocumentId === document.id ? 'bg-blue-50' : ''}
+              p-5 cursor-pointer transition-all duration-200 rounded-2xl shadow-lg hover:shadow-xl animate-slide-in-left
+              ${
+                selectedDocumentId === document.id
+                  ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white scale-[1.02]'
+                  : 'bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/50 dark:border-stone-800/50 hover:scale-[1.01]'
+              }
             `}
           >
             <div className="flex items-start justify-between">
               <div className="flex items-start flex-1 min-w-0">
                 <FileText
-                  className="flex-shrink-0 mr-3 mt-1 text-blue-600"
+                  className={`flex-shrink-0 mr-3 mt-1 ${
+                    selectedDocumentId === document.id
+                      ? 'text-white'
+                      : 'text-indigo-600 dark:text-indigo-400'
+                  }`}
                   size={20}
                 />
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium text-stone-900 truncate">
+                  <h3 className={`text-sm font-semibold truncate ${
+                    selectedDocumentId === document.id
+                      ? 'text-white'
+                      : 'text-stone-900 dark:text-white'
+                  }`}>
                     {document.filename}
                   </h3>
 
-                  <div className="mt-2 flex items-center gap-4 text-xs text-stone-500">
+                  <div className={`mt-2 flex items-center gap-4 text-xs ${
+                    selectedDocumentId === document.id
+                      ? 'text-indigo-100'
+                      : 'text-stone-500 dark:text-stone-400'
+                  }`}>
                     <span className="flex items-center gap-1">
                       <HardDrive size={14} />
                       {formatFileSize(document.file_size)}
@@ -124,17 +240,42 @@ export function DocumentsList({ onSelectDocument, selectedDocumentId }: Document
                       <Calendar size={14} />
                       {formatDate(document.created_at)}
                     </span>
-                    <span className="uppercase bg-stone-100 px-2 py-0.5 rounded">
+                    <span className={`uppercase px-2 py-0.5 rounded-full font-medium ${
+                      selectedDocumentId === document.id
+                        ? 'bg-white/20 text-white backdrop-blur-sm'
+                        : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400'
+                    }`}>
                       {document.file_type}
                     </span>
                   </div>
+
+                  {document.category && (
+                    <div className={`mt-2 flex items-center gap-1.5 text-xs ${
+                      selectedDocumentId === document.id
+                        ? 'text-indigo-100'
+                        : 'text-stone-600 dark:text-stone-400'
+                    }`}>
+                      <Tag size={14} />
+                      <span className={`px-2 py-0.5 rounded-full font-medium ${
+                        selectedDocumentId === document.id
+                          ? 'bg-white/20 text-white backdrop-blur-sm'
+                          : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                      }`}>
+                        {document.category}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <button
                 onClick={(e) => handleDelete(e, document.id)}
                 disabled={deleteDocument.isPending}
-                className="ml-4 p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
+                className={`ml-4 p-2 rounded-lg transition-colors disabled:opacity-50 ${
+                  selectedDocumentId === document.id
+                    ? 'text-white hover:bg-white/20'
+                    : 'text-stone-400 dark:text-stone-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                }`}
                 aria-label="Delete document"
               >
                 <Trash2 size={16} />
