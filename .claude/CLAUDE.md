@@ -512,9 +512,25 @@ This project has access to several Model Context Protocol (MCP) servers that ext
 4. Implement in project
 ```
 
-## Recent Features (2025-12-16)
+## Recent Features
 
-### Real-Time RAG Pipeline Feedback
+### AI-Powered Autocomplete (2025-12-18)
+- **What**: GitHub Copilot-style inline autocomplete for notes editor with ghost text suggestions
+- **Why**: Accelerates note-taking with contextually relevant AI completions
+- **How**:
+  - Powered by local Ollama LLM (Llama 3.2 3B) for privacy and speed
+  - Inline ghost text overlay appears after 500ms typing pause
+  - Tab to accept, Escape to dismiss suggestion
+  - Smart triggering: no suggestions immediately after sentence punctuation
+  - Context-aware: uses previous 1-2 sentences for better completions
+  - Sentence-aware capitalization after `.!?`
+- **Performance**: ~300ms response time, 5-second timeout with graceful degradation
+- **Files**:
+  - Backend: `app/api/v1/endpoints/autocomplete.py`, `app/schemas/autocomplete.py`
+  - Frontend: `src/components/notes/AIAutocompletePlugin.tsx`, `src/services/autocompleteService.ts`
+  - Integration: `src/components/notes/LexicalOutlinerEditor.tsx:286`
+
+### Real-Time RAG Pipeline Feedback (2025-12-16)
 - **What**: Live status updates during query processing
 - **Why**: Improves user experience by showing what's happening behind the scenes
 - **How**:
@@ -526,7 +542,7 @@ This project has access to several Model Context Protocol (MCP) servers that ext
   - Frontend: `src/pages/ChatPage.tsx:78-80, 164-172`
 - **Tests**: `frontend/src/pages/ChatPage.test.tsx:94-221` (3 tests)
 
-### Configurable Source Filtering (Notes Toggle)
+### Configurable Source Filtering (Notes Toggle) (2025-12-16)
 - **What**: Users can choose to include or exclude personal notes from search results
 - **Why**: Separates verified/reputable sources (documents, web) from personal thoughts (notes)
 - **Default**: Notes excluded (reputable sources only)
