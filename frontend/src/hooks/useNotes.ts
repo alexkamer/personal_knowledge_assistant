@@ -10,10 +10,10 @@ const NOTES_QUERY_KEY = ['notes'];
 /**
  * Hook to fetch all notes with optional tag filtering.
  */
-export function useNotes(tags?: string[]) {
+export function useNotes(skip: number = 0, limit: number = 20, tags?: string[]) {
   return useQuery({
-    queryKey: [...NOTES_QUERY_KEY, { tags }],
-    queryFn: () => noteService.getNotes(0, 100, tags),
+    queryKey: [...NOTES_QUERY_KEY, skip, limit, { tags }],
+    queryFn: () => noteService.getNotes(skip, limit, tags),
   });
 }
 

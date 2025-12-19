@@ -8,10 +8,10 @@ import { chatService } from '@/services/chatService';
 /**
  * Hook to get list of conversations.
  */
-export function useConversations() {
+export function useConversations(skip: number = 0, limit: number = 20) {
   return useQuery({
-    queryKey: ['conversations'],
-    queryFn: () => chatService.getConversations(),
+    queryKey: ['conversations', skip, limit],
+    queryFn: () => chatService.getConversations(skip, limit),
   });
 }
 

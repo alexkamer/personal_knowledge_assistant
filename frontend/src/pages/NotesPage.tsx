@@ -1,50 +1,119 @@
 /**
  * Notes page with list and form.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import NotesList from '../components/notes/NotesList';
 import NoteForm from '../components/notes/NoteForm';
 import { TagFilter } from '../components/tags/TagFilter';
+import { Pagination } from '@/components/ui/Pagination';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Note } from '../types/note';
 import { useNotes } from '../hooks/useNotes';
+import { usePaginationState } from '@/hooks/usePaginationState';
 import { ContextPanel } from '@/components/context/ContextPanel';
 
 function NotesPage() {
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // URL state management
+  const selectedNoteId = searchParams.get('note') || null;
+  const isCreating = searchParams.get('new') === 'true';
+  const selectedTags = searchParams.get('tags')?.split(',').filter(Boolean) || [];
+  const isSidebarCollapsed = searchParams.get('hideSidebar') === 'true';
+
   const [isContextPanelCollapsed, setIsContextPanelCollapsed] = useState(false);
-  const { data: notesData } = useNotes();
 
-  const handleSelectNote = (note: Note) => {
-    setSelectedNote(note);
-    setIsCreating(false);
-  };
+  // Pagination state
+  const pagination = usePaginationState({
+    defaultLimit: 20,
+    paramPrefix: 'note_',
+  });
 
-  const handleNavigateToNoteById = (noteId: string) => {
-    const notes = notesData?.notes || [];
-    const targetNote = notes.find((n: Note) => n.id === noteId);
-    if (targetNote) {
-      handleSelectNote(targetNote);
-    }
-  };
+  // Fetch notes with pagination
+  const { data: notesData, isLoading } = useNotes(
+    pagination.offset,
+    pagination.limit,
+    selectedTags.length > 0 ? selectedTags : undefined
+  );
 
-  const handleCreateNew = () => {
-    setSelectedNote(null);
-    setIsCreating(true);
-  };
+  // Get selected note from fetched data
+  const selectedNote = useMemo(() => {
+    if (!selectedNoteId || !notesData) return null;
+    return notesData.notes.find((n: Note) => n.id === selectedNoteId) || null;
+  }, [selectedNoteId, notesData]);
 
-  const handleCancel = () => {
-    setSelectedNote(null);
-    setIsCreating(false);
-  };
+  // URL param update helper
+  const updateURLParam = useCallback((key: string, value: string | null) => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      if (value) {
+        newParams.set(key, value);
+      } else {
+        newParams.delete(key);
+      }
+      return newParams;
+    });
+  }, [setSearchParams]);
 
-  const handleSaveComplete = () => {
-    setSelectedNote(null);
-    setIsCreating(false);
-  };
+  const handleSelectNote = useCallback((note: Note) => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      newParams.set('note', note.id);
+      newParams.delete('new');
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  const handleNavigateToNoteById = useCallback((noteId: string) => {
+    updateURLParam('note', noteId);
+    updateURLParam('new', null);
+  }, [updateURLParam]);
+
+  const handleCreateNew = useCallback(() => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete('note');
+      newParams.set('new', 'true');
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  const handleCancel = useCallback(() => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete('note');
+      newParams.delete('new');
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  const handleSaveComplete = useCallback(() => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete('note');
+      newParams.delete('new');
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  const handleTagsChange = useCallback((tags: string[]) => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      if (tags.length > 0) {
+        newParams.set('tags', tags.join(','));
+      } else {
+        newParams.delete('tags');
+      }
+      // Reset to page 1 when tags change
+      newParams.delete('note_page');
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  const handleToggleSidebar = useCallback(() => {
+    updateURLParam('hideSidebar', !isSidebarCollapsed ? 'true' : null);
+  }, [updateURLParam, isSidebarCollapsed]);
 
   // Listen for wiki link navigation events
   useEffect(() => {
@@ -81,35 +150,66 @@ function NotesPage() {
         <div className={`${isSidebarCollapsed ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 flex flex-col h-full`}>
           {/* Tag Filter */}
           <div className="flex-shrink-0">
-            <TagFilter selectedTags={selectedTags} onTagsChange={setSelectedTags} />
+            <TagFilter selectedTags={selectedTags} onTagsChange={handleTagsChange} />
           </div>
 
           {/* Notes List with header */}
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300 pl-3">Notes</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 pl-3">
+                Notes {notesData && `(${notesData.total})`}
+              </h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCreateNew}
-                  className="px-4 py-1.5 bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 rounded-md text-sm font-medium transition-colors"
+                  className="px-4 py-1.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-md text-sm font-medium transition-colors"
                 >
                   New Note
                 </button>
                 <button
-                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                  className="p-1.5 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-md transition-colors"
+                  onClick={handleToggleSidebar}
+                  className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-800 rounded-md transition-colors"
                   title="Hide sidebar"
                 >
                   <ChevronLeft size={18} />
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
-              <NotesList
-                onSelectNote={handleSelectNote}
-                selectedNoteId={selectedNote?.id}
-                selectedTags={selectedTags}
-              />
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 flex flex-col">
+              {isLoading ? (
+                <div className="p-4 text-center text-gray-400 text-sm">
+                  Loading notes...
+                </div>
+              ) : notesData && notesData.notes.length > 0 ? (
+                <>
+                  <div className="flex-1 overflow-y-auto">
+                    <NotesList
+                      notes={notesData.notes}
+                      onSelectNote={handleSelectNote}
+                      selectedNoteId={selectedNote?.id}
+                    />
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {notesData.total > pagination.limit && (
+                    <div className="flex-shrink-0 mt-3 px-2">
+                      <Pagination
+                        currentPage={pagination.page}
+                        totalPages={pagination.totalPages(notesData.total)}
+                        onPageChange={pagination.setPage}
+                        hasNext={pagination.hasNextPage(notesData.total)}
+                        hasPrev={pagination.hasPrevPage()}
+                        showPageNumbers={false}
+                        showFirstLast={false}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="p-4 text-center text-gray-400 text-sm">
+                  {selectedTags.length > 0 ? 'No notes with selected tags' : 'No notes yet'}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -117,8 +217,8 @@ function NotesPage() {
         {/* Show Sidebar Button - Only visible when collapsed */}
         {isSidebarCollapsed && (
           <button
-            onClick={() => setIsSidebarCollapsed(false)}
-            className="absolute top-3 left-2 p-2 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-lg shadow-md hover:shadow-lg transition-all z-10"
+            onClick={handleToggleSidebar}
+            className="absolute top-3 left-2 p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-lg shadow-md hover:shadow-lg transition-all z-10"
             title="Show sidebar"
           >
             <ChevronRight size={20} />
@@ -136,9 +236,9 @@ function NotesPage() {
             onNavigateToNote={handleNavigateToNoteById}
           />
         ) : (
-          <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200 dark:border-stone-800 rounded-lg p-12 text-center text-stone-500 dark:text-stone-400 h-full flex items-center justify-center">
+          <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-lg p-12 text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">
             <div>
-              <p className="text-sm text-stone-600 dark:text-stone-400">Select a note to edit or create a new one</p>
+              <p className="text-sm text-gray-400">Select a note to edit or create a new one</p>
             </div>
           </div>
         )}

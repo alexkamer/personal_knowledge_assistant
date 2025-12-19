@@ -8,13 +8,15 @@ import { documentService } from '@/services/documentService';
  * Hook to get list of documents with filtering and sorting.
  */
 export function useDocuments(
+  skip: number = 0,
+  limit: number = 20,
   category?: string,
   sortBy: string = 'created_at',
   sortOrder: string = 'desc'
 ) {
   return useQuery({
-    queryKey: ['documents', category, sortBy, sortOrder],
-    queryFn: () => documentService.getDocuments(0, 100, category, sortBy, sortOrder),
+    queryKey: ['documents', skip, limit, category, sortBy, sortOrder],
+    queryFn: () => documentService.getDocuments(skip, limit, category, sortBy, sortOrder),
   });
 }
 

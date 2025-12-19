@@ -1,13 +1,13 @@
 /**
  * Chat page for AI-powered Q&A using RAG.
  */
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
-import { MessageSquare, Plus, MoreVertical, AlertCircle, Search, X, ChevronLeft, ChevronRight, Moon, Sun, Download, Pin, PinOff } from 'lucide-react';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { Plus, MoreVertical, AlertCircle, Search, X, ChevronLeft, ChevronRight, Download, Pin, PinOff } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
-import { GradientMesh } from '@/components/ui/GradientMesh';
+import { Pagination } from '@/components/ui/Pagination';
 import { TokenUsage } from '@/components/chat/TokenUsage';
 import { LearningToolsFAB } from '@/components/chat/LearningToolsFAB';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
@@ -21,19 +21,25 @@ import {
   useDeleteConversation,
   useUpdateConversation,
 } from '@/hooks/useChat';
+import { usePaginationState } from '@/hooks/usePaginationState';
 import { chatService } from '@/services/chatService';
 import { learningGapsService, type LearningGap, type LearningPathResponse } from '@/services/learningGapsService';
 import { metabolizationService, type MetabolizationQuestion, type AnswerEvaluationResponse } from '@/services/metabolizationService';
 import { useCreateSnapshot } from '@/hooks/useKnowledgeEvolution';
-import { useTheme } from '@/contexts/ThemeContext';
 import { downloadConversationAsMarkdown } from '@/utils/exportMarkdown';
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
 import type { Message, ToolCall, ToolResult } from '@/types/chat';
 
 export function ChatPage() {
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // URL state management
+  const selectedConversationId = searchParams.get('conv') || null;
+  const searchQuery = searchParams.get('search') || '';
+  const isSidebarCollapsed = searchParams.get('hideSidebar') === 'true';
+
+  // Local state (not persisted in URL)
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(true); // Changed default to true
   const [includeNotes, setIncludeNotes] = useState<boolean>(false); // Default to false - only use reputable sources
   const [socraticMode, setSocraticMode] = useState<boolean>(false); // Default to false - direct answers
@@ -45,13 +51,18 @@ export function ChatPage() {
   const [streamingStatus, setStreamingStatus] = useState<string>('');
   const [streamingToolCalls, setStreamingToolCalls] = useState<ToolCall[]>([]);
   const [streamingToolResults, setStreamingToolResults] = useState<ToolResult[]>([]);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeAgent, setActiveAgent] = useState<{name: string; display_name: string; description: string} | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [prefillQuestion, setPrefillQuestion] = useState<string>('');
+
+  // Pagination state
+  const pagination = usePaginationState({
+    defaultLimit: 20,
+    paramPrefix: 'conv_',
+  });
 
   // Learning Gaps state
   const [showLearningGaps, setShowLearningGaps] = useState(false);
@@ -78,13 +89,52 @@ export function ChatPage() {
 
   const queryClient = useQueryClient();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
-  const { data: conversationsData } = useConversations();
+
+  // Fetch conversations with pagination
+  const { data: conversationsData } = useConversations(
+    pagination.offset,
+    pagination.limit
+  );
   const { data: conversationData, isLoading: isLoadingConversation } = useConversation(
     selectedConversationId
   );
   const deleteConversation = useDeleteConversation();
   const updateConversation = useUpdateConversation();
+
+  // URL param update helpers
+  const updateURLParam = useCallback((key: string, value: string | null) => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      if (value) {
+        newParams.set(key, value);
+      } else {
+        newParams.delete(key);
+      }
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  const handleSelectConversation = useCallback((convId: string) => {
+    updateURLParam('conv', convId);
+  }, [updateURLParam]);
+
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      if (query) {
+        newParams.set('search', query);
+      } else {
+        newParams.delete('search');
+      }
+      // Reset to page 1 when searching
+      newParams.delete('conv_page');
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  const handleToggleSidebar = useCallback(() => {
+    updateURLParam('hideSidebar', !isSidebarCollapsed ? 'true' : null);
+  }, [updateURLParam, isSidebarCollapsed]);
 
   const messages: Message[] = conversationData?.messages || [];
 
@@ -180,7 +230,7 @@ export function ChatPage() {
         (conversationId) => {
           if (!newConversationId) {
             newConversationId = conversationId;
-            setSelectedConversationId(conversationId);
+            updateURLParam('conv', conversationId);
           }
         },
         // onDone
@@ -234,13 +284,11 @@ export function ChatPage() {
   };
 
   const handleNewChat = () => {
-    setSelectedConversationId(null);
+    updateURLParam('conv', null);
     setErrorMessage(null);
   };
 
-  const handleSelectConversation = (id: string) => {
-    setSelectedConversationId(id);
-  };
+  // Removed duplicate - now using the URL-based version above
 
   const handleMenuToggle = (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation();
@@ -323,7 +371,7 @@ export function ChatPage() {
       try {
         await deleteConversation.mutateAsync(id);
         if (selectedConversationId === id) {
-          setSelectedConversationId(null);
+          updateURLParam('conv', null);
         }
       } catch (error) {
         console.error('Failed to delete conversation:', error);
@@ -503,7 +551,7 @@ export function ChatPage() {
       key: 'b',
       ctrl: true,
       handler: () => {
-        setIsSidebarCollapsed(!isSidebarCollapsed);
+        handleToggleSidebar();
       },
       description: 'Toggle sidebar',
       category: 'Navigation',
@@ -532,73 +580,52 @@ export function ChatPage() {
   useKeyboardShortcuts(shortcuts);
 
   return (
-    <div className="h-screen flex flex-col bg-stone-50 dark:bg-stone-950 relative">
-      {/* Gradient Mesh Background */}
-      <GradientMesh />
-
-      {/* Header */}
-      <header className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 px-6 py-4 relative z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <MessageSquare className="text-stone-700 dark:text-stone-300" size={22} />
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight text-stone-900 dark:text-white">AI Chat</h1>
-              <p className="text-xs text-stone-600 dark:text-stone-400">Ask questions about your knowledge base</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleTheme}
-              className="p-2 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            <button
-              onClick={handleNewChat}
-              className="flex items-center gap-2 px-4 py-2 bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 rounded-md font-medium transition-colors"
-            >
-              <Plus size={16} />
-              New Chat
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div className="h-screen flex bg-gray-950 relative">
+      {/* Command Center Layout - No redundant header! */}
       <div className="flex-1 flex overflow-hidden relative z-0">
-        {/* Sidebar - Conversation List */}
-        <aside className={`bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-r border-stone-200 dark:border-stone-800 flex flex-col transition-all duration-300 ease-in-out relative z-10 ${
+        {/* Sidebar - Context Panel */}
+        <aside className={`bg-gray-900/95 backdrop-blur-md border-r border-cyan-400/30 flex flex-col transition-all duration-300 ease-in-out relative z-10 ${
           isSidebarCollapsed ? 'w-0' : 'w-72'
         }`}>
           <div className={`${isSidebarCollapsed ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 flex flex-col h-full`}>
-            <div className="px-4 py-3 border-b border-stone-200 dark:border-stone-800 flex-shrink-0 flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300">Conversations</h2>
+            {/* Sidebar Header */}
+            <div className="px-4 py-3 border-b border-gray-700 flex-shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-white">History</h2>
+                <button
+                  onClick={handleToggleSidebar}
+                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors"
+                  title="Hide sidebar"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+              </div>
+              {/* New Chat Button */}
               <button
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors"
-                title="Hide sidebar"
+                onClick={handleNewChat}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium text-sm rounded-lg transition-all shadow-md"
               >
-                <ChevronLeft size={20} />
+                <Plus size={16} />
+                New Chat
               </button>
             </div>
 
             {/* Search Input */}
-            <div className="px-4 py-3 border-b border-stone-200 dark:border-stone-800 flex-shrink-0">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 dark:text-stone-500" size={16} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
                 <input
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-9 py-1.5 text-sm border border-stone-300 dark:border-stone-700 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400 focus:border-transparent transition-colors"
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="w-full pl-9 pr-9 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400 focus:border-transparent transition-colors"
                 />
                 {searchQuery && (
                   <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                    onClick={() => handleSearchChange('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     <X size={18} />
                   </button>
@@ -606,16 +633,17 @@ export function ChatPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
             {conversationsData && conversationsData.conversations.length > 0 ? (
               filteredConversations.length > 0 ? (
-                <div className="divide-y divide-stone-200 dark:divide-stone-800">
+                <>
+                <div className="flex-1 overflow-y-auto divide-y divide-stone-200 dark:divide-stone-800">
                   {filteredConversations.map((conv) => (
                   <div
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv.id)}
                     className={`
-                      p-4 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors
+                      p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
                       ${selectedConversationId === conv.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600' : ''}
                     `}
                   >
@@ -640,18 +668,18 @@ export function ChatPage() {
                                   handleCancelEdit(e as any, conv.title);
                                 }
                               }}
-                              className="w-full px-2 py-1 text-sm font-medium border-2 border-blue-500 dark:border-blue-400 rounded bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1 text-sm font-medium border-2 border-blue-500 dark:border-blue-400 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                               onClick={(e) => e.stopPropagation()}
                             />
                           </form>
                         ) : (
-                          <h3 className="text-sm font-medium text-stone-900 dark:text-white truncate flex items-center gap-1.5">
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
                             {conv.is_pinned && <Pin size={12} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />}
                             <span className="truncate">{conv.title}</span>
                           </h3>
                         )}
                         <div className="flex items-center gap-2 mt-1">
-                          <p className="text-xs text-stone-500 dark:text-stone-400">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {new Date(conv.updated_at).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
@@ -659,7 +687,7 @@ export function ChatPage() {
                             })}
                           </p>
                           {conv.message_count !== undefined && (
-                            <span className="text-xs text-stone-400 dark:text-stone-500">
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
                               • {conv.message_count} {conv.message_count === 1 ? 'message' : 'messages'}
                             </span>
                           )}
@@ -670,30 +698,30 @@ export function ChatPage() {
                       <div className="relative flex-shrink-0" ref={openMenuId === conv.id ? menuRef : null}>
                         <button
                           onClick={(e) => handleMenuToggle(e, conv.id)}
-                          className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 rounded transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                           title="More options"
                         >
                           <MoreVertical size={16} />
                         </button>
 
                         {openMenuId === conv.id && (
-                          <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-10">
+                          <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
                             <button
                               onClick={(e) => handleTogglePin(e, conv.id, conv.is_pinned)}
-                              className="w-full px-4 py-2 text-left text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-t-lg transition-colors flex items-center gap-2"
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg transition-colors flex items-center gap-2"
                             >
                               {conv.is_pinned ? <PinOff size={14} /> : <Pin size={14} />}
                               {conv.is_pinned ? 'Unpin' : 'Pin'}
                             </button>
                             <button
                               onClick={(e) => handleEditConversation(e, conv)}
-                              className="w-full px-4 py-2 text-left text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             >
                               Edit
                             </button>
                             <button
                               onClick={(e) => handleExportConversation(e, conv.id)}
-                              className="w-full px-4 py-2 text-left text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors flex items-center gap-2"
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
                             >
                               <Download size={14} />
                               Export as MD
@@ -712,13 +740,29 @@ export function ChatPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Pagination Controls */}
+              {conversationsData && conversationsData.total > pagination.limit && (
+                <div className="flex-shrink-0 px-4 py-3 border-t border-gray-700">
+                  <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.totalPages(conversationsData.total)}
+                    onPageChange={pagination.setPage}
+                    hasNext={pagination.hasNextPage(conversationsData.total)}
+                    hasPrev={pagination.hasPrevPage()}
+                    showPageNumbers={false}
+                    showFirstLast={false}
+                  />
+                </div>
+              )}
+              </>
               ) : (
-                <div className="p-8 text-center text-stone-500 dark:text-stone-400">
-                  <Search className="mx-auto mb-3 text-stone-400 dark:text-stone-500" size={32} />
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <Search className="mx-auto mb-3 text-gray-400 dark:text-gray-500" size={32} />
                   <p className="text-sm font-medium">No conversations found</p>
                   <p className="text-xs mt-2">Try a different search term</p>
                   <button
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => handleSearchChange('')}
                     className="mt-4 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                   >
                     Clear search
@@ -726,7 +770,7 @@ export function ChatPage() {
                 </div>
               )
             ) : (
-              <div className="p-8 text-center text-stone-500 dark:text-stone-400">
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                 <p className="text-sm">No conversations yet</p>
                 <p className="text-xs mt-2">Start a new chat to begin</p>
               </div>
@@ -737,8 +781,8 @@ export function ChatPage() {
           {/* Show Sidebar Button - Only visible when collapsed */}
           {isSidebarCollapsed && (
             <button
-              onClick={() => setIsSidebarCollapsed(false)}
-              className="absolute top-3 left-2 p-1 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors z-10"
+              onClick={handleToggleSidebar}
+              className="absolute top-3 left-2 p-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors z-10"
               title="Show sidebar"
             >
               <ChevronRight size={20} />
@@ -746,8 +790,8 @@ export function ChatPage() {
           )}
         </aside>
 
-        {/* Chat Area */}
-        <main className="flex-1 flex flex-col bg-stone-50 dark:bg-stone-950">
+        {/* Main Theater */}
+        <main className="flex-1 flex flex-col bg-gray-950">
           {/* Error Banner */}
           {errorMessage && (
             <div className="mx-6 mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
@@ -768,7 +812,7 @@ export function ChatPage() {
           {/* Loading Status - shows during streaming */}
           {isStreaming && streamingStatus && !streamingMessage && (
             <div className="px-6 py-4">
-              <div className="flex items-center gap-3 text-stone-600 dark:text-stone-400">
+              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
                 <div className="flex gap-1">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>

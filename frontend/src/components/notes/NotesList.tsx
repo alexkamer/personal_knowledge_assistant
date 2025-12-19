@@ -2,14 +2,14 @@
  * List of notes component.
  */
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useNotes, useDeleteNote, useUpdateNote } from '../../hooks/useNotes';
-import { MoreVertical, AlertCircle, RefreshCw, Search, FileText } from 'lucide-react';
+import { useDeleteNote, useUpdateNote } from '../../hooks/useNotes';
+import { MoreVertical, Search, FileText } from 'lucide-react';
 import type { Note } from '../../types/note';
 
 interface NotesListProps {
+  notes: Note[];
   onSelectNote: (note: Note) => void;
   selectedNoteId?: string;
-  selectedTags?: string[];
 }
 
 // Helper function to extract readable text preview from content
@@ -51,8 +51,7 @@ function extractPreviewText(content: string, maxLength: number = 150): string {
   return content.substring(0, maxLength);
 }
 
-function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProps) {
-  const { data, isLoading, error, refetch } = useNotes(selectedTags);
+function NotesList({ notes, onSelectNote, selectedNoteId }: NotesListProps) {
   const deleteNote = useDeleteNote();
   const updateNote = useUpdateNote();
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,17 +63,17 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
 
   // Filter notes by search query
   const filteredNotes = useMemo(() => {
-    if (!data?.notes) return [];
+    if (!notes) return [];
 
-    if (!searchQuery.trim()) return data.notes;
+    if (!searchQuery.trim()) return notes;
 
     const query = searchQuery.toLowerCase();
-    return data.notes.filter((note) =>
+    return notes.filter((note) =>
       note.title.toLowerCase().includes(query) ||
       note.content.toLowerCase().includes(query) ||
       note.tags_rel.some((tag) => tag.name.toLowerCase().includes(query))
     );
-  }, [data?.notes, searchQuery]);
+  }, [notes, searchQuery]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -147,79 +146,39 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="text-center text-stone-500">Loading notes...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle size={20} />
-            <span className="font-medium">Failed to load notes</span>
-          </div>
-          <p className="text-sm text-stone-600 text-center">
-            {(error as any)?.response?.data?.detail || error.message || 'An unexpected error occurred'}
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <RefreshCw size={16} />
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data || data.notes.length === 0) {
-    return (
-      <div className="bg-white rounded-lg shadow-md p-8 text-center">
-        <FileText size={48} className="mx-auto text-stone-300 mb-3" />
-        <p className="text-stone-500 text-lg font-medium">
-          No notes yet. Create your first note!
-        </p>
-      </div>
-    );
-  }
+  // Notes are now passed as props, so no loading/error states here
+  // Parent component handles those states
 
   return (
     <div className="space-y-3">
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" size={18} />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search notes by title, content, or tags..."
-          className="w-full pl-10 pr-4 py-2.5 border-2 border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          className="w-full pl-10 pr-4 py-2.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all"
         />
       </div>
 
       {/* Notes List */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-stone-200">
+      <div className="space-y-3">
         {filteredNotes.length === 0 ? (
-          <div className="p-8 text-center">
-            <Search size={32} className="mx-auto text-stone-300 mb-2" />
-            <p className="text-stone-500">No notes match your search</p>
+          <div className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl shadow-lg p-8 text-center">
+            <Search size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+            <p className="text-gray-500 dark:text-gray-400">No notes match your search</p>
           </div>
         ) : (
-          <div className="divide-y divide-stone-200">
-            {filteredNotes.map((note) => (
+          filteredNotes.map((note) => (
               <div
                 key={note.id}
                 onClick={() => onSelectNote(note)}
-                className={`p-5 cursor-pointer transition-all ${
+                className={`p-5 cursor-pointer transition-all duration-200 rounded-2xl shadow-lg hover:shadow-xl animate-slide-in-left ${
                   selectedNoteId === note.id
-                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500'
-                    : 'hover:bg-stone-50 border-l-4 border-transparent'
+                    ? 'bg-primary-500 text-white scale-[1.02]'
+                    : 'bg-white/90 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 hover:scale-[1.01]'
                 }`}
               >
                 <div className="flex justify-between items-start gap-4">
@@ -248,11 +207,19 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
                         />
                       </form>
                     ) : (
-                      <h3 className="text-lg font-semibold text-stone-900 truncate mb-1">
+                      <h3 className={`text-lg font-semibold truncate mb-1 ${
+                        selectedNoteId === note.id
+                          ? 'text-white'
+                          : 'text-gray-900 dark:text-white'
+                      }`}>
                         {note.title}
                       </h3>
                     )}
-                    <p className="text-sm text-stone-600 line-clamp-2 leading-relaxed">
+                    <p className={`text-sm line-clamp-2 leading-relaxed ${
+                      selectedNoteId === note.id
+                        ? 'text-primary-100'
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`}>
                       {extractPreviewText(note.content)}
                     </p>
                     {note.tags_rel && note.tags_rel.length > 0 && (
@@ -260,14 +227,22 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
                         {note.tags_rel.map((tag) => (
                           <span
                             key={tag.id}
-                            className="px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full"
+                            className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                              selectedNoteId === note.id
+                                ? 'bg-white/20 text-white backdrop-blur-sm'
+                                : 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                            }`}
                           >
                             #{tag.name}
                           </span>
                         ))}
                       </div>
                     )}
-                    <p className="mt-3 text-xs text-stone-500 font-medium">
+                    <p className={`mt-3 text-xs font-medium ${
+                      selectedNoteId === note.id
+                        ? 'text-primary-200'
+                        : 'text-gray-500 dark:text-gray-500'
+                    }`}>
                       Updated {new Date(note.updated_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -280,23 +255,27 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
                   <div className="relative flex-shrink-0" ref={openMenuId === note.id ? menuRef : null}>
                     <button
                       onClick={(e) => handleMenuToggle(e, note.id)}
-                      className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
+                      className={`p-2 rounded-lg transition-colors ${
+                        selectedNoteId === note.id
+                          ? 'text-white hover:bg-white/20'
+                          : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
                       title="More options"
                     >
                       <MoreVertical size={18} />
                     </button>
 
                     {openMenuId === note.id && (
-                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-stone-200 rounded-lg shadow-lg z-10">
+                      <div className="absolute right-0 top-full mt-1 w-32 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-700 rounded-xl shadow-xl z-10">
                         <button
                           onClick={(e) => handleEdit(e, note)}
-                          className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-100 rounded-t-lg transition-colors"
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-xl transition-colors"
                         >
                           Edit
                         </button>
                         <button
                           onClick={(e) => handleDelete(e, note.id)}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-b-lg transition-colors"
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-xl transition-colors"
                           disabled={deleteNote.isPending}
                         >
                           Delete
@@ -306,8 +285,7 @@ function NotesList({ onSelectNote, selectedNoteId, selectedTags }: NotesListProp
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            ))
         )}
       </div>
     </div>
