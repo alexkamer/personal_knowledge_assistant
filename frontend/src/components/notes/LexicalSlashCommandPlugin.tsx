@@ -4,6 +4,7 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { TableInsertModal } from './TableInsertModal';
 import {
   $getSelection,
   $isRangeSelection,
@@ -15,8 +16,9 @@ import {
   INSERT_UNORDERED_LIST_COMMAND,
   INSERT_ORDERED_LIST_COMMAND,
 } from '@lexical/list';
-import { Heading1, Heading2, Heading3, List, ListOrdered, Code } from 'lucide-react';
+import { Heading1, Heading2, Heading3, List, ListOrdered, Code, Table } from 'lucide-react';
 import { $createCodeNode } from '@lexical/code';
+import { INSERT_TABLE_COMMAND } from '@lexical/table';
 
 interface Command {
   id: string;
@@ -69,6 +71,13 @@ const COMMANDS: Command[] = [
     description: 'Insert a code block with syntax highlighting',
     keywords: ['code', 'snippet', 'programming', 'syntax'],
   },
+  {
+    id: 'table',
+    label: 'Table',
+    icon: Table,
+    description: 'Insert a customizable table',
+    keywords: ['table', 'grid', 'spreadsheet', 'data'],
+  },
 ];
 
 export function LexicalSlashCommandPlugin() {
@@ -77,6 +86,7 @@ export function LexicalSlashCommandPlugin() {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [showTableModal, setShowTableModal] = useState(false);
 
   // Filter commands based on query
   const filteredCommands = query
@@ -145,9 +155,39 @@ export function LexicalSlashCommandPlugin() {
         }
       });
 
+      if (command.id === 'table') {
+        // Open modal for table customization
+        setShowTableModal(true);
+      }
+
       setShowMenu(false);
       setQuery('');
       setSelectedIndex(0);
+    },
+    [editor]
+  );
+
+  const handleTableInsert = useCallback(
+    (rows: number, columns: number, includeHeaderRow: boolean, includeHeaderColumn: boolean) => {
+      // CURRENT BEHAVIOR:
+      // - When includeHeaderRow is true: Creates table with header row (top) AND header column (left)
+      // - When includeHeaderRow is false: Creates table with no headers
+      //
+      // LIMITATION:
+      // - The includeHeaderColumn parameter is not yet functional
+      // - Lexical's $createTableNodeWithDimensions automatically creates BOTH headers when includeHeaders=true
+      // - There's no built-in way to create only a header column without a header row
+      //
+      // TODO: Implement custom table creation logic to support:
+      // - Header row only (top row)
+      // - Header column only (left column)
+      // - Both headers (top row + left column)
+      // - No headers (plain data grid)
+      editor.dispatchCommand(INSERT_TABLE_COMMAND, {
+        columns: columns.toString(),
+        rows: rows.toString(),
+        includeHeaders: includeHeaderRow || includeHeaderColumn // Use either checkbox to enable headers
+      });
     },
     [editor]
   );
@@ -239,16 +279,22 @@ export function LexicalSlashCommandPlugin() {
     setSelectedIndex(0);
   }, [query]);
 
-  if (!showMenu || !menuPosition) return null;
-
   return (
-    <div
-      className="fixed bg-white rounded-lg shadow-xl border border-stone-200 z-50 min-w-[280px] overflow-hidden"
-      style={{ top: menuPosition.top, left: menuPosition.left }}
-    >
+    <>
+      <TableInsertModal
+        isOpen={showTableModal}
+        onClose={() => setShowTableModal(false)}
+        onInsert={handleTableInsert}
+      />
+
+      {showMenu && menuPosition && (
+        <div
+          className="fixed bg-white rounded-lg shadow-xl border border-gray-200 z-50 min-w-[280px] overflow-hidden"
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+        >
       <div className="py-2 max-h-[300px] overflow-y-auto">
         {filteredCommands.length === 0 ? (
-          <div className="px-4 py-2.5 text-sm text-stone-500">No commands found</div>
+          <div className="px-4 py-2.5 text-sm text-gray-500">No commands found</div>
         ) : (
           filteredCommands.map((command, index) => {
             const Icon = command.icon;
@@ -263,10 +309,10 @@ export function LexicalSlashCommandPlugin() {
                   isSelected ? 'bg-blue-100' : 'hover:bg-blue-50'
                 }`}
               >
-                <Icon size={18} className="text-stone-600" />
+                <Icon size={18} className="text-gray-600" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-stone-900">{command.label}</div>
-                  <div className="text-xs text-stone-500">{command.description}</div>
+                  <div className="text-sm font-medium text-gray-900">{command.label}</div>
+                  <div className="text-xs text-gray-500">{command.description}</div>
                 </div>
               </button>
             );
@@ -274,5 +320,7 @@ export function LexicalSlashCommandPlugin() {
         )}
       </div>
     </div>
+      )}
+    </>
   );
 }

@@ -25,6 +25,8 @@ import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { CodeNode, CodeHighlightNode } from '@lexical/code';
 import { LinkNode, AutoLinkNode } from '@lexical/link';
+import { TableNode, TableCellNode, TableRowNode } from '@lexical/table';
+import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { LexicalSlashCommandPlugin } from './LexicalSlashCommandPlugin';
 import { ImageNode } from './ImageNode';
@@ -40,6 +42,7 @@ import { ToolbarPlugin } from './ToolbarPlugin';
 import { WikiLinkNode } from './WikiLinkNode';
 import { WikiLinkPlugin } from './WikiLinkPlugin';
 import { AIAutocompletePlugin } from './AIAutocompletePlugin';
+import { TableContextMenuPlugin } from './TableContextMenuPlugin';
 
 interface LexicalOutlinerEditorProps {
   initialContent?: string;
@@ -104,6 +107,9 @@ const theme = {
     url: 'text-blue-400',
     variable: 'text-blue-400',
   },
+  table: 'my-4 border-collapse table-auto w-full',
+  tableCell: 'border border-gray-600 px-4 py-2 text-gray-100 relative',
+  tableCellHeader: 'border border-gray-600 px-4 py-2 text-gray-100 bg-gray-800 font-semibold',
 };
 
 // Plugin to handle keyboard shortcuts
@@ -246,6 +252,9 @@ export function LexicalOutlinerEditor({
       LinkNode,
       AutoLinkNode,
       WikiLinkNode,
+      TableNode,
+      TableCellNode,
+      TableRowNode,
     ],
   };
 
@@ -269,6 +278,7 @@ export function LexicalOutlinerEditor({
           />
           <HistoryPlugin />
           <ListPlugin />
+          <TablePlugin />
           <ListIndentPlugin />
           <AutoListPlugin />
           <KeyboardShortcutsPlugin />
@@ -284,6 +294,7 @@ export function LexicalOutlinerEditor({
           <ToolbarPlugin />
           <WikiLinkPlugin />
           <AIAutocompletePlugin />
+          <TableContextMenuPlugin />
         </div>
       </LexicalComposer>
     </div>
