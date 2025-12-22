@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { Copy, RotateCw, Check, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, FileText, StickyNote, Globe } from 'lucide-react';
+import { Copy, RotateCw, Check, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, FileText, StickyNote, Globe, User, Bot } from 'lucide-react';
 import type { Message, SourceCitation } from '@/types/chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ interface FloatingMessageCardProps {
   onToggleSources: (messageId: string) => void;
   onRegenerateMessage?: (messageId: string) => void;
   onQuestionClick?: (question: string) => void;
+  isLatestAssistantMessage?: boolean;
 }
 
 export const FloatingMessageCard = React.memo<FloatingMessageCardProps>(({
@@ -35,6 +36,7 @@ export const FloatingMessageCard = React.memo<FloatingMessageCardProps>(({
   onToggleSources,
   onRegenerateMessage,
   onQuestionClick,
+  isLatestAssistantMessage = false,
 }) => {
   const isUser = message.role === 'user';
   const isSourcesExpanded = expandedSources.has(message.id);
@@ -55,167 +57,158 @@ export const FloatingMessageCard = React.memo<FloatingMessageCardProps>(({
   return (
     <div
       className={cn(
-        'flex mb-6 px-4 sm:px-6',
-        isUser ? 'justify-end animate-slide-in-right' : 'justify-start animate-slide-in-left'
+        'w-full py-6 fade-in',
+        isUser ? 'bg-transparent' : 'bg-gray-800/30'
       )}
     >
-      <div
-        className={cn(
-          'max-w-2xl rounded-2xl shadow-lg transition-all duration-200',
-          isUser
-            ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-br-md ml-12'
-            : 'bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/50 dark:border-stone-800/50 text-stone-900 dark:text-stone-100 rounded-bl-md mr-12 hover:shadow-xl'
-        )}
-      >
-        {/* Message Content */}
-        <div className="px-6 py-4">
-          {isUser ? (
-            <div className="whitespace-pre-wrap break-words text-base leading-relaxed">
-              {message.content}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6">
+        <div className="flex gap-4">
+          {/* Avatar */}
+          <div className="flex-shrink-0">
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center",
+              isUser ? "bg-blue-600" : "bg-emerald-600"
+            )}>
+              {isUser ? <User size={18} className="text-white" /> : <Bot size={18} className="text-white" />}
             </div>
-          ) : (
-            <div className="prose dark:prose-invert prose-sm max-w-none">
-              <MarkdownRenderer content={message.content} />
-            </div>
-          )}
-        </div>
+          </div>
 
-        {/* Assistant Message Footer */}
-        {!isUser && (
-          <div className="px-6 pb-4 space-y-3">
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={() => onCopyMessage(message.content, message.id)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-700 rounded-md transition-colors"
-                title="Copy message"
-              >
-                {copiedMessageId === message.id ? (
-                  <>
-                    <Check size={14} className="text-green-600 dark:text-green-400" />
-                    <span className="text-green-600 dark:text-green-400">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={14} />
-                    <span>Copy</span>
-                  </>
-                )}
-              </button>
+          {/* Message Content */}
+          <div className="flex-1 min-w-0">
+            {isUser ? (
+              <div className="whitespace-pre-wrap break-words text-lg leading-relaxed text-white font-medium">
+                {message.content}
+              </div>
+            ) : (
+              <div className="prose dark:prose-invert prose-sm max-w-none">
+                <MarkdownRenderer content={message.content} />
+              </div>
+            )}
 
-              {onRegenerateMessage && message.id !== 'streaming' && (
-                <button
-                  onClick={() => onRegenerateMessage(message.id)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-700 rounded-md transition-colors"
-                  title="Regenerate response"
-                >
-                  <RotateCw size={14} />
-                  <span>Regenerate</span>
-                </button>
-              )}
-
-              {/* Feedback buttons */}
-              {message.id !== 'streaming' && (
-                <>
+            {/* Assistant Message Footer */}
+            {!isUser && (
+              <div className="space-y-3 mt-3">
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => onFeedback(message.id, true)}
-                    disabled={feedbackLoading === message.id}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md transition-colors disabled:opacity-50"
-                    title="Helpful response"
+                    onClick={() => onCopyMessage(message.content, message.id)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+                    title="Copy message"
                   >
-                    <ThumbsUp size={14} />
+                    {copiedMessageId === message.id ? (
+                      <>
+                        <Check size={14} className="text-green-600 dark:text-green-400" />
+                        <span className="text-green-600 dark:text-green-400">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        <span>Copy</span>
+                      </>
+                    )}
                   </button>
-                  <button
-                    onClick={() => onFeedback(message.id, false)}
-                    disabled={feedbackLoading === message.id}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50"
-                    title="Not helpful"
-                  >
-                    <ThumbsDown size={14} />
-                  </button>
-                </>
-              )}
-            </div>
 
-            {/* Sources */}
-            {message.sources && message.sources.length > 0 && (
-              <div className="border-t border-stone-200 dark:border-stone-700 pt-3">
-                <button
-                  onClick={() => onToggleSources(message.id)}
-                  className="flex items-center gap-2 text-xs font-medium text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors"
-                >
-                  <span>Sources ({message.sources.length})</span>
-                  {isSourcesExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </button>
+                  {onRegenerateMessage && message.id !== 'streaming' && (
+                    <button
+                      onClick={() => onRegenerateMessage(message.id)}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+                      title="Regenerate response"
+                    >
+                      <RotateCw size={14} />
+                      <span>Regenerate</span>
+                    </button>
+                  )}
 
-                {isSourcesExpanded && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {message.sources.map((source, index) => (
+                  {/* Feedback buttons */}
+                  {message.id !== 'streaming' && (
+                    <>
                       <button
-                        key={index}
-                        onClick={() => onSourceClick(source)}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
+                        onClick={() => onFeedback(message.id, true)}
+                        disabled={feedbackLoading === message.id}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-300 hover:text-success-400 hover:bg-success-900/20 rounded-md transition-colors disabled:opacity-50"
+                        title="Helpful response"
                       >
-                        {getSourceIcon(source.source_type)}
-                        <span className="max-w-xs truncate">{source.source_title}</span>
+                        <ThumbsUp size={14} />
                       </button>
-                    ))}
+                      <button
+                        onClick={() => onFeedback(message.id, false)}
+                        disabled={feedbackLoading === message.id}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-300 hover:text-danger-400 hover:bg-danger-900/20 rounded-md transition-colors disabled:opacity-50"
+                        title="Not helpful"
+                      >
+                        <ThumbsDown size={14} />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Sources */}
+                {message.sources && message.sources.length > 0 && (
+                  <div className="border-t border-gray-600 pt-3">
+                    <button
+                      onClick={() => onToggleSources(message.id)}
+                      className="flex items-center gap-2 text-xs font-medium text-gray-300 hover:text-white transition-colors"
+                    >
+                      <span>Sources ({message.sources.length})</span>
+                      {isSourcesExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+
+                    {isSourcesExpanded && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {message.sources.map((source, index) => (
+                          <button
+                            key={index}
+                            onClick={() => onSourceClick(source)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-primary-900/20 text-primary-400 rounded-md hover:bg-primary-900/30 transition-colors"
+                          >
+                            {getSourceIcon(source.source_type)}
+                            <span className="max-w-xs truncate">{source.source_title}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Suggested Questions - Only show on latest assistant message */}
+                {isLatestAssistantMessage && message.suggested_questions && message.suggested_questions.length > 0 && (
+                  <div className="border-t border-gray-600 pt-3">
+                    <p className="text-xs font-medium text-gray-300 mb-2">
+                      Suggested follow-up questions:
+                    </p>
+                    <div className="space-y-2">
+                      {message.suggested_questions.map((question, index) => (
+                        <button
+                          key={index}
+                          onClick={() => onQuestionClick?.(question)}
+                          className="w-full text-left px-3 py-2 text-sm text-primary-400 bg-primary-900/20 hover:bg-primary-900/30 rounded-lg transition-colors"
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Suggested Questions */}
-            {message.suggested_questions && message.suggested_questions.length > 0 && (
-              <div className="border-t border-stone-200 dark:border-stone-700 pt-3">
-                <p className="text-xs font-medium text-stone-600 dark:text-stone-400 mb-2">
-                  Suggested follow-up questions:
-                </p>
-                <div className="space-y-2">
-                  {message.suggested_questions.map((question, index) => (
-                    <button
-                      key={index}
-                      onClick={() => onQuestionClick?.(question)}
-                      className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                    >
-                      {question}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Timestamp */}
+            <div className="mt-2">
+              <span className="text-xs text-gray-400">
+                {new Date(message.created_at).toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })}
+                {!isUser && message.model_used && (
+                  <>
+                    <span className="mx-1">•</span>
+                    <span className="text-gray-500">{message.model_used}</span>
+                  </>
+                )}
+              </span>
+            </div>
           </div>
-        )}
-
-        {/* User Message Timestamp */}
-        {isUser && (
-          <div className="px-6 pb-3">
-            <span className="text-xs text-indigo-200">
-              {new Date(message.created_at).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </span>
-          </div>
-        )}
-
-        {/* Assistant Message Timestamp */}
-        {!isUser && (
-          <div className="px-6 pb-3 flex items-center gap-2 text-xs text-stone-400 dark:text-stone-600">
-            <span>
-              {new Date(message.created_at).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </span>
-            {message.model_used && (
-              <>
-                <span>•</span>
-                <span>{message.model_used}</span>
-              </>
-            )}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

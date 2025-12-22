@@ -1,7 +1,7 @@
 /**
  * Chat page for AI-powered Q&A using RAG.
  */
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, useReducer } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Plus, MoreVertical, AlertCircle, Search, X, ChevronLeft, ChevronRight, Download, Pin, PinOff } from 'lucide-react';
@@ -22,6 +22,7 @@ import {
   useUpdateConversation,
 } from '@/hooks/useChat';
 import { usePaginationState } from '@/hooks/usePaginationState';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { chatService } from '@/services/chatService';
 import { learningGapsService, type LearningGap, type LearningPathResponse } from '@/services/learningGapsService';
 import { metabolizationService, type MetabolizationQuestion, type AnswerEvaluationResponse } from '@/services/metabolizationService';
@@ -29,6 +30,92 @@ import { useCreateSnapshot } from '@/hooks/useKnowledgeEvolution';
 import { downloadConversationAsMarkdown } from '@/utils/exportMarkdown';
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
 import type { Message, ToolCall, ToolResult } from '@/types/chat';
+
+// Streaming state types
+interface StreamingState {
+  isStreaming: boolean;
+  message: string;
+  sources: any[];
+  suggestedQuestions: string[];
+  status: string;
+  toolCalls: ToolCall[];
+  toolResults: ToolResult[];
+  activeAgent: { name: string; display_name: string; description: string } | null;
+}
+
+// Streaming state actions
+type StreamingAction =
+  | { type: 'START_STREAMING' }
+  | { type: 'UPDATE_CHUNK'; payload: string }
+  | { type: 'UPDATE_SOURCES'; payload: any[] }
+  | { type: 'UPDATE_SUGGESTED_QUESTIONS'; payload: string[] }
+  | { type: 'UPDATE_STATUS'; payload: string }
+  | { type: 'ADD_TOOL_CALL'; payload: ToolCall }
+  | { type: 'ADD_TOOL_RESULT'; payload: ToolResult }
+  | { type: 'UPDATE_AGENT'; payload: { name: string; display_name: string; description: string } | null }
+  | { type: 'RESET' };
+
+// Initial streaming state
+const initialStreamingState: StreamingState = {
+  isStreaming: false,
+  message: '',
+  sources: [],
+  suggestedQuestions: [],
+  status: '',
+  toolCalls: [],
+  toolResults: [],
+  activeAgent: null,
+};
+
+// Streaming state reducer
+function streamingReducer(state: StreamingState, action: StreamingAction): StreamingState {
+  switch (action.type) {
+    case 'START_STREAMING':
+      return {
+        ...initialStreamingState,
+        isStreaming: true,
+      };
+    case 'UPDATE_CHUNK':
+      return {
+        ...state,
+        message: state.message + action.payload,
+      };
+    case 'UPDATE_SOURCES':
+      return {
+        ...state,
+        sources: action.payload,
+      };
+    case 'UPDATE_SUGGESTED_QUESTIONS':
+      return {
+        ...state,
+        suggestedQuestions: action.payload,
+      };
+    case 'UPDATE_STATUS':
+      return {
+        ...state,
+        status: action.payload,
+      };
+    case 'ADD_TOOL_CALL':
+      return {
+        ...state,
+        toolCalls: [...state.toolCalls, action.payload],
+      };
+    case 'ADD_TOOL_RESULT':
+      return {
+        ...state,
+        toolResults: [...state.toolResults, action.payload],
+      };
+    case 'UPDATE_AGENT':
+      return {
+        ...state,
+        activeAgent: action.payload,
+      };
+    case 'RESET':
+      return initialStreamingState;
+    default:
+      return state;
+  }
+}
 
 export function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,14 +131,10 @@ export function ChatPage() {
   const [includeNotes, setIncludeNotes] = useState<boolean>(false); // Default to false - only use reputable sources
   const [socraticMode, setSocraticMode] = useState<boolean>(false); // Default to false - direct answers
   const [selectedModel, setSelectedModel] = useState<string>('qwen2.5:14b'); // Default model
-  const [streamingMessage, setStreamingMessage] = useState<string>('');
-  const [isStreaming, setIsStreaming] = useState<boolean>(false);
-  const [streamingSources, setStreamingSources] = useState<any[]>([]);
-  const [streamingSuggestedQuestions, setStreamingSuggestedQuestions] = useState<string[]>([]);
-  const [streamingStatus, setStreamingStatus] = useState<string>('');
-  const [streamingToolCalls, setStreamingToolCalls] = useState<ToolCall[]>([]);
-  const [streamingToolResults, setStreamingToolResults] = useState<ToolResult[]>([]);
-  const [activeAgent, setActiveAgent] = useState<{name: string; display_name: string; description: string} | null>(null);
+
+  // Streaming state (consolidated with useReducer for performance)
+  const [streamingState, dispatchStreaming] = useReducer(streamingReducer, initialStreamingState);
+
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -138,27 +221,37 @@ export function ChatPage() {
 
   const messages: Message[] = conversationData?.messages || [];
 
-  // Add streaming message to the messages if currently streaming
-  const displayMessages: Message[] = isStreaming
-    ? [
-        ...messages,
-        {
-          id: 'streaming',
-          conversation_id: selectedConversationId || '',
-          role: 'assistant' as const,
-          content: streamingMessage,
-          sources: streamingSources.length > 0 ? streamingSources : undefined,
-          suggested_questions: streamingSuggestedQuestions.length > 0 ? streamingSuggestedQuestions : undefined,
-          created_at: new Date().toISOString(),
-        },
-      ]
-    : messages;
+  // Add streaming message to the messages if currently streaming (memoized for performance)
+  const displayMessages: Message[] = useMemo(() => {
+    if (!streamingState.isStreaming) return messages;
 
-  // Filter conversations based on search query
-  const filteredConversations = conversationsData?.conversations.filter((conv) =>
-    conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.summary?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+    return [
+      ...messages,
+      {
+        id: 'streaming',
+        conversation_id: selectedConversationId || '',
+        role: 'assistant' as const,
+        content: streamingState.message,
+        sources: streamingState.sources.length > 0 ? streamingState.sources : undefined,
+        suggested_questions: streamingState.suggestedQuestions.length > 0 ? streamingState.suggestedQuestions : undefined,
+        created_at: new Date().toISOString(),
+      },
+    ];
+  }, [messages, streamingState.isStreaming, streamingState.message, streamingState.sources, streamingState.suggestedQuestions, selectedConversationId]);
+
+  // Debounce search query for better performance
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
+
+  // Filter conversations based on debounced search query
+  const filteredConversations = useMemo(() => {
+    const conversations = conversationsData?.conversations || [];
+    if (!debouncedSearchQuery) return conversations;
+
+    return conversations.filter((conv) =>
+      conv.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      conv.summary?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
+  }, [conversationsData?.conversations, debouncedSearchQuery]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -190,17 +283,10 @@ export function ChatPage() {
     }
   }, [location]);
 
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = useCallback(async (message: string) => {
     try {
       setErrorMessage(null);
-      setIsStreaming(true);
-      setStreamingMessage('');
-      setStreamingSources([]);
-      setStreamingSuggestedQuestions([]);
-      setStreamingStatus('');
-      setStreamingToolCalls([]);
-      setStreamingToolResults([]);
-      setActiveAgent(null);
+      dispatchStreaming({ type: 'START_STREAMING' });
       setPrefillQuestion(''); // Clear prefill after sending
 
       // Get preferred model from localStorage
@@ -212,7 +298,7 @@ export function ChatPage() {
         {
           message,
           conversation_id: selectedConversationId || undefined,
-          conversation_title: selectedConversationId ? undefined : `Chat: ${message.slice(0, 50)}`,
+          conversation_title: selectedConversationId ? undefined : undefined,  // Let backend generate title
           model: preferredModel,
           include_web_search: webSearchEnabled,
           include_notes: includeNotes,
@@ -220,11 +306,11 @@ export function ChatPage() {
         },
         // onChunk
         (chunk) => {
-          setStreamingMessage((prev) => prev + chunk);
+          dispatchStreaming({ type: 'UPDATE_CHUNK', payload: chunk });
         },
         // onSources
         (sources) => {
-          setStreamingSources(sources);
+          dispatchStreaming({ type: 'UPDATE_SOURCES', payload: sources });
         },
         // onConversationId
         (conversationId) => {
@@ -235,65 +321,56 @@ export function ChatPage() {
         },
         // onDone
         (_messageId) => {
-          setIsStreaming(false);
-          setStreamingMessage('');
-          setStreamingSources([]);
-          setStreamingSuggestedQuestions([]);
+          dispatchStreaming({ type: 'RESET' });
           // Invalidate queries to refresh the conversation
           queryClient.invalidateQueries({ queryKey: ['conversations'] });
           queryClient.invalidateQueries({ queryKey: ['conversations', newConversationId] });
         },
         // onError
         (error) => {
-          setIsStreaming(false);
-          setStreamingMessage('');
-          setStreamingSources([]);
-          setStreamingSuggestedQuestions([]);
+          dispatchStreaming({ type: 'RESET' });
           setErrorMessage(error);
         },
         // onSuggestedQuestions
         (questions) => {
-          setStreamingSuggestedQuestions(questions);
+          dispatchStreaming({ type: 'UPDATE_SUGGESTED_QUESTIONS', payload: questions });
         },
         // onAgent
         (agent) => {
-          setActiveAgent(agent);
+          dispatchStreaming({ type: 'UPDATE_AGENT', payload: agent });
         },
         // onStatus
         (status) => {
-          setStreamingStatus(status);
+          dispatchStreaming({ type: 'UPDATE_STATUS', payload: status });
         },
         // onToolCall
         (toolCall) => {
-          setStreamingToolCalls((prev) => [...prev, toolCall]);
+          dispatchStreaming({ type: 'ADD_TOOL_CALL', payload: toolCall });
         },
         // onToolResult
         (toolResult) => {
-          setStreamingToolResults((prev) => [...prev, toolResult]);
+          dispatchStreaming({ type: 'ADD_TOOL_RESULT', payload: toolResult });
         }
       );
     } catch (error: any) {
       console.error('Failed to send message:', error);
       const errorDetail = error?.message || 'Failed to send message';
       setErrorMessage(errorDetail);
-      setIsStreaming(false);
-      setStreamingMessage('');
-      setStreamingSources([]);
-      setStreamingSuggestedQuestions([]);
+      dispatchStreaming({ type: 'RESET' });
     }
-  };
+  }, [selectedConversationId, webSearchEnabled, includeNotes, socraticMode, updateURLParam, queryClient]);
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     updateURLParam('conv', null);
     setErrorMessage(null);
-  };
+  }, [updateURLParam]);
 
   // Removed duplicate - now using the URL-based version above
 
-  const handleMenuToggle = (e: React.MouseEvent, conversationId: string) => {
+  const handleMenuToggle = useCallback((e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation();
     setOpenMenuId(openMenuId === conversationId ? null : conversationId);
-  };
+  }, [openMenuId]);
 
   const handleEditConversation = (e: React.MouseEvent, conversation: { id: string; title: string }) => {
     e.stopPropagation();
@@ -379,7 +456,7 @@ export function ChatPage() {
     }
   };
 
-  const handleRegenerateMessage = async (messageId: string) => {
+  const handleRegenerateMessage = useCallback(async (messageId: string) => {
     // Find the message to regenerate
     const messageIndex = messages.findIndex((m) => m.id === messageId);
     if (messageIndex === -1) return;
@@ -394,9 +471,9 @@ export function ChatPage() {
 
     // Resend the user message
     await handleSendMessage(userMessage.content);
-  };
+  }, [messages, handleSendMessage]);
 
-  const handleDetectLearningGaps = async (question: string) => {
+  const handleDetectLearningGaps = useCallback(async (question: string) => {
     try {
       setIsLoadingGaps(true);
       setGapsQuestion(question);
@@ -430,7 +507,7 @@ export function ChatPage() {
     } finally {
       setIsLoadingGaps(false);
     }
-  };
+  }, [messages]);
 
   const handleGenerateLearningPath = async () => {
     if (learningGaps.length === 0) return;
@@ -613,7 +690,7 @@ export function ChatPage() {
             {/* Search Input */}
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-400" size={16} />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -687,7 +764,7 @@ export function ChatPage() {
                             })}
                           </p>
                           {conv.message_count !== undefined && (
-                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
                               • {conv.message_count} {conv.message_count === 1 ? 'message' : 'messages'}
                             </span>
                           )}
@@ -698,7 +775,7 @@ export function ChatPage() {
                       <div className="relative flex-shrink-0" ref={openMenuId === conv.id ? menuRef : null}>
                         <button
                           onClick={(e) => handleMenuToggle(e, conv.id)}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
                           title="More options"
                         >
                           <MoreVertical size={16} />
@@ -757,8 +834,8 @@ export function ChatPage() {
               )}
               </>
               ) : (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Search className="mx-auto mb-3 text-gray-400 dark:text-gray-500" size={32} />
+                <div className="p-8 text-center text-gray-500 dark:text-gray-300">
+                  <Search className="mx-auto mb-3 text-gray-400 dark:text-gray-400" size={32} />
                   <p className="text-sm font-medium">No conversations found</p>
                   <p className="text-xs mt-2">Try a different search term</p>
                   <button
@@ -791,44 +868,46 @@ export function ChatPage() {
         </aside>
 
         {/* Main Theater */}
-        <main className="flex-1 flex flex-col bg-gray-950">
+        <main className="flex-1 flex flex-col bg-gray-950 overflow-hidden">
           {/* Error Banner */}
           {errorMessage && (
-            <div className="mx-6 mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-              <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size={20} />
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-red-900 dark:text-red-200">Error</h3>
-                <p className="text-sm text-red-700 dark:text-red-300 mt-1">{errorMessage}</p>
+            <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 mt-4">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+                <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size={20} />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-red-900 dark:text-red-200">Error</h3>
+                  <p className="text-sm text-red-700 dark:text-red-300 mt-1">{errorMessage}</p>
+                </div>
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                onClick={() => setErrorMessage(null)}
-                className="text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
-              >
-                ×
-              </button>
             </div>
           )}
 
-          {/* Loading Status - shows during streaming */}
-          {isStreaming && streamingStatus && !streamingMessage && (
-            <div className="px-6 py-4">
-              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+          {/* Loading Status - shows continuously during streaming for better UX */}
+          {streamingState.isStreaming && streamingState.status && (
+            <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-4">
+              <div className="flex items-center gap-3 text-gray-400">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
-                <span className="text-sm">{streamingStatus}</span>
+                <span className="text-sm">{streamingState.status}</span>
               </div>
             </div>
           )}
 
           {/* Tool Activity Timeline - Show when tool calls are active */}
-          {(streamingToolCalls.length > 0 || streamingToolResults.length > 0) && isStreaming && (
-            <div className="px-6 py-4">
+          {(streamingState.toolCalls.length > 0 || streamingState.toolResults.length > 0) && streamingState.isStreaming && (
+            <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-4">
               <ActivityTimeline
-                toolCalls={streamingToolCalls}
-                toolResults={streamingToolResults}
+                toolCalls={streamingState.toolCalls}
+                toolResults={streamingState.toolResults}
               />
             </div>
           )}
@@ -844,28 +923,20 @@ export function ChatPage() {
             onQuestionClick={handleSendMessage}
           />
 
-
           {/* Active Agent Indicator */}
-          {activeAgent && (
-            <div className="px-6 pb-2">
+          {streamingState.activeAgent && (
+            <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pb-2">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md text-sm border border-blue-200 dark:border-blue-800">
-                <span className="font-medium">{activeAgent.display_name}</span>
+                <span className="font-medium">{streamingState.activeAgent.display_name}</span>
                 <span className="text-blue-500 dark:text-blue-400">•</span>
-                <span className="text-xs text-blue-600 dark:text-blue-400">{activeAgent.description}</span>
+                <span className="text-xs text-blue-600 dark:text-blue-400">{streamingState.activeAgent.description}</span>
               </div>
-            </div>
-          )}
-
-          {/* Token Usage Indicator */}
-          {selectedConversationId && (
-            <div className="px-6 pb-3">
-              <TokenUsage conversationId={selectedConversationId} />
             </div>
           )}
 
           <ChatInput
             onSend={handleSendMessage}
-            disabled={isStreaming}
+            disabled={streamingState.isStreaming}
             initialValue={prefillQuestion}
             selectedModel={selectedModel}
             onModelChange={setSelectedModel}
@@ -891,7 +962,7 @@ export function ChatPage() {
               onViewTimeline={() => setShowEvolutionTimeline(true)}
               isLoadingQuiz={isLoadingQuiz}
               isLoadingSnapshot={createSnapshot.isPending}
-              disabled={isStreaming}
+              disabled={streamingState.isStreaming}
             />
           )}
         </main>

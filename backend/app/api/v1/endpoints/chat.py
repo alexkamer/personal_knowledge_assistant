@@ -29,6 +29,7 @@ from app.services.rag_service import get_rag_service
 from app.services.rag_orchestrator import get_rag_orchestrator
 from app.services.agent_service import get_agent_service
 from app.services.socratic_service import SocraticService
+from app.services.title_generator_service import get_title_generator_service
 from app.utils.token_counter import get_token_counter
 
 logger = logging.getLogger(__name__)
@@ -93,8 +94,8 @@ async def chat(
                     detail="Conversation not found",
                 )
         else:
-            # Create new conversation
-            title = request.conversation_title or f"Chat about: {request.message[:50]}"
+            # Create new conversation with placeholder title
+            title = request.conversation_title or request.message[:50]
             conversation_data = ConversationCreate(title=title)
             conversation = await ConversationService.create_conversation(
                 db, conversation_data
@@ -179,6 +180,20 @@ async def chat(
         await db.commit()
         await db.refresh(assistant_message)
 
+        # Generate a concise AI title for new conversations
+        if not request.conversation_id and not request.conversation_title:
+            try:
+                title_generator = get_title_generator_service()
+                generated_title = await title_generator.generate_title(
+                    first_message=request.message,
+                    first_response=response_text[:200],
+                )
+                conversation.title = generated_title
+                await db.commit()
+                logger.info(f"Generated title for new conversation: {generated_title}")
+            except Exception as e:
+                logger.error(f"Failed to generate title: {e}")
+
         return ChatResponse(
             conversation_id=str(conversation.id),
             message_id=str(assistant_message.id),
@@ -224,8 +239,9 @@ async def chat_stream(
                     yield f'data: {json.dumps({"error": "Conversation not found"})}\n\n'
                     return
             else:
-                # Create new conversation
-                title = request.conversation_title or f"Chat about: {clean_message[:50]}"
+                # Create new conversation with a placeholder title
+                # We'll generate a proper title after getting the AI response
+                title = request.conversation_title or clean_message[:50]
                 conversation_data = ConversationCreate(title=title)
                 conversation = await ConversationService.create_conversation(
                     db, conversation_data
@@ -414,6 +430,22 @@ async def chat_stream(
 
             await db.commit()
             await db.refresh(assistant_message)
+
+            # Generate a concise AI title for new conversations
+            if not request.conversation_id and not request.conversation_title:
+                try:
+                    title_generator = get_title_generator_service()
+                    generated_title = await title_generator.generate_title(
+                        first_message=clean_message,
+                        first_response=complete_response[:200],  # First 200 chars for context
+                    )
+                    # Update conversation title
+                    conversation.title = generated_title
+                    await db.commit()
+                    logger.info(f"Generated title for new conversation: {generated_title}")
+                except Exception as e:
+                    logger.error(f"Failed to generate title: {e}")
+                    # Continue without failing the request
 
             # Send suggested questions to client
             if suggested_questions:
