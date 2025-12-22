@@ -32,10 +32,11 @@ function CodeBlock({ inline, className, children, ...props }: CodeProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Render inline code (single backticks in markdown)
   if (inline) {
     return (
       <code
-        className="px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 rounded text-sm font-mono"
+        className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded text-sm font-mono"
         {...props}
       >
         {children}
@@ -43,11 +44,27 @@ function CodeBlock({ inline, className, children, ...props }: CodeProps) {
     );
   }
 
+  // Check if this is truly a code block or just a short snippet without language
+  // If it's a single line without a language specified and under 100 chars, treat as inline
+  const isShortSnippet = !language && !code.includes('\n') && code.length < 100;
+
+  if (isShortSnippet) {
+    return (
+      <code
+        className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded text-sm font-mono"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  }
+
+  // Render code block with syntax highlighting and copy button
   return (
     <div className="relative group my-4">
       <button
         onClick={handleCopy}
-        className="absolute right-2 top-2 p-2 bg-stone-700 hover:bg-stone-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        className="absolute right-2 top-2 p-2 bg-gray-700 hover:bg-gray-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity z-10"
         title="Copy code"
       >
         {copied ? <Check size={16} /> : <Copy size={16} />}
@@ -56,7 +73,7 @@ function CodeBlock({ inline, className, children, ...props }: CodeProps) {
         style={vscDarkPlus}
         language={language || 'text'}
         PreTag="div"
-        className="rounded-lg !bg-stone-900 dark:!bg-stone-950"
+        className="rounded-lg !bg-gray-900 dark:!bg-gray-950"
         customStyle={{
           margin: 0,
           padding: '1rem',
@@ -110,7 +127,7 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
           // Custom blockquote styling
           blockquote: ({ node, ...props }) => (
             <blockquote
-              className="border-l-4 border-stone-300 dark:border-stone-700 pl-4 italic my-4"
+              className="border-l-4 border-gray-300 dark:border-gray-700 pl-4 italic my-4"
               {...props}
             />
           ),
@@ -118,20 +135,20 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
           table: ({ node, ...props }) => (
             <div className="overflow-x-auto my-4">
               <table
-                className="min-w-full border border-stone-300 dark:border-stone-700"
+                className="min-w-full border border-gray-300 dark:border-gray-700"
                 {...props}
               />
             </div>
           ),
           th: ({ node, ...props }) => (
             <th
-              className="border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 px-4 py-2 text-left font-semibold"
+              className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-4 py-2 text-left font-semibold"
               {...props}
             />
           ),
           td: ({ node, ...props }) => (
             <td
-              className="border border-stone-300 dark:border-stone-700 px-4 py-2"
+              className="border border-gray-300 dark:border-gray-700 px-4 py-2"
               {...props}
             />
           ),
