@@ -413,7 +413,15 @@ async def chat_stream(
                 model_used=request.model or llm_service.primary_model,
             )
 
-            # Generate suggested follow-up questions
+            # Calculate and store token count for assistant message
+            assistant_message.token_count = token_counter.count_tokens(complete_response)
+            await db.commit()
+            await db.refresh(assistant_message)
+
+            # Send completion event IMMEDIATELY to avoid blocking
+            yield f'data: {json.dumps({"type": "done", "message_id": str(assistant_message.id)})}\n\n'
+
+            # Generate suggested follow-up questions (in background after done event)
             suggested_questions = await llm_service.generate_follow_up_questions(
                 query=request.message,
                 answer=complete_response,
@@ -421,17 +429,14 @@ async def chat_stream(
                 model=request.model,
             )
 
-            # Calculate and store token count for assistant message
-            assistant_message.token_count = token_counter.count_tokens(complete_response)
-
-            # Update the message with suggested questions and token count
+            # Update message with suggested questions
             if suggested_questions:
                 assistant_message.suggested_questions = suggested_questions
+                await db.commit()
+                # Send suggested questions to client
+                yield f'data: {json.dumps({"type": "suggested_questions", "questions": suggested_questions})}\n\n'
 
-            await db.commit()
-            await db.refresh(assistant_message)
-
-            # Generate a concise AI title for new conversations
+            # Generate a concise AI title for new conversations (in background)
             if not request.conversation_id and not request.conversation_title:
                 try:
                     title_generator = get_title_generator_service()
@@ -446,13 +451,6 @@ async def chat_stream(
                 except Exception as e:
                     logger.error(f"Failed to generate title: {e}")
                     # Continue without failing the request
-
-            # Send suggested questions to client
-            if suggested_questions:
-                yield f'data: {json.dumps({"type": "suggested_questions", "questions": suggested_questions})}\n\n'
-
-            # Send completion event
-            yield f'data: {json.dumps({"type": "done", "message_id": str(assistant_message.id)})}\n\n'
 
         except Exception as e:
             logger.error(f"Chat stream error: {e}", exc_info=True)

@@ -322,9 +322,12 @@ export function ChatPage() {
         // onDone
         (_messageId) => {
           dispatchStreaming({ type: 'RESET' });
-          // Invalidate queries to refresh the conversation
-          queryClient.invalidateQueries({ queryKey: ['conversations'] });
-          queryClient.invalidateQueries({ queryKey: ['conversations', newConversationId] });
+          // Only invalidate the specific conversation to avoid expensive full list refetch
+          if (newConversationId) {
+            queryClient.invalidateQueries({ queryKey: ['conversations', newConversationId] });
+            // Invalidate list only to update the sidebar title/message count
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+          }
         },
         // onError
         (error) => {
