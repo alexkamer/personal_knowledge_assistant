@@ -127,7 +127,7 @@ export function ChatPage() {
 
   // Local state (not persisted in URL)
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(true); // Changed default to true
+  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false); // Default to false for faster responses
   const [includeNotes, setIncludeNotes] = useState<boolean>(false); // Default to false - only use reputable sources
   const [socraticMode, setSocraticMode] = useState<boolean>(false); // Default to false - direct answers
   const [selectedModel, setSelectedModel] = useState<string>('qwen2.5:14b'); // Default model
