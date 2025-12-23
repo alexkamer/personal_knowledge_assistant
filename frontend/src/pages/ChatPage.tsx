@@ -166,6 +166,10 @@ export function ChatPage() {
   const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
   const [quizContentTitle, setQuizContentTitle] = useState('');
 
+  // Drag and drop state
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const dragCounterRef = useRef(0);
+
   // Knowledge Evolution Timeline state
   const [showEvolutionTimeline, setShowEvolutionTimeline] = useState(false);
 
@@ -392,6 +396,38 @@ export function ChatPage() {
     updateURLParam('conv', null);
     setErrorMessage(null);
   }, [updateURLParam]);
+
+  // Drag and drop handlers for the main chat area
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDraggingFiles(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDraggingFiles(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFiles(false);
+    dragCounterRef.current = 0;
+    // Don't handle the drop here - let ChatInput handle it
+  }, []);
 
   // Removed duplicate - now using the URL-based version above
 
@@ -896,7 +932,28 @@ export function ChatPage() {
         </aside>
 
         {/* Main Theater */}
-        <main className="flex-1 flex flex-col bg-gray-950 overflow-hidden">
+        <main
+          className="flex-1 flex flex-col bg-gray-950 overflow-hidden relative"
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          {/* Drag and Drop Overlay */}
+          {isDraggingFiles && (
+            <div className="absolute inset-0 bg-indigo-950/80 backdrop-blur-sm flex items-center justify-center z-50 pointer-events-none">
+              <div className="text-center">
+                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-indigo-500/20 border-4 border-dashed border-indigo-400 flex items-center justify-center">
+                  <svg className="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">Drop files to attach</h3>
+                <p className="text-indigo-300 text-lg">PDF, DOCX, TXT, MD files (max 25MB each)</p>
+              </div>
+            </div>
+          )}
+
           {/* Error Banner */}
           {errorMessage && (
             <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 mt-4">
