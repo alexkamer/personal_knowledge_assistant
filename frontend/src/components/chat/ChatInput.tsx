@@ -377,6 +377,7 @@ export function ChatInput({
           <div className="flex-1">
             <div
               className="relative"
+              data-chat-input-dropzone
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
               onDragOver={handleDragOver}

@@ -169,6 +169,7 @@ export function ChatPage() {
   // Drag and drop state
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const dragCounterRef = useRef(0);
+  const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Knowledge Evolution Timeline state
   const [showEvolutionTimeline, setShowEvolutionTimeline] = useState(false);
@@ -420,21 +421,59 @@ export function ChatPage() {
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Clear any existing timeout
+    if (dragTimeoutRef.current) {
+      clearTimeout(dragTimeoutRef.current);
+    }
+
+    // Set a timeout - if no dragover for 100ms, assume drag left the window
+    dragTimeoutRef.current = setTimeout(() => {
+      setIsDraggingFiles(false);
+      dragCounterRef.current = 0;
+    }, 100);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (dragTimeoutRef.current) {
+      clearTimeout(dragTimeoutRef.current);
+    }
     setIsDraggingFiles(false);
     dragCounterRef.current = 0;
-    // Don't handle the drop here - let ChatInput handle it
+
+    // Extract files and dispatch a drop event to the ChatInput
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      // Find the ChatInput's drop zone and dispatch drop event to it
+      const chatInputContainer = document.querySelector('[data-chat-input-dropzone]');
+      if (chatInputContainer) {
+        const dropEvent = new DragEvent('drop', {
+          bubbles: true,
+          cancelable: true,
+          dataTransfer: e.dataTransfer,
+        });
+        chatInputContainer.dispatchEvent(dropEvent);
+      }
+    }
   }, []);
 
   // Cleanup drag state when drag leaves the browser window or file is dropped
   useEffect(() => {
+    const handleDocumentDragOver = (e: DragEvent) => {
+      // Track that we're still dragging inside the window
+      e.preventDefault();
+    };
+
     const handleDocumentDragLeave = (e: DragEvent) => {
-      // Only reset if leaving the document entirely (relatedTarget is null)
-      if (!e.relatedTarget && e.target === document) {
+      // Check if we're leaving the window entirely
+      // This fires when relatedTarget is null (leaving document body)
+      const rect = document.documentElement.getBoundingClientRect();
+      const isOutside = e.clientX <= 0 || e.clientX >= rect.width ||
+                       e.clientY <= 0 || e.clientY >= rect.height;
+
+      if (isOutside || !e.relatedTarget) {
         setIsDraggingFiles(false);
         dragCounterRef.current = 0;
       }
@@ -452,11 +491,13 @@ export function ChatPage() {
       dragCounterRef.current = 0;
     };
 
+    document.addEventListener('dragover', handleDocumentDragOver);
     document.addEventListener('dragleave', handleDocumentDragLeave);
     document.addEventListener('drop', handleDocumentDrop);
     document.addEventListener('dragend', handleDocumentDragEnd);
 
     return () => {
+      document.removeEventListener('dragover', handleDocumentDragOver);
       document.removeEventListener('dragleave', handleDocumentDragLeave);
       document.removeEventListener('drop', handleDocumentDrop);
       document.removeEventListener('dragend', handleDocumentDragEnd);
