@@ -34,6 +34,7 @@ import type { Message, ToolCall, ToolResult } from '@/types/chat';
 // Streaming state types
 interface StreamingState {
   isStreaming: boolean;
+  userMessage: string;
   message: string;
   sources: any[];
   suggestedQuestions: string[];
@@ -45,7 +46,7 @@ interface StreamingState {
 
 // Streaming state actions
 type StreamingAction =
-  | { type: 'START_STREAMING' }
+  | { type: 'START_STREAMING'; payload: string }
   | { type: 'UPDATE_CHUNK'; payload: string }
   | { type: 'UPDATE_SOURCES'; payload: any[] }
   | { type: 'UPDATE_SUGGESTED_QUESTIONS'; payload: string[] }
@@ -58,6 +59,7 @@ type StreamingAction =
 // Initial streaming state
 const initialStreamingState: StreamingState = {
   isStreaming: false,
+  userMessage: '',
   message: '',
   sources: [],
   suggestedQuestions: [],
@@ -74,6 +76,7 @@ function streamingReducer(state: StreamingState, action: StreamingAction): Strea
       return {
         ...initialStreamingState,
         isStreaming: true,
+        userMessage: action.payload,
       };
     case 'UPDATE_CHUNK':
       return {
@@ -224,23 +227,38 @@ export function ChatPage() {
 
   const messages: Message[] = conversationData?.messages || [];
 
-  // Add streaming message to the messages if currently streaming (memoized for performance)
+  // Add streaming messages to the messages if currently streaming (memoized for performance)
   const displayMessages: Message[] = useMemo(() => {
     if (!streamingState.isStreaming) return messages;
 
-    return [
-      ...messages,
-      {
-        id: 'streaming',
+    const streamingMessages: Message[] = [];
+
+    // Add user message immediately
+    if (streamingState.userMessage) {
+      streamingMessages.push({
+        id: 'streaming-user',
         conversation_id: selectedConversationId || '',
-        role: 'assistant' as const,
-        content: streamingState.message,
-        sources: streamingState.sources.length > 0 ? streamingState.sources : undefined,
-        suggested_questions: streamingState.suggestedQuestions.length > 0 ? streamingState.suggestedQuestions : undefined,
+        role: 'user' as const,
+        content: streamingState.userMessage,
         created_at: new Date().toISOString(),
-      },
-    ];
-  }, [messages, streamingState.isStreaming, streamingState.message, streamingState.sources, streamingState.suggestedQuestions, selectedConversationId]);
+      });
+    }
+
+    // Add assistant message (with status as placeholder if no content yet)
+    streamingMessages.push({
+      id: 'streaming-assistant',
+      conversation_id: selectedConversationId || '',
+      role: 'assistant' as const,
+      content: streamingState.message,
+      sources: streamingState.sources.length > 0 ? streamingState.sources : undefined,
+      suggested_questions: streamingState.suggestedQuestions.length > 0 ? streamingState.suggestedQuestions : undefined,
+      created_at: new Date().toISOString(),
+      // Pass status for rendering as placeholder
+      metadata: { status: streamingState.status },
+    });
+
+    return [...messages, ...streamingMessages];
+  }, [messages, streamingState.isStreaming, streamingState.userMessage, streamingState.message, streamingState.sources, streamingState.suggestedQuestions, streamingState.status, selectedConversationId]);
 
   // Debounce search query for better performance
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
@@ -294,7 +312,8 @@ export function ChatPage() {
   const handleSendMessage = useCallback(async (message: string) => {
     try {
       setErrorMessage(null);
-      dispatchStreaming({ type: 'START_STREAMING' });
+      // Store the user message for immediate display
+      dispatchStreaming({ type: 'START_STREAMING', payload: message });
       setPrefillQuestion(''); // Clear prefill after sending
 
       let newConversationId = selectedConversationId;
@@ -892,20 +911,6 @@ export function ChatPage() {
                 >
                   ×
                 </button>
-              </div>
-            </div>
-          )}
-
-          {/* Loading Status - shows continuously during streaming for better UX */}
-          {streamingState.isStreaming && streamingState.status && (
-            <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-4">
-              <div className="flex items-center gap-3 text-gray-400">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
-                <span className="text-sm">{streamingState.status}</span>
               </div>
             </div>
           )}

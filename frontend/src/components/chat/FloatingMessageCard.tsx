@@ -80,9 +80,26 @@ export const FloatingMessageCard = React.memo<FloatingMessageCardProps>(({
                 {message.content}
               </div>
             ) : (
-              <div className="prose dark:prose-invert prose-sm max-w-none">
-                <MarkdownRenderer content={message.content} />
-              </div>
+              <>
+                {/* Show status as placeholder if no content yet */}
+                {!message.content && message.metadata?.status && (
+                  <div className="flex items-center gap-3 text-gray-400 py-2">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                    <span className="text-sm">{message.metadata.status}</span>
+                  </div>
+                )}
+
+                {/* Show content when available */}
+                {message.content && (
+                  <div className="prose dark:prose-invert prose-sm max-w-none">
+                    <MarkdownRenderer content={message.content} />
+                  </div>
+                )}
+              </>
             )}
 
             {/* Assistant Message Footer */}

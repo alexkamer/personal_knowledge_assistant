@@ -20,6 +20,7 @@ export interface Message {
   sources?: SourceCitation[];
   feedback?: MessageFeedback;
   suggested_questions?: string[];
+  metadata?: Record<string, any>;
 }
 
 export interface SourceCitation {
