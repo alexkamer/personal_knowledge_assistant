@@ -21,8 +21,9 @@ interface ChatInputProps {
 }
 
 const AVAILABLE_MODELS = [
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Google - Best price-performance', category: 'cloud' },
   { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', description: 'Google - Balanced multimodal', category: 'cloud' },
-  { id: 'gemini-2.5-flash-preview', name: 'Gemini 2.5 Flash', description: 'Google - Best price-performance', category: 'cloud' },
+  { id: 'gemini-2.5-flash-preview', name: 'Gemini 2.5 Flash Preview', description: 'Google - Preview version', category: 'cloud' },
   { id: 'gemini-2.5-flash-lite-preview', name: 'Gemini 2.5 Flash Lite', description: 'Google - Fastest & cheapest', category: 'cloud' },
   { id: 'qwen2.5:14b', name: 'Qwen 2.5 14B', description: 'Best reasoning', category: 'local' },
   { id: 'phi4:14b', name: 'Phi-4 14B', description: 'Complex analysis', category: 'local' },
@@ -35,7 +36,7 @@ export function ChatInput({
   disabled = false,
   placeholder = 'Ask a question about your notes and documents...',
   initialValue = '',
-  selectedModel = 'gemini-2.0-flash-exp',
+  selectedModel = 'gemini-2.5-flash',
   onModelChange,
   webSearchEnabled = true,
   onWebSearchToggle,

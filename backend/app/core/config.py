@@ -55,7 +55,7 @@ class Settings(BaseSettings):
 
     # Google Gemini API
     gemini_api_key: str | None = None
-    gemini_default_model: str = "gemini-2.0-flash-exp"  # Free tier models available
+    gemini_default_model: str = "gemini-2.5-flash"  # Free tier models available
 
     # Embeddings Configuration
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"

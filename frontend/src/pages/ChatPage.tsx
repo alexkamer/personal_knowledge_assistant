@@ -131,8 +131,8 @@ export function ChatPage() {
   const [includeNotes, setIncludeNotes] = useState<boolean>(false); // Default to false - only use reputable sources
   const [socraticMode, setSocraticMode] = useState<boolean>(false); // Default to false - direct answers
   const [selectedModel, setSelectedModel] = useState<string>(() => {
-    // Load from localStorage or default to gemini-2.0-flash-exp
-    return localStorage.getItem('preferred_model') || 'gemini-2.0-flash-exp';
+    // Load from localStorage or default to gemini-2.5-flash
+    return localStorage.getItem('preferred_model') || 'gemini-2.5-flash';
   });
 
   // Streaming state (consolidated with useReducer for performance)
