@@ -430,6 +430,39 @@ export function ChatPage() {
     // Don't handle the drop here - let ChatInput handle it
   }, []);
 
+  // Cleanup drag state when drag leaves the browser window or file is dropped
+  useEffect(() => {
+    const handleDocumentDragLeave = (e: DragEvent) => {
+      // Only reset if leaving the document entirely (relatedTarget is null)
+      if (!e.relatedTarget && e.target === document) {
+        setIsDraggingFiles(false);
+        dragCounterRef.current = 0;
+      }
+    };
+
+    const handleDocumentDrop = () => {
+      // Reset state when any drop happens
+      setIsDraggingFiles(false);
+      dragCounterRef.current = 0;
+    };
+
+    const handleDocumentDragEnd = () => {
+      // Reset when drag operation ends
+      setIsDraggingFiles(false);
+      dragCounterRef.current = 0;
+    };
+
+    document.addEventListener('dragleave', handleDocumentDragLeave);
+    document.addEventListener('drop', handleDocumentDrop);
+    document.addEventListener('dragend', handleDocumentDragEnd);
+
+    return () => {
+      document.removeEventListener('dragleave', handleDocumentDragLeave);
+      document.removeEventListener('drop', handleDocumentDrop);
+      document.removeEventListener('dragend', handleDocumentDragEnd);
+    };
+  }, []);
+
   // Removed duplicate - now using the URL-based version above
 
   const handleMenuToggle = useCallback((e: React.MouseEvent, conversationId: string) => {
