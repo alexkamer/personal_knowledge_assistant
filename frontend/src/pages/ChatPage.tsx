@@ -402,6 +402,7 @@ export function ChatPage() {
     e.preventDefault();
     e.stopPropagation();
     dragCounterRef.current++;
+    // Check if dragging files (dataTransfer.items is more reliable than types)
     if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
       setIsDraggingFiles(true);
     }
