@@ -5,6 +5,9 @@ import React, { useState, useEffect } from 'react';
 import { Send, ChevronDown, Globe, MessageSquare, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Source filter options
+export type SourceFilter = 'general' | 'docs' | 'web';
+
 interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
@@ -12,10 +15,8 @@ interface ChatInputProps {
   initialValue?: string;
   selectedModel?: string;
   onModelChange?: (model: string) => void;
-  webSearchEnabled?: boolean;
-  onWebSearchToggle?: () => void;
-  includeNotes?: boolean;
-  onIncludeNotesToggle?: () => void;
+  sourceFilter?: SourceFilter;
+  onSourceFilterChange?: (filter: SourceFilter) => void;
   socraticMode?: boolean;
   onSocraticModeToggle?: () => void;
 }
@@ -38,10 +39,8 @@ export function ChatInput({
   initialValue = '',
   selectedModel = 'gemini-2.5-flash',
   onModelChange,
-  webSearchEnabled = true,
-  onWebSearchToggle,
-  includeNotes = false,
-  onIncludeNotesToggle,
+  sourceFilter = 'general',
+  onSourceFilterChange,
   socraticMode = false,
   onSocraticModeToggle,
 }: ChatInputProps) {
@@ -164,38 +163,54 @@ export function ChatInput({
 
           {/* Inline Toggles */}
           <div className="flex items-center gap-2">
-            {/* Web Search Toggle */}
-            {onWebSearchToggle && (
-              <button
-                type="button"
-                onClick={onWebSearchToggle}
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors",
-                  webSearchEnabled
-                    ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
-                )}
-              >
-                <Globe size={13} />
-                <span className="whitespace-nowrap">{webSearchEnabled ? '✓ Web' : 'Docs only'}</span>
-              </button>
-            )}
+            {/* Source Filter Button Group */}
+            {onSourceFilterChange && (
+              <div className="flex items-center gap-0.5 p-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => onSourceFilterChange('web')}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors",
+                    sourceFilter === 'web'
+                      ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700 shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                  title="Search the web"
+                >
+                  <Globe size={13} />
+                  <span className="whitespace-nowrap">Web</span>
+                </button>
 
-            {/* Include Notes Toggle */}
-            {onIncludeNotesToggle && (
-              <button
-                type="button"
-                onClick={onIncludeNotesToggle}
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors",
-                  includeNotes
-                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-700"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
-                )}
-              >
-                <MessageSquare size={13} />
-                <span className="whitespace-nowrap">{includeNotes ? '✓ Notes' : 'Verified only'}</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onSourceFilterChange('docs')}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors",
+                    sourceFilter === 'docs'
+                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-700 shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                  title="Search your documents only"
+                >
+                  <MessageSquare size={13} />
+                  <span className="whitespace-nowrap">Docs only</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onSourceFilterChange('general')}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors",
+                    sourceFilter === 'general'
+                      ? "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700 shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                  title="Use general knowledge only (no document search)"
+                >
+                  <GraduationCap size={13} />
+                  <span className="whitespace-nowrap">General</span>
+                </button>
+              </div>
             )}
 
             {/* Socratic Mode Toggle */}
@@ -206,7 +221,7 @@ export function ChatInput({
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors",
                   socraticMode
-                    ? "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700"
+                    ? "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
                 )}
                 title="Enable Socratic Learning Mode: AI teaches through guided questions"

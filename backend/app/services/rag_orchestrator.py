@@ -94,10 +94,11 @@ class RAGOrchestrator:
                 top_k=top_k_final
             )
 
-        # Step 6: Assemble context with deduplication
+        # Step 6: Assemble context with deduplication and relevance filtering
         context, citations = self.rag_service.assemble_context(
             chunks=chunks,
-            max_tokens=settings.max_context_tokens
+            max_tokens=settings.max_context_tokens,
+            min_relevance_threshold=settings.min_relevance_threshold
         )
 
         # Step 7: Decide on web search

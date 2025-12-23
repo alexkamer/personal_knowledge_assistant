@@ -187,7 +187,7 @@ class AgentService:
             description="Balanced conversational assistant",
             model="qwen2.5:14b",
             temperature=0.7,
-            rag_top_k=10,
+            rag_top_k=4,  # Reduced from 10 for better quality over quantity
             max_conversation_history=10,
             system_prompt="""You are a helpful AI assistant for a personal knowledge management system.
 

@@ -130,8 +130,7 @@ export function ChatPage() {
 
   // Local state (not persisted in URL)
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false); // Default to false for faster responses
-  const [includeNotes, setIncludeNotes] = useState<boolean>(false); // Default to false - only use reputable sources
+  const [sourceFilter, setSourceFilter] = useState<'general' | 'docs' | 'web'>('general'); // Default to general (no RAG)
   const [socraticMode, setSocraticMode] = useState<boolean>(false); // Default to false - direct answers
   const [selectedModel, setSelectedModel] = useState<string>(() => {
     // Load from localStorage or default to gemini-2.5-flash
@@ -324,9 +323,10 @@ export function ChatPage() {
           conversation_id: selectedConversationId || undefined,
           conversation_title: selectedConversationId ? undefined : undefined,  // Let backend generate title
           model: selectedModel,
-          include_web_search: webSearchEnabled,
-          include_notes: includeNotes,
+          include_web_search: sourceFilter === 'web',
+          include_notes: sourceFilter === 'docs' ? true : false, // docs mode includes all sources
           socratic_mode: socraticMode,
+          skip_rag: sourceFilter === 'general', // Skip RAG for general knowledge mode
         },
         // onChunk
         (chunk) => {
@@ -385,7 +385,7 @@ export function ChatPage() {
       setErrorMessage(errorDetail);
       dispatchStreaming({ type: 'RESET' });
     }
-  }, [selectedConversationId, selectedModel, webSearchEnabled, includeNotes, socraticMode, updateURLParam, queryClient]);
+  }, [selectedConversationId, selectedModel, sourceFilter, socraticMode, updateURLParam, queryClient]);
 
   const handleNewChat = useCallback(() => {
     updateURLParam('conv', null);
@@ -953,10 +953,8 @@ export function ChatPage() {
             initialValue={prefillQuestion}
             selectedModel={selectedModel}
             onModelChange={setSelectedModel}
-            webSearchEnabled={webSearchEnabled}
-            onWebSearchToggle={() => setWebSearchEnabled(!webSearchEnabled)}
-            includeNotes={includeNotes}
-            onIncludeNotesToggle={() => setIncludeNotes(!includeNotes)}
+            sourceFilter={sourceFilter}
+            onSourceFilterChange={setSourceFilter}
             socraticMode={socraticMode}
             onSocraticModeToggle={() => setSocraticMode(!socraticMode)}
           />

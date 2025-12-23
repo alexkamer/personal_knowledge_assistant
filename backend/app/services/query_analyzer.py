@@ -198,33 +198,33 @@ class QueryAnalyzer:
 
         Returns parameters for initial retrieval before re-ranking.
         """
-        # Base parameters
+        # Base parameters - reduced for better quality over quantity
         params = {
-            "initial_k": 10,  # Always retrieve 10 for re-ranking
-            "top_k": 3,  # Default after re-ranking
-            "max_final_chunks": 3,  # Final chunks to use
+            "initial_k": 6,  # Retrieve 6 for re-ranking (reduced from 10)
+            "top_k": 2,  # Default after re-ranking (reduced from 3)
+            "max_final_chunks": 2,  # Final chunks to use (reduced from 3)
         }
 
         # Adjust based on query type and complexity
         if query_type == QueryType.COMPARATIVE:
             # Need more context to compare multiple things
-            params["top_k"] = 5
-            params["max_final_chunks"] = 5
+            params["top_k"] = 3
+            params["max_final_chunks"] = 3
 
         elif query_type == QueryType.EXPLORATORY:
             # Broader context needed
-            params["top_k"] = 4
-            params["max_final_chunks"] = 4
+            params["top_k"] = 3
+            params["max_final_chunks"] = 3
 
         elif query_type == QueryType.PROCEDURAL:
             # Step-by-step needs more detail
-            params["top_k"] = 4
-            params["max_final_chunks"] = 4
+            params["top_k"] = 3
+            params["max_final_chunks"] = 3
 
         # Adjust for complexity
         if complexity == QueryComplexity.COMPLEX:
-            params["top_k"] = min(params["top_k"] + 1, 5)
-            params["max_final_chunks"] = min(params["max_final_chunks"] + 1, 5)
+            params["top_k"] = min(params["top_k"] + 1, 4)
+            params["max_final_chunks"] = min(params["max_final_chunks"] + 1, 4)
 
         return params
 

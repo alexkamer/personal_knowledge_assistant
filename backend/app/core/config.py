@@ -65,12 +65,13 @@ class Settings(BaseSettings):
     # RAG Configuration
     chunk_size: int = 512
     chunk_overlap: int = 50
-    max_retrieval_chunks: int = 10  # Initial retrieval (before re-ranking)
-    max_final_chunks: int = 3  # After re-ranking
+    max_retrieval_chunks: int = 6  # Initial retrieval (before re-ranking) - reduced from 10
+    max_final_chunks: int = 2  # After re-ranking - reduced from 3 for quality over quantity
     max_context_tokens: int = 5000
     rerank_enabled: bool = True  # Enable re-ranking for better relevance
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     web_search_confidence_threshold: float = 0.7  # Only use web if best match < this
+    min_relevance_threshold: float = 0.7  # Minimum relevance score (1 - distance) to include chunk
 
     # File Upload Configuration
     max_upload_size_mb: int = 50  # Maximum file size in MB

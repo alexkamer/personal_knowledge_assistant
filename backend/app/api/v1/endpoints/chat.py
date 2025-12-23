@@ -309,11 +309,11 @@ async def chat_stream(
             # Check if this is a conversational follow-up query
             is_conversational = _is_conversational_query(clean_message)
 
-            # Retrieve relevant context using RAG Orchestrator (skip for conversational queries)
+            # Retrieve relevant context using RAG Orchestrator (skip for conversational queries or general mode)
             context = ""
             citations = []
             metadata = {}
-            if not is_conversational and agent_config.use_rag:
+            if not is_conversational and not request.skip_rag and agent_config.use_rag:
                 # Send status: analyzing query
                 yield f'data: {json.dumps({"type": "status", "status": "Analyzing your question..."})}\n\n'
 
@@ -339,6 +339,10 @@ async def chat_stream(
                 if is_conversational:
                     logger.info("Detected conversational query, skipping RAG retrieval")
                     metadata = {"query_type": "conversational"}
+                    yield f'data: {json.dumps({"type": "status", "status": "Generating answer..."})}\n\n'
+                elif request.skip_rag:
+                    logger.info("User requested general knowledge mode (skip_rag=True)")
+                    metadata = {"query_type": "general_knowledge"}
                     yield f'data: {json.dumps({"type": "status", "status": "Generating answer..."})}\n\n'
                 else:
                     logger.info(f"Agent {agent_config.name} has RAG disabled")

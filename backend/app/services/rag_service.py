@@ -208,29 +208,41 @@ class RAGService:
         doc_ids = [chunk.document_id for chunk in chunks_by_id.values() if chunk.document_id]
         youtube_ids = [chunk.youtube_video_id for chunk in chunks_by_id.values() if chunk.youtube_video_id]
 
-        # Single query for all note titles
+        # Single query for all note titles - ensure consistent UUID string formatting
         note_title_map = {}
         if note_ids:
-            result = await db.execute(
-                select(Note.id, Note.title).where(Note.id.in_(note_ids))
-            )
-            note_title_map = {str(note_id): title for note_id, title in result}
+            try:
+                result = await db.execute(
+                    select(Note.id, Note.title).where(Note.id.in_(note_ids))
+                )
+                note_title_map = {str(note_id): title for note_id, title in result}
+                logger.debug(f"Fetched {len(note_title_map)} note titles")
+            except Exception as e:
+                logger.error(f"Failed to fetch note titles: {e}")
 
-        # Single query for all document titles
+        # Single query for all document titles - ensure consistent UUID string formatting
         doc_title_map = {}
         if doc_ids:
-            result = await db.execute(
-                select(Document.id, Document.filename).where(Document.id.in_(doc_ids))
-            )
-            doc_title_map = {str(doc_id): filename for doc_id, filename in result}
+            try:
+                result = await db.execute(
+                    select(Document.id, Document.filename).where(Document.id.in_(doc_ids))
+                )
+                doc_title_map = {str(doc_id): filename for doc_id, filename in result}
+                logger.debug(f"Fetched {len(doc_title_map)} document titles")
+            except Exception as e:
+                logger.error(f"Failed to fetch document titles: {e}")
 
-        # Single query for all YouTube video titles
+        # Single query for all YouTube video titles - ensure consistent UUID string formatting
         youtube_title_map = {}
         if youtube_ids:
-            result = await db.execute(
-                select(YouTubeVideo.id, YouTubeVideo.title).where(YouTubeVideo.id.in_(youtube_ids))
-            )
-            youtube_title_map = {str(yt_id): title for yt_id, title in result}
+            try:
+                result = await db.execute(
+                    select(YouTubeVideo.id, YouTubeVideo.title).where(YouTubeVideo.id.in_(youtube_ids))
+                )
+                youtube_title_map = {str(yt_id): title for yt_id, title in result}
+                logger.debug(f"Fetched {len(youtube_title_map)} YouTube titles")
+            except Exception as e:
+                logger.error(f"Failed to fetch YouTube titles: {e}")
 
         # Build RetrievedChunk objects maintaining fused order
         retrieved_chunks = []
@@ -344,29 +356,41 @@ class RAGService:
         doc_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "document"]
         youtube_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "youtube"]
 
-        # Single query for all note titles
+        # Single query for all note titles - ensure consistent UUID string formatting
         note_title_map = {}
         if note_ids:
-            result = await db.execute(
-                select(Note.id, Note.title).where(Note.id.in_(note_ids))
-            )
-            note_title_map = {str(note_id): title for note_id, title in result}
+            try:
+                result = await db.execute(
+                    select(Note.id, Note.title).where(Note.id.in_(note_ids))
+                )
+                note_title_map = {str(note_id): title for note_id, title in result}
+                logger.debug(f"Fetched {len(note_title_map)} note titles")
+            except Exception as e:
+                logger.error(f"Failed to fetch note titles: {e}")
 
-        # Single query for all document titles
+        # Single query for all document titles - ensure consistent UUID string formatting
         doc_title_map = {}
         if doc_ids:
-            result = await db.execute(
-                select(Document.id, Document.filename).where(Document.id.in_(doc_ids))
-            )
-            doc_title_map = {str(doc_id): filename for doc_id, filename in result}
+            try:
+                result = await db.execute(
+                    select(Document.id, Document.filename).where(Document.id.in_(doc_ids))
+                )
+                doc_title_map = {str(doc_id): filename for doc_id, filename in result}
+                logger.debug(f"Fetched {len(doc_title_map)} document titles")
+            except Exception as e:
+                logger.error(f"Failed to fetch document titles: {e}")
 
-        # Single query for all YouTube video titles
+        # Single query for all YouTube video titles - ensure consistent UUID string formatting
         youtube_title_map = {}
         if youtube_ids:
-            result = await db.execute(
-                select(YouTubeVideo.id, YouTubeVideo.title).where(YouTubeVideo.id.in_(youtube_ids))
-            )
-            youtube_title_map = {str(yt_id): title for yt_id, title in result}
+            try:
+                result = await db.execute(
+                    select(YouTubeVideo.id, YouTubeVideo.title).where(YouTubeVideo.id.in_(youtube_ids))
+                )
+                youtube_title_map = {str(yt_id): title for yt_id, title in result}
+                logger.debug(f"Fetched {len(youtube_title_map)} YouTube titles")
+            except Exception as e:
+                logger.error(f"Failed to fetch YouTube titles: {e}")
 
         # Fetch source titles from preloaded maps
         retrieved_chunks = []
@@ -443,6 +467,7 @@ class RAGService:
         self,
         chunks: List[RetrievedChunk],
         max_tokens: int = None,
+        min_relevance_threshold: float = 0.7,
     ) -> tuple[str, List[dict]]:
         """
         Assemble context from retrieved chunks for the LLM prompt.
@@ -450,6 +475,7 @@ class RAGService:
         Args:
             chunks: List of retrieved chunks
             max_tokens: Maximum tokens for context (defaults to config)
+            min_relevance_threshold: Minimum relevance score (1 - distance) to include chunk (default: 0.7)
 
         Returns:
             Tuple of (assembled context string, source citations)
@@ -459,12 +485,27 @@ class RAGService:
         if not chunks:
             return "", []
 
+        # Filter chunks by relevance threshold
+        # Lower distance = higher relevance, so we filter by (1 - distance) >= threshold
+        relevant_chunks = [
+            chunk for chunk in chunks
+            if (1.0 - chunk.distance) >= min_relevance_threshold
+        ]
+
+        # If filtering removed all chunks, fall back to top 2 chunks regardless of relevance
+        if not relevant_chunks and chunks:
+            relevant_chunks = chunks[:2]
+            logger.warning(f"All chunks below relevance threshold {min_relevance_threshold}, using top 2 anyway")
+        elif len(relevant_chunks) < len(chunks):
+            filtered_out = len(chunks) - len(relevant_chunks)
+            logger.info(f"Filtered out {filtered_out} low-relevance chunks (threshold: {min_relevance_threshold})")
+
         context_parts = []
         all_chunk_citations = []
         total_tokens = 0
 
         # Build context with source citations
-        for idx, chunk in enumerate(chunks, 1):
+        for idx, chunk in enumerate(relevant_chunks, 1):
             # Estimate tokens (rough: 4 chars per token)
             chunk_tokens = len(chunk.content) // 4
 
@@ -478,6 +519,7 @@ class RAGService:
             # Track all chunk citations (including duplicates from same document)
             citation = {
                 "index": idx,
+                "chunk_id": chunk.chunk_id,  # Required by frontend for chunk preview
                 "source_type": chunk.source_type,
                 "source_id": chunk.source_id,
                 "source_title": chunk.source_title,
@@ -499,9 +541,11 @@ class RAGService:
             total_tokens += chunk_tokens
 
         # Deduplicate citations by source (keep best distance for each unique source)
+        # Use (source_type, source_title) instead of (source_type, source_id) to avoid
+        # showing duplicate filenames (e.g., multiple versions of same document)
         unique_sources = {}
         for citation in all_chunk_citations:
-            source_key = (citation["source_type"], citation["source_id"])
+            source_key = (citation["source_type"], citation["source_title"])
             if source_key not in unique_sources:
                 unique_sources[source_key] = citation
             else:
@@ -610,8 +654,12 @@ class RAGService:
             chunks = self.rerank_chunks(query, chunks)
             logger.info(f"After re-ranking: {len(chunks)} chunks (distances: {[f'{c.distance:.3f}' for c in chunks]})")
 
-        # Assemble context from re-ranked chunks
-        context, citations = self.assemble_context(chunks, max_tokens=max_tokens)
+        # Assemble context from re-ranked chunks with relevance filtering
+        context, citations = self.assemble_context(
+            chunks,
+            max_tokens=max_tokens,
+            min_relevance_threshold=settings.min_relevance_threshold
+        )
 
         # Determine if we should add web search based on confidence
         should_add_web = include_web_search

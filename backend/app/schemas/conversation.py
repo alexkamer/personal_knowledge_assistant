@@ -113,6 +113,7 @@ class ChatRequest(BaseModel):
     include_web_search: bool = Field(False, description="Include web search results")
     include_notes: bool = Field(False, description="Include personal notes as sources (default: reputable sources only)")
     socratic_mode: bool = Field(False, description="Enable Socratic Learning Mode (AI teaches through questioning)")
+    skip_rag: bool = Field(False, description="Skip RAG retrieval and use general knowledge only")
 
 
 class ChatResponse(BaseModel):
