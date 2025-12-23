@@ -234,19 +234,19 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-900">
+    <div className="min-h-screen bg-gray-950">
       {/* Header */}
-      <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-700/50 shadow-sm">
+      <div className="bg-gray-900/80 backdrop-blur-xl border-b border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-7">
           <div className="flex items-center gap-4 mb-5">
-            <div className="p-2.5 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-md">
+            <div className="p-2.5 bg-danger-500 rounded-xl shadow-md">
               <Youtube className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
+              <h1 className="text-2xl font-bold tracking-tight text-white">
                 YouTube Learning
               </h1>
-              <p className="text-sm font-medium text-stone-600 dark:text-stone-400 mt-0.5">
+              <p className="text-sm font-medium text-gray-400 mt-0.5">
                 Learn better from videos with AI-powered transcripts and summaries
               </p>
             </div>
@@ -261,15 +261,15 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Paste YouTube URL here (e.g., https://www.youtube.com/watch?v=...)"
-                className="w-full px-4 py-3 pr-10 bg-white/90 dark:bg-stone-700/90 backdrop-blur-xl border border-stone-300/50 dark:border-stone-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:text-white shadow-sm transition-all"
+                className="w-full px-4 py-3 pr-10 bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white shadow-sm transition-all"
                 disabled={loading}
               />
-              <Youtube className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <Youtube className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
             <button
               onClick={handleLoadVideo}
               disabled={loading || !url.trim()}
-              className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-danger-500 hover:bg-danger-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
                 <>
@@ -307,7 +307,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
             {/* Video Player Column */}
             <div className="lg:col-span-2 space-y-4">
               {/* Video Embed */}
-              <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg overflow-hidden">
+              <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-lg overflow-hidden">
                 <div className="relative pb-[56.25%]">
                   <iframe
                     src={youtubeService.getEmbedUrl(transcriptData.video_id, currentTime)}
@@ -321,11 +321,11 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
 
               {/* Video Metadata */}
               {metadata && (
-                <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg p-5">
-                  <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-3">
+                <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-lg p-5">
+                  <h1 className="text-xl font-bold text-white mb-3">
                     {metadata.title}
                   </h1>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-stone-600 dark:text-stone-400">
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       <span className="font-medium">{metadata.channel}</span>
@@ -342,13 +342,13 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
               )}
 
               {/* Video Info */}
-              <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg p-5">
+              <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-lg p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex-1">
-                    <h2 className="font-semibold text-stone-900 dark:text-white">
+                    <h2 className="font-semibold text-white">
                       Video Transcript
                     </h2>
-                    <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                    <p className="text-sm text-gray-400 mt-1">
                       {transcriptData.entry_count} entries •{' '}
                       {youtubeService.formatTimestamp(transcriptData.total_duration)} •{' '}
                       {transcriptData.language.toUpperCase()}
@@ -357,7 +357,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                   </div>
                   <button
                     onClick={handleCopyTranscript}
-                    className="px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-xl transition-colors flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-300"
+                    className="px-3 py-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm font-medium text-gray-400"
                     title="Copy transcript to clipboard"
                   >
                     {copiedTranscript ? (
@@ -376,18 +376,18 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
               </div>
 
               {/* AI Summary Section */}
-              <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg p-6">
+              <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    <h3 className="text-lg font-semibold text-stone-900 dark:text-white">
+                    <h3 className="text-lg font-semibold text-white">
                       AI Summary
                     </h3>
                   </div>
                   {!summary && !summarizing && (
                     <button
                       onClick={handleSummarize}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+                      className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center gap-2"
                     >
                       <Sparkles className="w-4 h-4" />
                       Generate Summary
@@ -399,7 +399,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                 {summarizing && (
                   <div className="text-center py-8">
                     <Loader2 className="w-8 h-8 text-purple-600 dark:text-purple-400 mx-auto mb-3 animate-spin" />
-                    <p className="text-sm text-stone-600 dark:text-stone-400">
+                    <p className="text-sm text-gray-400">
                       Analyzing video with AI...
                     </p>
                   </div>
@@ -417,23 +417,23 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                 {summary && !summarizing && (
                   <div className="space-y-3">
                     {/* Overall Summary */}
-                    <div className="border border-stone-200 dark:border-stone-700 rounded-lg overflow-hidden">
+                    <div className="border border-gray-700 rounded-lg overflow-hidden">
                       <button
                         onClick={() => toggleSection('overview')}
-                        className="w-full flex items-center justify-between p-3 hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors"
+                        className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
                       >
-                        <h4 className="text-sm font-semibold text-stone-900 dark:text-white">
+                        <h4 className="text-sm font-semibold text-white">
                           Overview
                         </h4>
                         {expandedSections.overview ? (
-                          <ChevronUp className="w-4 h-4 text-stone-500" />
+                          <ChevronUp className="w-4 h-4 text-gray-400" />
                         ) : (
-                          <ChevronDown className="w-4 h-4 text-stone-500" />
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
                         )}
                       </button>
                       {expandedSections.overview && (
                         <div className="px-3 pb-3">
-                          <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
+                          <p className="text-sm text-gray-400 leading-relaxed">
                             {summary.summary}
                           </p>
                         </div>
@@ -442,18 +442,18 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
 
                     {/* Key Points */}
                     {summary.key_points.length > 0 && (
-                      <div className="border border-stone-200 dark:border-stone-700 rounded-lg overflow-hidden">
+                      <div className="border border-gray-700 rounded-lg overflow-hidden">
                         <button
                           onClick={() => toggleSection('keyPoints')}
-                          className="w-full flex items-center justify-between p-3 hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors"
+                          className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
                         >
-                          <h4 className="text-sm font-semibold text-stone-900 dark:text-white">
+                          <h4 className="text-sm font-semibold text-white">
                             Key Points ({summary.key_points.length})
                           </h4>
                           {expandedSections.keyPoints ? (
-                            <ChevronUp className="w-4 h-4 text-stone-500" />
+                            <ChevronUp className="w-4 h-4 text-gray-400" />
                           ) : (
-                            <ChevronDown className="w-4 h-4 text-stone-500" />
+                            <ChevronDown className="w-4 h-4 text-gray-400" />
                           )}
                         </button>
                         {expandedSections.keyPoints && (
@@ -462,7 +462,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                               {summary.key_points.map((point, idx) => (
                                 <li
                                   key={idx}
-                                  className="flex items-start gap-2 text-sm text-stone-700 dark:text-stone-300"
+                                  className="flex items-start gap-2 text-sm text-gray-400"
                                 >
                                   <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                                   <span>{point}</span>
@@ -476,18 +476,18 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
 
                     {/* Topics */}
                     {summary.topics.length > 0 && (
-                      <div className="border border-stone-200 dark:border-stone-700 rounded-lg overflow-hidden">
+                      <div className="border border-gray-700 rounded-lg overflow-hidden">
                         <button
                           onClick={() => toggleSection('topics')}
-                          className="w-full flex items-center justify-between p-3 hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors"
+                          className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
                         >
-                          <h4 className="text-sm font-semibold text-stone-900 dark:text-white">
+                          <h4 className="text-sm font-semibold text-white">
                             Topics Covered ({summary.topics.length})
                           </h4>
                           {expandedSections.topics ? (
-                            <ChevronUp className="w-4 h-4 text-stone-500" />
+                            <ChevronUp className="w-4 h-4 text-gray-400" />
                           ) : (
-                            <ChevronDown className="w-4 h-4 text-stone-500" />
+                            <ChevronDown className="w-4 h-4 text-gray-400" />
                           )}
                         </button>
                         {expandedSections.topics && (
@@ -511,7 +511,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                     <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={handleCopySummary}
-                        className="px-4 py-2 bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-750 text-gray-400 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                       >
                         {copiedSummary ? (
                           <>
@@ -527,7 +527,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                       </button>
                       <button
                         onClick={handleDownloadSummary}
-                        className="px-4 py-2 bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-750 text-gray-400 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                         title="Download as Markdown"
                       >
                         <Download className="w-4 h-4" />
@@ -535,7 +535,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                       </button>
                       <button
                         onClick={handleSummarize}
-                        className="px-4 py-2 bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-750 text-gray-400 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                       >
                         Regenerate
                       </button>
@@ -546,8 +546,8 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                 {/* Empty State */}
                 {!summary && !summarizing && !summaryError && (
                   <div className="text-center py-8">
-                    <Sparkles className="w-12 h-12 text-stone-400 dark:text-stone-600 mx-auto mb-3" />
-                    <p className="text-sm text-stone-600 dark:text-stone-400">
+                    <Sparkles className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-sm text-gray-400">
                       Click "Generate Summary" to get AI-powered insights
                     </p>
                   </div>
@@ -557,31 +557,31 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
 
             {/* Transcript Sidebar */}
             <div className="lg:col-span-1">
-              <div className="bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg overflow-hidden sticky top-6">
+              <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-lg overflow-hidden sticky top-6">
                 {/* Search */}
-                <div className="p-4 border-b border-stone-200/50 dark:border-stone-700/50">
+                <div className="p-4 border-b border-gray-700">
                   <div className="relative">
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search transcript..."
-                      className="w-full px-4 py-2 pr-20 bg-white/90 dark:bg-stone-700/90 backdrop-blur-xl border border-stone-300/50 dark:border-stone-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:text-white text-sm shadow-sm transition-all"
+                      className="w-full px-4 py-2 pr-20 bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:text-white text-sm shadow-sm transition-all"
                     />
                     {searchQuery ? (
                       <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-stone-200 dark:hover:bg-stone-600 rounded-lg transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-750 rounded-lg transition-colors"
                         title="Clear search"
                       >
-                        <X className="w-4 h-4 text-stone-500" />
+                        <X className="w-4 h-4 text-gray-400" />
                       </button>
                     ) : (
-                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     )}
                   </div>
                   {searchQuery && (
-                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-2">
+                    <p className="text-xs text-gray-400 dark:text-gray-400 mt-2">
                       {filteredTranscript.length} {filteredTranscript.length === 1 ? 'result' : 'results'}
                     </p>
                   )}
@@ -600,7 +600,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                           if (el) transcriptRefs.current[originalIndex] = el;
                         }}
                         onClick={() => handleTimestampClick(entry.start)}
-                        className={`w-full text-left px-4 py-3 hover:bg-stone-50 dark:hover:bg-stone-700 border-b border-stone-100 dark:border-stone-700 transition-all group ${
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-800 border-b border-gray-700 transition-all group ${
                           isActive
                             ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-600'
                             : ''
@@ -619,8 +619,8 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                           <span
                             className={`text-sm flex-1 ${
                               isActive
-                                ? 'text-stone-900 dark:text-white font-medium'
-                                : 'text-stone-700 dark:text-stone-300'
+                                ? 'text-white font-medium'
+                                : 'text-gray-400'
                             }`}
                           >
                             {searchQuery ? (
@@ -629,7 +629,7 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
                                 part.toLowerCase() === searchQuery.toLowerCase() ? (
                                   <mark
                                     key={i}
-                                    className="bg-yellow-200 dark:bg-yellow-700 text-stone-900 dark:text-white rounded px-0.5"
+                                    className="bg-yellow-200 dark:bg-yellow-700 text-white rounded px-0.5"
                                   >
                                     {part}
                                   </mark>
@@ -667,40 +667,40 @@ ${summary.topics.map(t => `- ${t}`).join('\n')}
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-red-500/20 to-red-600/20 dark:bg-red-900/20 rounded-2xl mb-4">
               <Youtube className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
-            <h2 className="text-2xl font-bold text-stone-900 dark:text-white mb-2">
+            <h2 className="text-2xl font-bold text-white mb-2">
               Start Learning from YouTube
             </h2>
-            <p className="text-stone-600 dark:text-stone-400 mb-6 max-w-md mx-auto">
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">
               Paste a YouTube URL above to get started. You'll see the transcript, AI
               summaries, and can ask questions about the video.
             </p>
 
             {/* Features */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              <div className="p-5 bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg">
-                <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
-                <h3 className="font-semibold text-stone-900 dark:text-white text-sm mb-1">
+              <div className="p-5 bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-lg">
+                <FileText className="w-6 h-6 text-primary-600 dark:text-primary-400 mx-auto mb-2" />
+                <h3 className="font-semibold text-white text-sm mb-1">
                   Interactive Transcript
                 </h3>
-                <p className="text-xs text-stone-600 dark:text-stone-400">
+                <p className="text-xs text-gray-400">
                   Click timestamps to jump to specific moments
                 </p>
               </div>
-              <div className="p-5 bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg">
+              <div className="p-5 bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-lg">
                 <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
-                <h3 className="font-semibold text-stone-900 dark:text-white text-sm mb-1">
+                <h3 className="font-semibold text-white text-sm mb-1">
                   AI Summaries
                 </h3>
-                <p className="text-xs text-stone-600 dark:text-stone-400">
+                <p className="text-xs text-gray-400">
                   Get key takeaways and concepts
                 </p>
               </div>
-              <div className="p-5 bg-white/90 dark:bg-stone-800/90 backdrop-blur-xl border border-stone-200/50 dark:border-stone-700/50 rounded-2xl shadow-lg">
+              <div className="p-5 bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-lg">
                 <Search className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto mb-2" />
-                <h3 className="font-semibold text-stone-900 dark:text-white text-sm mb-1">
+                <h3 className="font-semibold text-white text-sm mb-1">
                   Smart Search
                 </h3>
-                <p className="text-xs text-stone-600 dark:text-stone-400">
+                <p className="text-xs text-gray-400">
                   Find specific moments instantly
                 </p>
               </div>

@@ -21,10 +21,13 @@ interface ChatInputProps {
 }
 
 const AVAILABLE_MODELS = [
-  { id: 'qwen2.5:14b', name: 'Qwen 2.5 14B', description: 'Best reasoning' },
-  { id: 'phi4:14b', name: 'Phi-4 14B', description: 'Complex analysis' },
-  { id: 'llama3.2:3b', name: 'Llama 3.2 3B', description: 'Fast responses' },
-  { id: 'gemma3:latest', name: 'Gemma 3', description: 'Balanced' },
+  { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', description: 'Google - Balanced multimodal', category: 'cloud' },
+  { id: 'gemini-2.5-flash-preview', name: 'Gemini 2.5 Flash', description: 'Google - Best price-performance', category: 'cloud' },
+  { id: 'gemini-2.5-flash-lite-preview', name: 'Gemini 2.5 Flash Lite', description: 'Google - Fastest & cheapest', category: 'cloud' },
+  { id: 'qwen2.5:14b', name: 'Qwen 2.5 14B', description: 'Best reasoning', category: 'local' },
+  { id: 'phi4:14b', name: 'Phi-4 14B', description: 'Complex analysis', category: 'local' },
+  { id: 'llama3.2:3b', name: 'Llama 3.2 3B', description: 'Fast responses', category: 'local' },
+  { id: 'gemma3:latest', name: 'Gemma 3', description: 'Balanced', category: 'local' },
 ];
 
 export function ChatInput({
@@ -32,7 +35,7 @@ export function ChatInput({
   disabled = false,
   placeholder = 'Ask a question about your notes and documents...',
   initialValue = '',
-  selectedModel = 'qwen2.5:14b',
+  selectedModel = 'gemini-2.0-flash-exp',
   onModelChange,
   webSearchEnabled = true,
   onWebSearchToggle,
@@ -99,10 +102,40 @@ export function ChatInput({
 
                 {/* Dropdown menu */}
                 <div className="absolute bottom-full mb-2 left-0 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-20">
+                  {/* Cloud Models Section */}
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Select Model
+                    Cloud Models
                   </div>
-                  {AVAILABLE_MODELS.map((model) => (
+                  {AVAILABLE_MODELS.filter(m => m.category === 'cloud').map((model) => (
+                    <button
+                      key={model.id}
+                      type="button"
+                      onClick={() => {
+                        onModelChange?.(model.id);
+                        setIsModelDropdownOpen(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
+                        selectedModel === model.id && "bg-primary-50 dark:bg-primary-900/20"
+                      )}
+                    >
+                      <div className="font-medium text-gray-900 dark:text-white text-sm">
+                        {model.name}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                        {model.description}
+                      </div>
+                    </button>
+                  ))}
+
+                  {/* Divider */}
+                  <div className="my-2 border-t border-gray-200 dark:border-gray-700" />
+
+                  {/* Local Models Section */}
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Local Models
+                  </div>
+                  {AVAILABLE_MODELS.filter(m => m.category === 'local').map((model) => (
                     <button
                       key={model.id}
                       type="button"

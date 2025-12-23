@@ -25,7 +25,7 @@ export function MarkdownEditor({ value, onChange, disabled, placeholder }: Markd
           {/* Preview Content */}
           <div
             onClick={() => !disabled && setIsEditing(true)}
-            className={`prose prose-sm max-w-none p-6 border-2 border-stone-200 rounded-lg min-h-[300px] bg-white transition-all ${
+            className={`prose prose-sm max-w-none p-6 border-2 border-gray-200 rounded-lg min-h-[300px] bg-white transition-all ${
               !disabled ? 'cursor-text hover:border-blue-300 hover:shadow-sm' : ''
             }`}
           >
@@ -34,7 +34,7 @@ export function MarkdownEditor({ value, onChange, disabled, placeholder }: Markd
                 {value}
               </ReactMarkdown>
             ) : (
-              <p className="text-stone-400 italic">
+              <p className="text-gray-400 italic">
                 {placeholder || 'Click to start writing...'}
               </p>
             )}
@@ -45,7 +45,7 @@ export function MarkdownEditor({ value, onChange, disabled, placeholder }: Markd
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-white border border-stone-300 rounded-md text-xs font-medium text-stone-700 hover:bg-stone-50 shadow-sm"
+              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 shadow-sm"
             >
               <Edit2 size={12} />
               Edit
@@ -67,7 +67,7 @@ export function MarkdownEditor({ value, onChange, disabled, placeholder }: Markd
 
           {/* Done editing button */}
           <div className="flex items-center justify-between">
-            <div className="text-xs text-stone-500">
+            <div className="text-xs text-gray-500">
               <span className="font-medium">Markdown:</span> **bold** *italic* `code` [link](url) # heading - list &gt; quote
             </div>
             <button

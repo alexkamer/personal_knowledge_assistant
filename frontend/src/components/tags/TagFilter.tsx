@@ -43,7 +43,7 @@ export const TagFilter: React.FC<TagFilterProps> = ({ selectedTags, onTagsChange
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-3">
-        <p className="text-sm text-stone-500">Loading tags...</p>
+        <p className="text-sm text-gray-500">Loading tags...</p>
       </div>
     );
   }
@@ -57,26 +57,26 @@ export const TagFilter: React.FC<TagFilterProps> = ({ selectedTags, onTagsChange
       {/* Dropdown Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-white border-2 border-stone-300 rounded-lg hover:border-blue-400 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-white border-2 border-gray-300 rounded-lg hover:border-blue-400 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Filter size={16} className="text-stone-600" />
-          <span className="text-sm font-medium text-stone-700">
+          <Filter size={16} className="text-gray-600" />
+          <span className="text-sm font-medium text-gray-700">
             {selectedTags.length > 0 ? `${selectedTags.length} tag${selectedTags.length !== 1 ? 's' : ''} selected` : 'Filter by tags'}
           </span>
         </div>
         <ChevronDown
           size={16}
-          className={`text-stone-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-stone-200 z-20 max-h-80 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-20 max-h-80 overflow-y-auto">
           {/* Header */}
-          <div className="flex justify-between items-center px-4 py-3 border-b border-stone-200 sticky top-0 bg-white">
-            <h3 className="font-medium text-stone-900 text-sm">Select Tags</h3>
+          <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 sticky top-0 bg-white">
+            <h3 className="font-medium text-gray-900 text-sm">Select Tags</h3>
             {selectedTags.length > 0 && (
               <button
                 onClick={handleClearAll}
@@ -96,7 +96,7 @@ export const TagFilter: React.FC<TagFilterProps> = ({ selectedTags, onTagsChange
                 <label
                   key={tag.id}
                   className={`flex items-center justify-between p-2.5 rounded cursor-pointer transition-colors ${
-                    isSelected ? 'bg-blue-50' : 'hover:bg-stone-50'
+                    isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center gap-2 flex-1">
@@ -106,11 +106,11 @@ export const TagFilter: React.FC<TagFilterProps> = ({ selectedTags, onTagsChange
                       onChange={() => handleToggleTag(tag.name)}
                       className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className={`text-sm ${isSelected ? 'font-medium text-blue-700' : 'text-stone-700'}`}>
+                    <span className={`text-sm ${isSelected ? 'font-medium text-blue-700' : 'text-gray-700'}`}>
                       {tag.name}
                     </span>
                   </div>
-                  <span className="text-xs text-stone-500">({tag.note_count})</span>
+                  <span className="text-xs text-gray-500">({tag.note_count})</span>
                 </label>
               );
             })}

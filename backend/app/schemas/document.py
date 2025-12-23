@@ -22,6 +22,8 @@ class DocumentCreate(DocumentBase):
     content: str = Field(..., description="Extracted text content")
     metadata_: Optional[str] = Field(None, description="Additional metadata as JSON")
     category: Optional[str] = Field(None, description="Document category")
+    archive_path: Optional[str] = Field(None, description="Path to archived original file")
+    storage_location: str = Field("local", description="Storage location (local or archive)")
 
 
 class DocumentResponse(DocumentBase):
@@ -36,6 +38,8 @@ class DocumentResponse(DocumentBase):
 
     # Optional fields
     metadata_: Optional[str] = None
+    archive_path: Optional[str] = None
+    storage_location: str = "local"
 
     class Config:
         from_attributes = True

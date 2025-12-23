@@ -10,6 +10,7 @@ from fastapi import UploadFile
 import aiofiles
 
 from app.core.config import settings
+from app.services.archive_service import ArchiveService
 
 
 # Directory to store uploaded files
@@ -17,29 +18,50 @@ UPLOAD_DIR = Path("./uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
-async def save_upload_file(upload_file: UploadFile) -> Tuple[str, int]:
+async def save_upload_file(upload_file: UploadFile) -> Tuple[str, int, str, str]:
     """
-    Save an uploaded file to disk.
+    Save an uploaded file to disk and optionally to archive.
 
     Args:
         upload_file: FastAPI UploadFile object
 
     Returns:
-        Tuple of (file_path, file_size)
+        Tuple of (file_path, file_size, archive_path, storage_location)
+        - file_path: Path to local working copy
+        - file_size: Size of file in bytes
+        - archive_path: Path to archived original (None if not archived)
+        - storage_location: "local" or "archive"
     """
     # Generate unique filename
     file_extension = Path(upload_file.filename or "file.txt").suffix
     unique_filename = f"{uuid.uuid4()}{file_extension}"
     file_path = UPLOAD_DIR / unique_filename
 
-    # Save file
+    # Save file locally first (needed for processing)
     file_size = 0
     async with aiofiles.open(file_path, "wb") as f:
         while chunk := await upload_file.read(8192):  # Read in 8KB chunks
             await f.write(chunk)
             file_size += len(chunk)
 
-    return str(file_path), file_size
+    # Archive original if enabled
+    archive_path = None
+    storage_location = "local"
+
+    if settings.archive_enabled:
+        try:
+            file_type = file_extension.lstrip(".")
+            archive_path, storage_location = await ArchiveService.save_to_archive(
+                source_path=str(file_path),
+                filename=upload_file.filename or "unknown",
+                file_type=file_type,
+            )
+        except Exception:
+            # If archiving fails, continue with local storage
+            # Error is already logged by ArchiveService
+            pass
+
+    return str(file_path), file_size, archive_path, storage_location
 
 
 async def extract_text_from_file(file_path: str, file_type: str) -> str:

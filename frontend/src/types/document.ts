@@ -12,6 +12,7 @@ export interface Document {
   updated_at: string;
   metadata_: string | null;
   category: string | null;
+  thumbnail_url?: string; // Optional thumbnail/preview URL
 }
 
 export interface DocumentContent {

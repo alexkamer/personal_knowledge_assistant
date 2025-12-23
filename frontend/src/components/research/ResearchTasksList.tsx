@@ -13,19 +13,19 @@ interface ResearchTasksListProps {
 export function ResearchTasksList({ tasks, isLoading, onTaskClick }: ResearchTasksListProps) {
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-stone-900 rounded-lg shadow-sm border border-stone-200 dark:border-stone-800 p-12 text-center">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-12 text-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
-        <p className="text-stone-600 dark:text-stone-400">Loading research history...</p>
+        <p className="text-gray-600 dark:text-gray-400">Loading research history...</p>
       </div>
     );
   }
 
   if (tasks.length === 0) {
     return (
-      <div className="bg-white dark:bg-stone-900 rounded-lg shadow-sm border border-stone-200 dark:border-stone-800 p-12 text-center">
-        <Clock className="w-12 h-12 text-stone-300 dark:text-stone-700 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-2">No Research History</h3>
-        <p className="text-stone-600 dark:text-stone-400">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-12 text-center">
+        <Clock className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Research History</h3>
+        <p className="text-gray-600 dark:text-gray-400">
           Your completed research tasks will appear here
         </p>
       </div>
@@ -33,13 +33,13 @@ export function ResearchTasksList({ tasks, isLoading, onTaskClick }: ResearchTas
   }
 
   return (
-    <div className="bg-white dark:bg-stone-900 rounded-lg shadow-sm border border-stone-200 dark:border-stone-800 overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
       <div className="divide-y divide-stone-200 dark:divide-stone-800">
         {tasks.map((task) => (
           <button
             key={task.id}
             onClick={() => onTaskClick(task.id)}
-            className="w-full p-6 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors text-left"
+            className="w-full p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-left"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
@@ -49,8 +49,8 @@ export function ResearchTasksList({ tasks, isLoading, onTaskClick }: ResearchTas
                     {getStatusLabel(task.status)}
                   </span>
                 </div>
-                <h4 className="font-medium text-stone-900 dark:text-white mb-1">{task.query}</h4>
-                <div className="flex items-center gap-4 text-sm text-stone-500 dark:text-stone-400">
+                <h4 className="font-medium text-gray-900 dark:text-white mb-1">{task.query}</h4>
+                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                   <span>
                     {new Date(task.created_at).toLocaleDateString('en-US', {
                       month: 'short',
@@ -77,7 +77,7 @@ export function ResearchTasksList({ tasks, isLoading, onTaskClick }: ResearchTas
                 </div>
               </div>
               <div className="flex-shrink-0">
-                <span className="text-sm text-stone-400 dark:text-stone-500">View →</span>
+                <span className="text-sm text-gray-400 dark:text-gray-500">View →</span>
               </div>
             </div>
           </button>
@@ -98,7 +98,7 @@ function getStatusIcon(status: string) {
     case 'cancelled':
       return <AlertCircle className="w-4 h-4 text-orange-500" />;
     default:
-      return <Clock className="w-4 h-4 text-stone-400" />;
+      return <Clock className="w-4 h-4 text-gray-400" />;
   }
 }
 
@@ -113,7 +113,7 @@ function getStatusColor(status: string) {
     case 'cancelled':
       return 'text-orange-600 dark:text-orange-400';
     default:
-      return 'text-stone-600 dark:text-stone-400';
+      return 'text-gray-600 dark:text-gray-400';
   }
 }
 

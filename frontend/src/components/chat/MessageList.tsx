@@ -257,17 +257,29 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
   const [expandedSources, setExpandedSources] = React.useState<Set<string>>(new Set());
   const [isUserScrolling, setIsUserScrolling] = React.useState(false);
 
-  // Detect if user has manually scrolled away from bottom
+  // Detect if user has manually scrolled away from bottom (throttled for performance)
   const handleScroll = React.useCallback(() => {
     if (!scrollContainerRef.current) return;
 
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-    // If user is within 150px of bottom, they're "at bottom"
-    // Otherwise, they're reading history
-    setIsUserScrolling(distanceFromBottom > 150);
+    // If user is within 400px of bottom, they're "at bottom"
+    // Otherwise, they're reading history (more forgiving threshold for better UX)
+    setIsUserScrolling(distanceFromBottom > 400);
   }, []);
+
+  // Throttle scroll handler to fire at most every 100ms
+  const throttledHandleScroll = React.useMemo(() => {
+    let lastCall = 0;
+    return () => {
+      const now = Date.now();
+      if (now - lastCall >= 100) {
+        lastCall = now;
+        handleScroll();
+      }
+    };
+  }, [handleScroll]);
 
   // Only auto-scroll if user hasn't manually scrolled up
   React.useEffect(() => {
@@ -276,8 +288,8 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-      // Only auto-scroll if user is near the bottom (within 150px threshold)
-      if (distanceFromBottom < 150) {
+      // Only auto-scroll if user is near the bottom (within 400px threshold - more forgiving)
+      if (distanceFromBottom < 400) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
     }
@@ -340,7 +352,7 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
   return (
     <div
       ref={scrollContainerRef}
-      onScroll={handleScroll}
+      onScroll={throttledHandleScroll}
       className="flex-1 overflow-y-auto py-6"
     >
       {messages.map((message, index) => {

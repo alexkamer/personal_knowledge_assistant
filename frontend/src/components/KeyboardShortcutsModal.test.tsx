@@ -339,7 +339,7 @@ describe('KeyboardShortcutsModal', () => {
         <KeyboardShortcutsModal isOpen={true} onClose={mockOnClose} shortcuts={mockShortcuts} />
       );
 
-      const shortcutItems = container.querySelectorAll('.hover\\:bg-stone-50');
+      const shortcutItems = container.querySelectorAll('.hover\\:bg-gray-50');
       expect(shortcutItems.length).toBeGreaterThan(0);
     });
   });

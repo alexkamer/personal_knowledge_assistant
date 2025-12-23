@@ -36,22 +36,22 @@ export default function ToolResultDisplay({ toolResult }: ToolResultDisplayProps
         <div className="space-y-2">
           {resultData?.stdout && (
             <div>
-              <div className="text-xs text-stone-600 dark:text-stone-400 mb-1">Output:</div>
-              <pre className="bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded p-2 text-xs overflow-x-auto">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Output:</div>
+              <pre className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-2 text-xs overflow-x-auto">
                 {resultData.stdout}
               </pre>
             </div>
           )}
           {resultData?.stderr && (
             <div>
-              <div className="text-xs text-stone-600 dark:text-stone-400 mb-1">Errors:</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Errors:</div>
               <pre className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2 text-xs overflow-x-auto text-red-800 dark:text-red-200">
                 {resultData.stderr}
               </pre>
             </div>
           )}
           {resultData?.return_code !== undefined && (
-            <div className="text-xs text-stone-600 dark:text-stone-400">
+            <div className="text-xs text-gray-600 dark:text-gray-400">
               Exit code: {resultData.return_code}
             </div>
           )}
@@ -63,11 +63,11 @@ export default function ToolResultDisplay({ toolResult }: ToolResultDisplayProps
     if (toolName === 'web_search' && resultData?.results) {
       return (
         <div className="space-y-1">
-          <div className="text-sm text-stone-700 dark:text-stone-300">
+          <div className="text-sm text-gray-700 dark:text-gray-300">
             Found {resultData.results.length} results
           </div>
           {resultData.results.slice(0, 2).map((r: any, idx: number) => (
-            <div key={idx} className="text-xs text-stone-600 dark:text-stone-400">
+            <div key={idx} className="text-xs text-gray-600 dark:text-gray-400">
               • {r.title || r.url}
             </div>
           ))}
@@ -78,7 +78,7 @@ export default function ToolResultDisplay({ toolResult }: ToolResultDisplayProps
     // Document search result
     if (toolName === 'document_search' && resultData?.results_count !== undefined) {
       return (
-        <div className="text-sm text-stone-700 dark:text-stone-300">
+        <div className="text-sm text-gray-700 dark:text-gray-300">
           Found {resultData.results_count} relevant passages in your documents
         </div>
       );
@@ -86,12 +86,12 @@ export default function ToolResultDisplay({ toolResult }: ToolResultDisplayProps
 
     // Generic result display
     if (typeof resultData === 'string') {
-      return <div className="text-sm text-stone-800 dark:text-stone-200">{resultData}</div>;
+      return <div className="text-sm text-gray-800 dark:text-gray-200">{resultData}</div>;
     }
 
     // JSON fallback
     return (
-      <pre className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded p-2 text-xs overflow-x-auto">
+      <pre className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-2 text-xs overflow-x-auto">
         {JSON.stringify(resultData, null, 2)}
       </pre>
     );
@@ -125,7 +125,7 @@ export default function ToolResultDisplay({ toolResult }: ToolResultDisplayProps
 
       {/* Result content */}
       {success ? (
-        <div className="text-stone-800 dark:text-stone-200">{formatResult(tool, result)}</div>
+        <div className="text-gray-800 dark:text-gray-200">{formatResult(tool, result)}</div>
       ) : (
         <div className="text-red-800 dark:text-red-200 text-sm">
           Error: {error || 'Unknown error'}
@@ -134,7 +134,7 @@ export default function ToolResultDisplay({ toolResult }: ToolResultDisplayProps
 
       {/* Metadata (if present) */}
       {metadata && Object.keys(metadata).length > 0 && (
-        <div className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
           {Object.entries(metadata)
             .filter(([key]) => key !== 'tool')
             .map(([key, value]) => (

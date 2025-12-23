@@ -18,8 +18,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     const baseStyles = 'rounded-xl';
 
     const variants = {
-      standard: 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm',
-      glass: 'bg-white/80 dark:bg-stone-900/70 backdrop-blur-xl backdrop-saturate-150 border border-white/20 dark:border-stone-800/50 shadow-xl',
+      standard: 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm',
+      glass: 'bg-white/80 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150 border border-white/20 dark:border-gray-800/50 shadow-xl',
       gradient: 'bg-gradient-to-br from-indigo-50 to-lavender-50 dark:from-indigo-900/20 dark:to-lavender-900/20 border border-indigo-200 dark:border-indigo-800 shadow-sm',
     };
 
@@ -60,7 +60,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadi
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-2xl font-semibold leading-none tracking-tight text-stone-900 dark:text-white', className)}
+      className={cn('text-2xl font-semibold leading-none tracking-tight text-gray-900 dark:text-white', className)}
       {...props}
     />
   )
@@ -72,7 +72,7 @@ export const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<H
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn('text-sm text-stone-500 dark:text-stone-400', className)}
+      className={cn('text-sm text-gray-500 dark:text-gray-400', className)}
       {...props}
     />
   )

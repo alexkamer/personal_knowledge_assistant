@@ -47,7 +47,7 @@ function getSourceLabel(sourceType: SourceType): string {
 function getSimilarityColor(score: number): string {
   if (score >= 0.8) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
   if (score >= 0.6) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-  return 'bg-stone-100 text-stone-800 dark:bg-stone-700 dark:text-stone-300';
+  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
 }
 
 /**
@@ -97,7 +97,7 @@ export function RelatedContentSection({ items }: RelatedContentSectionProps) {
 
   return (
     <div>
-      <h4 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
+      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
         Related Content
       </h4>
       <div className="space-y-3">
@@ -110,13 +110,13 @@ export function RelatedContentSection({ items }: RelatedContentSectionProps) {
             <button
               key={`${item.source_type}-${item.source_id}`}
               onClick={() => handleItemClick(item)}
-              className="w-full text-left p-3 bg-stone-50 dark:bg-stone-900/50 hover:bg-stone-100 dark:hover:bg-stone-900 rounded-lg transition-colors border border-stone-200 dark:border-stone-700 group"
+              className="w-full text-left p-3 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg transition-colors border border-gray-200 dark:border-gray-700 group"
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Icon className="w-4 h-4 text-stone-500 dark:text-stone-400 flex-shrink-0" />
-                  <span className="text-xs text-stone-600 dark:text-stone-400 flex-shrink-0">
+                  <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
                     {label}
                   </span>
                   {item.timestamp !== undefined && (
@@ -125,17 +125,17 @@ export function RelatedContentSection({ items }: RelatedContentSectionProps) {
                     </span>
                   )}
                 </div>
-                <ExternalLink className="w-4 h-4 text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                <ExternalLink className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
               </div>
 
               {/* Title */}
-              <h5 className="text-sm font-medium text-stone-900 dark:text-white mb-2 line-clamp-2">
+              <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2 line-clamp-2">
                 {item.source_title}
               </h5>
 
               {/* Preview */}
               {item.preview && (
-                <p className="text-xs text-stone-600 dark:text-stone-400 line-clamp-2 mb-2">
+                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
                   {item.preview}
                 </p>
               )}
@@ -148,7 +148,7 @@ export function RelatedContentSection({ items }: RelatedContentSectionProps) {
                   {Math.round(item.similarity_score * 100)}% match
                 </span>
                 {item.chunk_count > 1 && (
-                  <span className="text-xs text-stone-500 dark:text-stone-400">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     {item.chunk_count} sections
                   </span>
                 )}

@@ -32,6 +32,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     logger.info(f"Starting {settings.app_name} in {settings.environment} mode")
 
+    # Start Research Scheduler
+    from app.services.research_scheduler_service import get_research_scheduler
+    scheduler = get_research_scheduler()
+    await scheduler.start()
+    logger.info("Research Autopilot scheduler started")
+
     # TODO: Initialize database connection pool
     # TODO: Initialize ChromaDB
     # TODO: Load embedding model
@@ -40,6 +46,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Cleanup on shutdown
     logger.info(f"Shutting down {settings.app_name}")
+
+    # Shutdown Research Scheduler
+    await scheduler.shutdown()
+    logger.info("Research Autopilot scheduler shutdown")
+
     # TODO: Close database connections
     # TODO: Close ChromaDB connections
 

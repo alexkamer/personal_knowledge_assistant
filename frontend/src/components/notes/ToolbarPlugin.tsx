@@ -19,7 +19,9 @@ import {
   Code,
   Link as LinkIcon,
   Strikethrough,
+  Table as TableIcon,
 } from 'lucide-react';
+import { INSERT_TABLE_COMMAND } from '@lexical/table';
 
 export function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
@@ -124,6 +126,10 @@ export function ToolbarPlugin() {
     }
   };
 
+  const insertTable = () => {
+    editor.dispatchCommand(INSERT_TABLE_COMMAND, { columns: '3', rows: '3' });
+  };
+
   if (!isVisible) {
     return null;
   }
@@ -131,7 +137,7 @@ export function ToolbarPlugin() {
   return (
     <div
       ref={toolbarRef}
-      className="fixed z-50 bg-stone-900 text-white rounded-lg shadow-xl p-1 flex gap-1 items-center"
+      className="fixed z-50 bg-gray-900 text-white rounded-lg shadow-xl p-1 flex gap-1 items-center"
     >
       <ToolbarButton
         onClick={() => formatText('bold')}
@@ -157,7 +163,7 @@ export function ToolbarPlugin() {
         title="Strikethrough (Cmd+Shift+X)"
         icon={<Strikethrough size={18} />}
       />
-      <div className="w-px h-6 bg-stone-700 mx-1" />
+      <div className="w-px h-6 bg-gray-700 mx-1" />
       <ToolbarButton
         onClick={() => formatText('code')}
         active={isCode}
@@ -167,8 +173,15 @@ export function ToolbarPlugin() {
       <ToolbarButton
         onClick={insertLink}
         active={isLink}
-        title="Link (Cmd+K)"
+        title="Link (Cmd+Shift+K)"
         icon={<LinkIcon size={18} />}
+      />
+      <div className="w-px h-6 bg-gray-700 mx-1" />
+      <ToolbarButton
+        onClick={insertTable}
+        active={false}
+        title="Insert Table (3x3)"
+        icon={<TableIcon size={18} />}
       />
     </div>
   );
@@ -187,8 +200,8 @@ function ToolbarButton({ onClick, active, title, icon }: ToolbarButtonProps) {
       onClick={onClick}
       title={title}
       className={`
-        p-2 rounded hover:bg-stone-800 transition-colors
-        ${active ? 'bg-blue-600 text-white' : 'text-stone-300'}
+        p-2 rounded hover:bg-gray-800 transition-colors
+        ${active ? 'bg-blue-600 text-white' : 'text-gray-300'}
       `}
     >
       {icon}

@@ -61,18 +61,18 @@ export function SourcePreviewModal({ source, onClose }: SourcePreviewModalProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-stone-900 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-stone-200 dark:border-stone-800">
+        <div className="flex items-start justify-between p-6 border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-start gap-3 flex-1">
             <div className={`p-2 rounded-lg ${getSourceColor()}`}>
               {getSourceIcon()}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-semibold text-stone-900 dark:text-white mb-1">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                 {source.source_title}
               </h2>
-              <div className="flex items-center gap-3 text-sm text-stone-600 dark:text-stone-400">
+              <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                 <span className="capitalize">{source.source_type}</span>
                 <span>•</span>
                 <span>Reference [{source.index}]</span>
@@ -89,7 +89,7 @@ export function SourcePreviewModal({ source, onClose }: SourcePreviewModalProps)
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
             <X size={20} />
           </button>
@@ -111,16 +111,16 @@ export function SourcePreviewModal({ source, onClose }: SourcePreviewModalProps)
             </div>
           ) : chunkDetail ? (
             <div className="prose prose-sm max-w-none">
-              <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300 uppercase tracking-wide mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
                 Content
               </h3>
-              <div className="bg-stone-50 dark:bg-stone-800 rounded-lg p-4 border border-stone-200 dark:border-stone-700">
-                <p className="text-stone-800 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
                   {chunkDetail.content}
                 </p>
               </div>
 
-              <div className="mt-4 flex items-center gap-4 text-xs text-stone-600 dark:text-stone-400">
+              <div className="mt-4 flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
                 <span>Tokens: {chunkDetail.token_count}</span>
                 <span>•</span>
                 <span>Chunk: {chunkDetail.chunk_index}</span>
@@ -128,15 +128,15 @@ export function SourcePreviewModal({ source, onClose }: SourcePreviewModalProps)
 
               {chunkDetail.metadata && Object.keys(chunkDetail.metadata).length > 0 && (
                 <div className="mt-6">
-                  <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300 uppercase tracking-wide mb-3">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
                     Metadata
                   </h3>
-                  <div className="bg-stone-50 dark:bg-stone-800 rounded-lg p-4 border border-stone-200 dark:border-stone-700">
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                     <dl className="grid grid-cols-2 gap-3">
                       {Object.entries(chunkDetail.metadata).map(([key, value]) => (
                         <div key={key}>
-                          <dt className="text-xs font-medium text-stone-500 dark:text-stone-400 uppercase">{key}</dt>
-                          <dd className="text-sm text-stone-900 dark:text-white mt-1">{String(value)}</dd>
+                          <dt className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{key}</dt>
+                          <dd className="text-sm text-gray-900 dark:text-white mt-1">{String(value)}</dd>
                         </div>
                       ))}
                     </dl>
@@ -148,8 +148,8 @@ export function SourcePreviewModal({ source, onClose }: SourcePreviewModalProps)
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800">
-          <div className="text-sm text-stone-600 dark:text-stone-400">
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
             {source.source_type === 'web' && chunkDetail?.metadata?.url && (
               <a
                 href={chunkDetail.metadata.url}
@@ -164,7 +164,7 @@ export function SourcePreviewModal({ source, onClose }: SourcePreviewModalProps)
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-200 rounded-lg hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors"
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Close
           </button>

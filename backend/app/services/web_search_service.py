@@ -36,10 +36,13 @@ class WebSearchService:
             # Create fresh DDGS instance for each search
             ddgs = DDGS()
 
-            # Perform text search
+            # Perform text search with settings optimized for quality content
             search_results = list(ddgs.text(
                 query,
                 max_results=max_results,
+                region="wt-wt",  # Worldwide results
+                safesearch="moderate",
+                timelimit=None,  # No time limit - get best content regardless of age
             ))
 
             logger.info(f"Raw search results count: {len(search_results)}")

@@ -167,9 +167,9 @@ class ResearchOrchestrator:
                     # Scrape content
                     content = await self.web_scraper.scrape(source["url"])
 
-                    if not content or len(content) < 100:
+                    if not content or len(content) < 500:
                         logger.warning(
-                            f"Content too short or empty for {source['url']}, skipping"
+                            f"Content too short or empty for {source['url']}, skipping (need 500+ chars)"
                         )
                         await self._update_research_source_status(
                             db,
@@ -241,16 +241,29 @@ class ResearchOrchestrator:
                         failure_reason=str(e),
                     )
 
-            # Step 4: Generate summary (MVP: simple summary)
+            # Step 4: Deep analysis and synthesis
+            await self._update_task_status(
+                db,
+                task_id,
+                current_step="Analyzing findings...",
+                progress_percentage=85,
+            )
+
+            # Generate deep analysis using LLM
+            analysis = await self._generate_deep_analysis(
+                query, documents_created
+            )
+
             await self._update_task_status(
                 db,
                 task_id,
                 current_step="Generating summary...",
-                progress_percentage=90,
+                progress_percentage=95,
             )
 
-            summary = await self._generate_simple_summary(
-                query, documents_created, failed_count, skipped_count
+            # Generate comprehensive summary
+            summary = await self._generate_comprehensive_summary(
+                query, documents_created, failed_count, skipped_count, analysis
             )
 
             # Complete task
@@ -261,6 +274,9 @@ class ResearchOrchestrator:
                 current_step="Complete",
                 progress_percentage=100,
                 summary=summary,
+                key_findings=analysis.get("key_findings", []),
+                contradictions_found=analysis.get("contradictions", []),
+                suggested_followups=analysis.get("follow_up_questions", []),
                 sources_skipped=skipped_count,
                 completed_at=datetime.utcnow(),
             )
@@ -406,6 +422,141 @@ class ResearchOrchestrator:
             source.document_id = document_id
             await db.commit()
 
+    async def _generate_deep_analysis(
+        self, query: str, documents: List[Document]
+    ) -> Dict:
+        """
+        Generate deep analysis of research findings using LLM.
+
+        Extracts:
+        - Key findings and main themes
+        - Contradictions or disagreements
+        - Knowledge gaps
+        - Follow-up questions for deeper research
+        """
+        if not documents:
+            return {
+                "key_findings": [],
+                "contradictions": [],
+                "knowledge_gaps": [],
+                "follow_up_questions": [],
+            }
+
+        # Combine document content (limit to avoid token overflow)
+        combined_content = "\n\n---\n\n".join([
+            f"SOURCE: {doc.source_url or doc.filename}\n{doc.content[:2000]}"  # Truncate to 2000 chars per doc
+            for doc in documents[:5]  # Max 5 documents for analysis
+        ])
+
+        prompt = f"""Analyze the following research findings for the query: "{query}"
+
+RESEARCH CONTENT:
+{combined_content}
+
+Please provide a deep analysis in JSON format with the following structure:
+{{
+    "key_findings": [
+        "Finding 1: Brief description of important insight",
+        "Finding 2: Another key discovery",
+        ...
+    ],
+    "contradictions": [
+        "Sources disagree on X: Source A says... while Source B says...",
+        ...
+    ],
+    "knowledge_gaps": [
+        "Gap 1: What's still unknown or unclear",
+        ...
+    ],
+    "follow_up_questions": [
+        "Question 1: Deeper question to explore next",
+        "Question 2: Related topic to investigate",
+        ...
+    ]
+}}
+
+Focus on:
+1. Main themes and important insights
+2. Areas where sources disagree or contradict
+3. Questions that remain unanswered
+4. Promising directions for deeper investigation
+
+Provide 3-5 items in each category. Be specific and cite which sources support each point."""
+
+        try:
+            response = await self.llm_service.generate_completion(
+                prompt=prompt,
+                model_key="reasoning",  # Use reasoning model for analysis
+                max_tokens=1000,
+                temperature=0.3,  # Lower temperature for more focused analysis
+            )
+
+            # Parse JSON response
+            import json
+            analysis = json.loads(response)
+
+            logger.info(f"Generated deep analysis for query: {query}")
+            return analysis
+
+        except Exception as e:
+            logger.error(f"Failed to generate deep analysis: {e}")
+            # Return empty structure on failure
+            return {
+                "key_findings": ["Analysis could not be generated"],
+                "contradictions": [],
+                "knowledge_gaps": [],
+                "follow_up_questions": [],
+            }
+
+    async def _generate_comprehensive_summary(
+        self,
+        query: str,
+        documents: List[Document],
+        failed_count: int,
+        skipped_count: int,
+        analysis: Dict,
+    ) -> str:
+        """Generate comprehensive summary incorporating deep analysis."""
+        if not documents:
+            return f"No sources were successfully added for the query: '{query}'"
+
+        # Build rich summary with analysis insights
+        summary_parts = [
+            f"## Research Summary: {query}\n",
+            f"**Sources Added:** {len(documents)} documents",
+        ]
+
+        if failed_count > 0:
+            summary_parts.append(f"**Failed:** {failed_count} sources")
+
+        if skipped_count > 0:
+            summary_parts.append(f"**Skipped:** {skipped_count} sources (insufficient content)")
+
+        # Add key findings
+        key_findings = analysis.get("key_findings", [])
+        if key_findings:
+            summary_parts.append("\n### Key Findings")
+            for finding in key_findings[:5]:  # Top 5
+                summary_parts.append(f"- {finding}")
+
+        # Add contradictions if found
+        contradictions = analysis.get("contradictions", [])
+        if contradictions:
+            summary_parts.append("\n### Contradictions Found")
+            for contradiction in contradictions[:3]:  # Top 3
+                summary_parts.append(f"- {contradiction}")
+
+        # Add follow-up questions
+        follow_ups = analysis.get("follow_up_questions", [])
+        if follow_ups:
+            summary_parts.append("\n### Suggested Follow-Up Research")
+            for question in follow_ups[:5]:  # Top 5
+                summary_parts.append(f"- {question}")
+
+        summary_parts.append("\n**Next Steps:** Ask questions about these sources in the Chat page to explore the findings in depth.")
+
+        return "\n".join(summary_parts)
+
     async def _generate_simple_summary(
         self,
         query: str,
@@ -413,7 +564,7 @@ class ResearchOrchestrator:
         failed_count: int,
         skipped_count: int,
     ) -> str:
-        """Generate a simple text summary of research results."""
+        """Generate a simple text summary of research results (fallback)."""
         if not documents:
             return f"No sources were successfully added for the query: '{query}'"
 

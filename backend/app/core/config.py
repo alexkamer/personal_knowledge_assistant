@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     ollama_fast_model: str = "llama3.2:3b"
     ollama_request_timeout: int = 300
 
+    # Google Gemini API
+    gemini_api_key: str | None = None
+    gemini_default_model: str = "gemini-2.0-flash-exp"  # Free tier models available
+
     # Embeddings Configuration
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_dimension: int = 384
@@ -72,6 +76,13 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 50  # Maximum file size in MB
     allowed_file_types: List[str] = ["txt", "md", "markdown", "pdf", "doc", "docx"]
     upload_directory: str = "./uploads"
+
+    # Document Archive Configuration (External Drive)
+    archive_enabled: bool = False  # Enable archiving original documents to external drive
+    archive_base_path: str = "/Volumes/Knowledge-Drive"  # Base path for external drive
+    archive_documents_path: str = "documents"  # Subdirectory for documents within archive
+    archive_backups_path: str = "backups"  # Subdirectory for backups within archive
+    archive_fallback_to_local: bool = True  # If external drive unavailable, save locally
 
     # Security (for future authentication)
     secret_key: str = "dev-secret-key-change-in-production"

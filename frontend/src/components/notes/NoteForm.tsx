@@ -130,7 +130,7 @@ function NoteForm({ note, onNavigateToNote }: NoteFormProps) {
   // const isLoading = createNote.isPending || updateNote.isPending;
 
   return (
-    <div className="bg-white rounded-lg border border-stone-200 overflow-hidden h-full flex flex-col">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden h-full flex flex-col">
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Lexical Editor - takes all available space */}
         <div className="flex-1 overflow-y-auto">
@@ -143,7 +143,7 @@ function NoteForm({ note, onNavigateToNote }: NoteFormProps) {
         </div>
 
         {/* Bottom toolbar with tags and auto-save indicator */}
-        <div className="border-t border-stone-200 px-6 py-4 bg-stone-50 space-y-3">
+        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 space-y-3">
           {/* Tags and Save Status */}
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1">
@@ -151,7 +151,7 @@ function NoteForm({ note, onNavigateToNote }: NoteFormProps) {
             </div>
 
             {/* Auto-save indicator */}
-            <div className="flex items-center gap-2 text-sm text-stone-500">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
               {isSaving ? (
                 <>
                   <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

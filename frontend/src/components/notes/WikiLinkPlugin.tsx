@@ -245,10 +245,10 @@ export function WikiLinkPlugin() {
 
   return (
     <div
-      className="fixed z-50 bg-white border border-stone-200 rounded-lg shadow-lg py-1 w-64"
+      className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-64"
       style={{ top: autocompletePosition.top, left: autocompletePosition.left }}
     >
-      <div className="px-3 py-1 text-xs font-medium text-stone-500 border-b border-stone-100">
+      <div className="px-3 py-1 text-xs font-medium text-gray-500 border-b border-gray-100">
         Link to note
       </div>
       {filteredNotes.map((note) => (
@@ -257,9 +257,9 @@ export function WikiLinkPlugin() {
           onClick={() => handleSelectNote(note.title)}
           className="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors"
         >
-          <div className="font-medium text-sm text-stone-900">{note.title}</div>
+          <div className="font-medium text-sm text-gray-900">{note.title}</div>
           {note.content && (
-            <div className="text-xs text-stone-500 truncate">
+            <div className="text-xs text-gray-500 truncate">
               {note.content.slice(0, 60)}...
             </div>
           )}

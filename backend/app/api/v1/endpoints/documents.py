@@ -67,9 +67,9 @@ async def upload_document(
     # Reset file pointer for save_upload_file
     await file.seek(0)
 
-    # Save the uploaded file
+    # Save the uploaded file (and optionally archive it)
     try:
-        file_path, file_size = await save_upload_file(file)
+        file_path, file_size, archive_path, storage_location = await save_upload_file(file)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -106,6 +106,8 @@ async def upload_document(
         content=content,
         metadata_=None,
         category=category,
+        archive_path=archive_path,
+        storage_location=storage_location,
     )
 
     try:

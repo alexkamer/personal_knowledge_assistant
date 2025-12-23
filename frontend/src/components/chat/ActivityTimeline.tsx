@@ -49,7 +49,7 @@ export default function ActivityTimeline({ toolCalls, toolResults }: ActivityTim
 
   return (
     <div className="activity-timeline mb-4">
-      <div className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
+      <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
         <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
         Reasoning Steps
       </div>
@@ -58,7 +58,7 @@ export default function ActivityTimeline({ toolCalls, toolResults }: ActivityTim
         {activities.map((activity, idx) => (
           <div key={idx} className="relative">
             {/* Timeline dot */}
-            <div className="absolute -left-6 top-2 w-4 h-4 bg-blue-500 dark:bg-blue-600 rounded-full border-2 border-white dark:border-stone-900" />
+            <div className="absolute -left-6 top-2 w-4 h-4 bg-blue-500 dark:bg-blue-600 rounded-full border-2 border-white dark:border-gray-900" />
 
             {/* Activity content */}
             {activity.type === 'tool_call' ? (

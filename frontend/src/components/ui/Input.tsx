@@ -14,11 +14,11 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, type = 'text', error, ...props }, ref) => {
-    const baseStyles = 'w-full px-4 py-3 bg-stone-50 dark:bg-stone-900 border rounded-lg text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-600 focus:outline-none transition-all duration-150';
+    const baseStyles = 'w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border rounded-lg text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none transition-all duration-150';
 
     const borderStyles = error
       ? 'border-rose-500 focus:ring-2 focus:ring-rose-500'
-      : 'border-stone-300 dark:border-stone-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent';
+      : 'border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent';
 
     return (
       <input
@@ -43,11 +43,11 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, error, ...props }, ref) => {
-    const baseStyles = 'w-full px-4 py-3 bg-stone-50 dark:bg-stone-900 border rounded-xl text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-600 focus:outline-none resize-none transition-all duration-150';
+    const baseStyles = 'w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border rounded-xl text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none resize-none transition-all duration-150';
 
     const borderStyles = error
       ? 'border-rose-500 focus:ring-2 focus:ring-rose-500'
-      : 'border-stone-300 dark:border-stone-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent';
+      : 'border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent';
 
     return (
       <textarea

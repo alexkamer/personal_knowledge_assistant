@@ -53,26 +53,48 @@ class WebScraperService:
             async with httpx.AsyncClient(
                 timeout=self.timeout,
                 follow_redirects=True,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+                }
             ) as client:
                 # Make request
                 response = await client.get(url)
                 response.raise_for_status()
 
-                # Extract main content with trafilatura
-                # This removes navigation, ads, footers, etc.
+                # Try aggressive extraction first (better content extraction)
                 content = trafilatura.extract(
                     response.text,
                     include_comments=False,
                     include_tables=True,
-                    no_fallback=False,
+                    include_links=False,
+                    no_fallback=False,  # Use fallback if main extraction fails
+                    favor_precision=False,  # Favor recall over precision (get more content)
+                    favor_recall=True,
                 )
 
-                if not content or len(content.strip()) < 100:
+                # If content is too short, try with more aggressive settings
+                if not content or len(content.strip()) < 500:
+                    logger.info(f"First extraction yielded {len(content) if content else 0} chars, trying fallback")
+
+                    # Try with even more aggressive extraction
+                    content = trafilatura.extract(
+                        response.text,
+                        include_comments=False,
+                        include_tables=True,
+                        include_links=True,
+                        no_fallback=True,  # Force fallback extraction
+                        favor_precision=False,
+                        favor_recall=True,
+                    )
+
+                # Minimum threshold: 500 characters (roughly 100 words)
+                if not content or len(content.strip()) < 500:
                     logger.warning(
-                        f"Content too short or empty for {url}: {len(content) if content else 0} chars"
+                        f"Content too short for {url}: {len(content) if content else 0} chars (need 500+)"
                     )
                     return None
 
+                logger.info(f"Successfully extracted {len(content)} chars from {url}")
                 return content
 
         except httpx.HTTPStatusError as e:

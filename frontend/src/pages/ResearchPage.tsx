@@ -41,25 +41,34 @@ export function ResearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
+    <div className="min-h-screen bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-stone-900 dark:text-white flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
                   <Search className="w-6 h-6 text-white" />
                 </div>
                 Web Researcher
               </h1>
-              <p className="mt-2 text-stone-600 dark:text-stone-400">
+              <p className="mt-2 text-gray-400">
                 Autonomous AI agent that researches topics and adds findings to your knowledge base
               </p>
+              <div className="mt-3 flex items-center gap-2 text-sm">
+                <span className="text-gray-500">Looking for scheduled research?</span>
+                <a
+                  href="/research/projects"
+                  className="text-primary-400 hover:text-primary-300 underline"
+                >
+                  Try Research Autopilot →
+                </a>
+              </div>
             </div>
             <button
               onClick={handleStartResearch}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all shadow-sm"
             >
               <Plus size={20} />
               New Research
@@ -68,13 +77,13 @@ export function ResearchPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-stone-200 dark:bg-stone-800 p-1 rounded-lg w-fit">
+        <div className="flex gap-1 mb-6 bg-gray-200 dark:bg-gray-800 p-1 rounded-lg w-fit">
           <button
             onClick={() => setActiveTab('new')}
             className={`px-4 py-2 rounded-md font-medium transition-all ${
               activeTab === 'new'
-                ? 'bg-white dark:bg-stone-900 text-stone-900 dark:text-white shadow-sm'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                ? 'bg-gray-900/80 backdrop-blur-md text-white shadow-sm'
+                : 'text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             Active Research
@@ -83,8 +92,8 @@ export function ResearchPage() {
             onClick={() => setActiveTab('history')}
             className={`px-4 py-2 rounded-md font-medium transition-all ${
               activeTab === 'history'
-                ? 'bg-white dark:bg-stone-900 text-stone-900 dark:text-white shadow-sm'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                ? 'bg-gray-900/80 backdrop-blur-md text-white shadow-sm'
+                : 'text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             Research History
@@ -97,7 +106,7 @@ export function ResearchPage() {
             <>
               {/* Research Form */}
               {showForm && (
-                <div className="bg-white dark:bg-stone-900 rounded-lg shadow-sm border border-stone-200 dark:border-stone-800 p-6">
+                <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-sm border border-gray-700 p-6">
                   <ResearchForm
                     onStarted={handleResearchStarted}
                     onCancel={() => setShowForm(false)}
@@ -120,14 +129,14 @@ export function ResearchPage() {
 
                   {/* Failed State */}
                   {taskData.status === 'failed' ? (
-                    <div className="bg-white dark:bg-stone-900 rounded-lg shadow-sm border border-red-200 dark:border-red-900 p-6">
+                    <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-sm border border-red-200 dark:border-red-900 p-6">
                       <div className="flex items-start gap-3">
                         <XCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
                         <div>
                           <h3 className="text-lg font-semibold text-red-700 dark:text-red-400">
                             Research Failed
                           </h3>
-                          <p className="mt-2 text-stone-600 dark:text-stone-400">
+                          <p className="mt-2 text-gray-400">
                             {taskData.error_message || 'An unknown error occurred'}
                           </p>
                         </div>
@@ -139,14 +148,14 @@ export function ResearchPage() {
 
               {/* Empty State */}
               {!showForm && !selectedTaskId && (
-                <div className="bg-white dark:bg-stone-900 rounded-lg shadow-sm border border-stone-200 dark:border-stone-800 p-12 text-center">
+                <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-sm border border-gray-700 p-12 text-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Search className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-semibold text-white mb-2">
                     No Active Research
                   </h3>
-                  <p className="text-stone-600 dark:text-stone-400 mb-6">
+                  <p className="text-gray-400 mb-6">
                     Start a new research task to automatically gather information from across the web
                   </p>
                   <button

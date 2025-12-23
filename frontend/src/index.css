@@ -2,16 +2,372 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* === PROFESSIONAL UI FOUNDATION === */
+
+@layer base {
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    letter-spacing: -0.011em;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    font-feature-settings: 'calt' 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(10 10 10 / 0.3);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(139 92 246 / 0.3);
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(139 92 246 / 0.5);
+  }
+
+  /* Custom selection */
+  ::selection {
+    background: rgb(139 92 246 / 0.3);
+    color: white;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus visible styles */
+  *:focus-visible {
+    outline: 2px solid rgb(139 92 246 / 0.6);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* === SOPHISTICATED VISUAL EFFECTS === */
+
+@layer utilities {
+  /* Glassmorphism - Frosted glass effect */
+  .glass {
+    background: rgba(17, 17, 17, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity;
+  }
+
+  .glass-hover:hover {
+    background: rgba(17, 17, 17, 0.85);
+    border-color: rgba(139, 92, 246, 0.3);
+    transform: translateY(-1px);
+  }
+
+  /* Elevated depth with sophisticated shadows */
+  .elevated {
+    box-shadow:
+      0 1px 2px 0 rgb(0 0 0 / 0.05),
+      0 2px 8px 0 rgb(0 0 0 / 0.1),
+      0 4px 16px 0 rgb(0 0 0 / 0.1);
+  }
+
+  .elevated-lg {
+    box-shadow:
+      0 4px 6px -1px rgb(0 0 0 / 0.1),
+      0 8px 24px -4px rgb(0 0 0 / 0.2),
+      0 16px 48px -8px rgb(0 0 0 / 0.2);
+  }
+
+  /* Inner shadow for depth */
+  .inset-shadow {
+    box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.3);
+  }
+
+  /* Subtle gradient text (tasteful) */
+  .gradient-text {
+    background: linear-gradient(135deg, #ffffff 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Shimmer loading effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(31, 31, 31, 0) 0%,
+      rgba(139, 92, 246, 0.1) 50%,
+      rgba(31, 31, 31, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Spring-based scale animation */
+  .spring-scale {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .spring-scale:active {
+    transform: scale(0.96);
+    will-change: transform;
+  }
+
+  /* Magnetic hover effect (subtle) */
+  .magnetic {
+    transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* Smooth fade in */
+  .fade-in {
+    animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Stagger delay utilities */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+
+  /* Ripple effect on click */
+  .ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  .ripple:active::after {
+    width: 300px;
+    height: 300px;
+    transition: 0s;
+  }
+
+  /* Noise texture overlay for depth */
+  .noise {
+    position: relative;
+  }
+
+  .noise::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+
+  /* Ambient glow (subtle) */
+  .ambient-glow {
+    position: relative;
+  }
+
+  .ambient-glow::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    background: radial-gradient(
+      circle at center,
+      rgba(139, 92, 246, 0.15) 0%,
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    z-index: -1;
+    will-change: opacity;
+  }
+
+  .ambient-glow:hover::before {
+    opacity: 1;
+  }
+
+  /* Better typography scale */
+  .text-display {
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .text-headline {
+    font-size: 2.25rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
+
+  .text-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .text-body {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    letter-spacing: -0.005em;
+  }
+
+  /* Floating animation */
+  .float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  /* Subtle pulse */
+  .pulse-soft {
+    animation: pulseSoft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulseSoft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+}
+
+/* === AMBIENT BACKGROUND EFFECTS === */
+
+/* Subtle animated gradient mesh */
+.gradient-mesh {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+.gradient-mesh::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  top: -300px;
+  right: -300px;
+  background: radial-gradient(
+    circle at center,
+    rgba(139, 92, 246, 0.08) 0%,
+    transparent 70%
+  );
+  animation: floatMesh1 20s ease-in-out infinite;
+}
+
+.gradient-mesh::after {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  bottom: -250px;
+  left: -250px;
+  background: radial-gradient(
+    circle at center,
+    rgba(59, 130, 246, 0.06) 0%,
+    transparent 70%
+  );
+  animation: floatMesh2 25s ease-in-out infinite;
+}
+
+@keyframes floatMesh1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(100px, -100px) scale(1.1);
+  }
+  66% {
+    transform: translate(-50px, 50px) scale(0.9);
+  }
+}
+
+@keyframes floatMesh2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-80px, 80px) scale(1.15);
+  }
+  66% {
+    transform: translate(60px, -60px) scale(0.85);
+  }
+}
+
+/* === REDUCED MOTION SUPPORT === */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .gradient-mesh::before,
+  .gradient-mesh::after {
+    animation: none !important;
+  }
 }

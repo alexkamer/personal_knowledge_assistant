@@ -11,6 +11,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.schemas.conversation import (
     ChatRequest,
     ChatResponse,
@@ -25,6 +26,7 @@ from app.schemas.conversation import (
 )
 from app.services.conversation_service import ConversationService
 from app.services.llm_service import get_llm_service
+from app.services.gemini_service import get_gemini_service
 from app.services.rag_service import get_rag_service
 from app.services.rag_orchestrator import get_rag_orchestrator
 from app.services.agent_service import get_agent_service
@@ -34,6 +36,11 @@ from app.utils.token_counter import get_token_counter
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _is_gemini_model(model: str) -> bool:
+    """Check if the model is a Gemini model."""
+    return model.startswith("gemini-")
 
 
 def _is_conversational_query(query: str) -> bool:
@@ -142,15 +149,37 @@ async def chat(
             for msg in messages[:-1]  # Exclude the message we just added
         ]
 
-        # Generate response using LLM
-        llm_service = get_llm_service()
-        response_text = await llm_service.generate_answer(
-            query=request.message,
-            context=context,
-            conversation_history=conversation_history,
-            model=request.model,
-            stream=False,
-        )
+        # Generate response using appropriate service (Gemini or Ollama)
+        model_to_use = request.model or settings.gemini_default_model if settings.gemini_api_key else "qwen2.5:14b"
+
+        if _is_gemini_model(model_to_use):
+            # Use Gemini service
+            gemini_service = get_gemini_service()
+
+            # Build prompt with context and history
+            prompt_parts = []
+            if context:
+                prompt_parts.append(f"Context:\n{context}\n")
+            if conversation_history:
+                for msg in conversation_history:
+                    prompt_parts.append(f"{msg['role'].capitalize()}: {msg['content']}")
+            prompt_parts.append(f"User: {request.message}\n\nProvide a helpful, accurate response based on the context provided.")
+
+            full_prompt = "\n".join(prompt_parts)
+            response_text = await gemini_service.generate_response(
+                prompt=full_prompt,
+                model=model_to_use,
+            )
+        else:
+            # Use Ollama LLM service
+            llm_service = get_llm_service()
+            response_text = await llm_service.generate_answer(
+                query=request.message,
+                context=context,
+                conversation_history=conversation_history,
+                model=model_to_use,
+                stream=False,
+            )
 
         # Add assistant message with citations
         assistant_message = await ConversationService.add_message(
@@ -159,7 +188,7 @@ async def chat(
             role="assistant",
             content=response_text,
             retrieved_chunks=citations,
-            model_used=request.model or llm_service.primary_model,
+            model_used=model_to_use,
         )
 
         # Generate suggested follow-up questions
@@ -325,6 +354,9 @@ async def chat_stream(
 
             # Check if agent uses tools
             complete_response = ""
+            model_to_use = request.model or agent_config.model
+            is_gemini = _is_gemini_model(model_to_use)
+
             llm_service = get_llm_service()  # Initialize for both paths
             if agent_config.use_tools:
                 # Use tool orchestrator for multi-step reasoning
@@ -377,19 +409,45 @@ async def chat_stream(
                         user_question=clean_message,
                         context=context,
                         conversation_history=conversation_history,
-                        model=request.model or agent_config.model,
+                        model=model_to_use,
                     )
 
                     # Stream the Socratic response
                     yield f'data: {json.dumps({"type": "chunk", "content": response})}\n\n'
                     complete_response = response
+                elif is_gemini:
+                    # Use Gemini service for streaming
+                    gemini_service = get_gemini_service()
+
+                    # Build prompt with context and history
+                    prompt_parts = []
+                    if context:
+                        prompt_parts.append(f"Context:\n{context}\n")
+                    if conversation_history:
+                        for msg in conversation_history:
+                            prompt_parts.append(f"{msg['role'].capitalize()}: {msg['content']}")
+                    prompt_parts.append(f"User: {clean_message}\n\nProvide a helpful, accurate response based on the context provided.")
+
+                    full_prompt = "\n".join(prompt_parts)
+
+                    # Stream Gemini response
+                    full_response = []
+                    async for chunk in gemini_service.generate_response_stream(
+                        prompt=full_prompt,
+                        model=model_to_use,
+                    ):
+                        if chunk:
+                            full_response.append(chunk)
+                            yield f'data: {json.dumps({"type": "chunk", "content": chunk})}\n\n'
+
+                    complete_response = "".join(full_response)
                 else:
-                    # Standard mode: Direct answer
+                    # Standard mode with Ollama: Direct answer
                     stream = await llm_service.generate_answer(
                         query=clean_message,  # Use clean message without @ mention
                         context=context,
                         conversation_history=conversation_history,
-                        model=request.model or agent_config.model,  # Use agent's model if not specified
+                        model=model_to_use,  # Use agent's model if not specified
                         stream=True,
                         temperature=agent_config.temperature,  # Use agent's temperature
                         system_prompt=agent_config.system_prompt,  # Use agent's system prompt
@@ -410,7 +468,7 @@ async def chat_stream(
                 role="assistant",
                 content=complete_response,
                 retrieved_chunks=citations,
-                model_used=request.model or llm_service.primary_model,
+                model_used=model_to_use,
             )
 
             # Calculate and store token count for assistant message

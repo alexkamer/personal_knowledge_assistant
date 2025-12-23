@@ -138,7 +138,7 @@ export function LearningToolsFAB({
 
         {/* Pulse animation when not expanded */}
         {!isExpanded && (
-          <div className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-20" />
+          <div className="absolute inset-0 rounded-full bg-primary-400 animate-ping opacity-20" />
         )}
       </button>
     </div>

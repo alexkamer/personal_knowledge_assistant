@@ -16,13 +16,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, disabled, children, ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none';
+    const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 spring-scale disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none';
 
     const variants = {
-      primary: 'bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg',
-      secondary: 'bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-300 dark:border-stone-600',
-      ghost: 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800',
-      icon: 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg',
+      primary: 'bg-primary-500 hover:bg-primary-600 text-white elevated hover:elevated-lg ripple',
+      secondary: 'bg-gray-800 hover:bg-gray-750 text-gray-300 border border-gray-700 ripple',
+      ghost: 'text-gray-400 hover:bg-gray-800',
+      icon: 'text-gray-400 hover:bg-gray-800 rounded-lg',
     };
 
     const sizes = {

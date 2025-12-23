@@ -302,7 +302,7 @@ export function OutlinerEditor({ initialBlocks = [], onChange, placeholder }: Ou
         >
           {/* Bullet */}
           <div className="flex-shrink-0 w-6 flex items-center justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-stone-400 group-hover:bg-blue-500 transition-colors" />
+            <div className="w-1.5 h-1.5 rounded-full bg-gray-400 group-hover:bg-blue-500 transition-colors" />
           </div>
 
           {/* ContentEditable with formatted preview */}
@@ -328,7 +328,7 @@ export function OutlinerEditor({ initialBlocks = [], onChange, placeholder }: Ou
               setSelectedText(null);
             }}
             data-placeholder={index === 0 && block.content === '' ? placeholder || 'Start typing...' : ''}
-            className="flex-1 outline-none bg-transparent text-stone-900 py-1 px-2 -ml-2 rounded hover:bg-stone-50 focus:bg-blue-50 focus:ring-2 focus:ring-blue-200 transition-colors min-h-[28px] empty:before:content-[attr(data-placeholder)] empty:before:text-stone-400"
+            className="flex-1 outline-none bg-transparent text-gray-900 py-1 px-2 -ml-2 rounded hover:bg-gray-50 focus:bg-blue-50 focus:ring-2 focus:ring-blue-200 transition-colors min-h-[28px] empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400"
           >
             {block.content}
           </div>

@@ -25,6 +25,12 @@ class Document(Base, UUIDMixin, TimestampMixin):
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
     category: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
 
+    # Archive fields (for external drive storage)
+    archive_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    storage_location: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="local", index=True
+    )  # local, archive
+
     # Extracted content
     content: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_: Mapped[str | None] = mapped_column(Text, nullable=True)

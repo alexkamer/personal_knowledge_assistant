@@ -12,6 +12,8 @@ import type { Note } from '../types/note';
 import { useNotes } from '../hooks/useNotes';
 import { usePaginationState } from '@/hooks/usePaginationState';
 import { ContextPanel } from '@/components/context/ContextPanel';
+import { CommandPalette } from '@/components/notes/CommandPalette';
+import { KeyboardShortcutsModal } from '@/components/notes/KeyboardShortcutsModal';
 
 function NotesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,6 +25,8 @@ function NotesPage() {
   const isSidebarCollapsed = searchParams.get('hideSidebar') === 'true';
 
   const [isContextPanelCollapsed, setIsContextPanelCollapsed] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
 
   // Pagination state
   const pagination = usePaginationState({
@@ -137,6 +141,47 @@ function NotesPage() {
     };
   }, [notesData]);
 
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Command Palette (Cmd+K)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+      }
+      // Keyboard Shortcuts Modal (?)
+      else if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+        // Only open if not typing in an input/textarea
+        const target = e.target as HTMLElement;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.isContentEditable) {
+          e.preventDefault();
+          setIsShortcutsModalOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Track recent notes in localStorage
+  useEffect(() => {
+    if (selectedNoteId) {
+      const stored = localStorage.getItem('recentNotes');
+      let recent: string[] = [];
+
+      try {
+        recent = stored ? JSON.parse(stored) : [];
+      } catch {
+        recent = [];
+      }
+
+      // Add to front, remove duplicates, keep last 10
+      recent = [selectedNoteId, ...recent.filter(id => id !== selectedNoteId)].slice(0, 10);
+      localStorage.setItem('recentNotes', JSON.stringify(recent));
+    }
+  }, [selectedNoteId]);
+
   const hasNoteOpen = isCreating || selectedNote;
 
   return (
@@ -163,6 +208,7 @@ function NotesPage() {
                 <button
                   onClick={handleCreateNew}
                   className="px-4 py-1.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-md text-sm font-medium transition-colors"
+                  title="Create new note (Cmd+N via Cmd+K)"
                 >
                   New Note
                 </button>
@@ -237,8 +283,12 @@ function NotesPage() {
           />
         ) : (
           <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-lg p-12 text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">
-            <div>
+            <div className="space-y-4">
               <p className="text-sm text-gray-400">Select a note to edit or create a new one</p>
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <kbd className="px-2 py-1 bg-gray-800 border border-gray-700 rounded font-mono">⌘K</kbd>
+                <span>to open command palette</span>
+              </div>
             </div>
           </div>
         )}
@@ -255,6 +305,22 @@ function NotesPage() {
           />
         </div>
       )}
+
+      {/* Command Palette - Global search and actions */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelectNote={handleNavigateToNoteById}
+        onCreateNote={handleCreateNew}
+        onFilterByTag={(tag) => handleTagsChange([tag])}
+        currentNoteId={selectedNoteId}
+      />
+
+      {/* Keyboard Shortcuts Modal - Press ? to open */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsModalOpen}
+        onClose={() => setIsShortcutsModalOpen(false)}
+      />
     </div>
   );
 }

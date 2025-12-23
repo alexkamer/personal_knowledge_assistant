@@ -1,6 +1,7 @@
 /**
  * Plugin to handle hyperlinks in the editor
- * Supports creating and editing links with Cmd+K shortcut
+ * Supports creating and editing links with Cmd+Shift+K shortcut
+ * (Changed from Cmd+K to avoid conflict with Command Palette)
  */
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -26,12 +27,13 @@ export function LinkPlugin(): JSX.Element | null {
   const savedSelectionRef = useRef<RangeSelection | null>(null);
 
   useEffect(() => {
-    // Register Cmd+K keyboard shortcut
+    // Register Cmd+Shift+K keyboard shortcut for links
     return editor.registerCommand(
       KEY_MODIFIER_COMMAND,
       (payload) => {
         const event: KeyboardEvent = payload;
-        if (event.key === 'k') {
+        // Changed to Cmd+Shift+K to avoid conflict with Command Palette (Cmd+K)
+        if (event.key === 'k' && event.shiftKey) {
           event.preventDefault();
 
           editor.update(() => {
@@ -126,7 +128,7 @@ export function LinkPlugin(): JSX.Element | null {
         <div className="space-y-4">
           {!selectedText && (
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Link Text
               </label>
               <input
@@ -134,14 +136,14 @@ export function LinkPlugin(): JSX.Element | null {
                 value={linkText}
                 onChange={(e) => setLinkText(e.target.value)}
                 placeholder="Enter link text"
-                className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoFocus={!isEditingLink}
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               URL
             </label>
             <input
@@ -149,7 +151,7 @@ export function LinkPlugin(): JSX.Element | null {
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="https://example.com"
-              className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus={isEditingLink || !!selectedText}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -182,14 +184,14 @@ export function LinkPlugin(): JSX.Element | null {
                 setLinkText('');
                 setSelectedText('');
               }}
-              className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-md transition-colors"
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleCreateLink}
               disabled={!linkUrl}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-stone-300 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               {isEditingLink ? 'Update' : 'Insert'}
             </button>

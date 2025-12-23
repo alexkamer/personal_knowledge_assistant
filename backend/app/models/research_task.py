@@ -4,7 +4,7 @@ Research task model for autonomous web research.
 from datetime import datetime
 from typing import Optional, List
 
-from sqlalchemy import Integer, String, Text, DateTime, Float, ARRAY
+from sqlalchemy import Integer, String, Text, DateTime, Float, ARRAY, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,6 +21,14 @@ class ResearchTask(Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "research_tasks"
 
+    # Project relationship (optional - tasks can be standalone or part of a project)
+    project_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("research_projects.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+
     # Query and settings
     query: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(
@@ -34,6 +42,12 @@ class ResearchTask(Base, UUIDMixin, TimestampMixin):
     source_types: Mapped[Optional[List[str]]] = mapped_column(
         ARRAY(String), nullable=True
     )  # academic, news, blogs, reddit, github
+
+    # Autopilot metadata
+    auto_generated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    scheduled_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Progress tracking
     sources_found: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -73,6 +87,11 @@ class ResearchTask(Base, UUIDMixin, TimestampMixin):
     )
 
     # Relationships
+    project: Mapped[Optional["ResearchProject"]] = relationship(
+        "ResearchProject",
+        back_populates="tasks",
+    )
+
     sources: Mapped[List["ResearchSource"]] = relationship(
         "ResearchSource",
         back_populates="research_task",

@@ -135,7 +135,7 @@ function WikiLinkComponent({
         ${
           noteId
             ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
-            : 'bg-stone-100 text-stone-600 hover:bg-stone-200 border border-stone-300 border-dashed'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300 border-dashed'
         }
       `}
       title={noteId ? `Go to: ${noteTitle}` : `Note not found: ${noteTitle}`}

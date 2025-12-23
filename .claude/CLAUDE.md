@@ -215,6 +215,121 @@ CHROMA_PERSIST_DIRECTORY=./chroma_data
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
+## Document Archive System (External Drive)
+
+The application supports archiving original documents to an external drive while keeping fast embeddings on the internal SSD. This enables building a large document library without storage constraints.
+
+### Architecture
+
+**Two-Tier Storage**:
+- **External Drive**: Original documents (PDFs, DOCs, etc.) in date-based folders
+- **Internal SSD**: Extracted text, embeddings, and ChromaDB index for fast retrieval
+
+**Benefits**:
+- Store hundreds of thousands of documents without internal storage limits
+- Preserve originals for re-processing if chunking/embedding strategies improve
+- Automatic backups of PostgreSQL + ChromaDB to external drive
+- Fast search remains on SSD (no performance penalty)
+
+### Setup Instructions
+
+1. **Mount your external drive** (e.g., `/Volumes/Knowledge-Drive`)
+
+2. **Enable archiving** in `backend/.env`:
+   ```bash
+   # Document Archive Configuration
+   ARCHIVE_ENABLED=true
+   ARCHIVE_BASE_PATH=/Volumes/Knowledge-Drive
+   ARCHIVE_DOCUMENTS_PATH=documents
+   ARCHIVE_BACKUPS_PATH=backups
+   ARCHIVE_FALLBACK_TO_LOCAL=true
+   ```
+
+3. **Run database migration**:
+   ```bash
+   cd backend
+   alembic upgrade head
+   ```
+
+4. **Verify setup**:
+   ```bash
+   # Check that archive directories are created
+   ls -la /Volumes/Knowledge-Drive/
+   # Should see: documents/ and backups/
+   ```
+
+### Usage
+
+**Document Upload (Automatic)**:
+- When `ARCHIVE_ENABLED=true`, all uploaded documents are automatically archived
+- Original files saved to: `/Volumes/Knowledge-Drive/documents/YYYY/MM/DD/UUID.ext`
+- Extracted text and embeddings remain on internal SSD for fast search
+- If external drive unavailable, falls back to local storage (configurable)
+
+**Backup Database & ChromaDB**:
+```bash
+# Manual backup
+./scripts/backup_to_archive.sh
+
+# Schedule with cron (weekly backup at 2 AM Sunday)
+0 2 * * 0 /path/to/personal_knowledge_assistant/scripts/backup_to_archive.sh
+```
+
+**Re-index Documents from Archive**:
+```bash
+# Re-index all documents (rebuilds embeddings from archived originals)
+cd backend
+python -m app.cli.reindex_from_archive --all
+
+# Re-index specific document
+python -m app.cli.reindex_from_archive --document-id abc-123-def
+
+# Dry run (see what would be re-indexed without doing it)
+python -m app.cli.reindex_from_archive --all --dry-run
+```
+
+### Use Cases
+
+1. **Upgrade Embedding Models**: Re-index with better models without re-uploading
+2. **Change Chunking Strategy**: Adjust chunk size and rebuild index from originals
+3. **Disaster Recovery**: Restore from backups if local database corrupted
+4. **Research Archives**: Build domain-specific libraries (academic papers, legal docs, etc.)
+
+### Archive Structure
+
+```
+/Volumes/Knowledge-Drive/
+├── documents/           # Archived original documents
+│   └── 2025/
+│       └── 12/
+│           └── 19/
+│               ├── UUID-1.pdf
+│               ├── UUID-2.docx
+│               └── UUID-3.txt
+└── backups/            # Database backups
+    ├── postgres_20251219_140530.sql.gz
+    ├── chroma_20251219_140530.tar.gz
+    ├── postgres_20251212_140530.sql.gz
+    └── chroma_20251212_140530.tar.gz
+```
+
+### Configuration Reference
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ARCHIVE_ENABLED` | `false` | Enable/disable document archiving |
+| `ARCHIVE_BASE_PATH` | `/Volumes/Knowledge-Drive` | External drive mount point |
+| `ARCHIVE_DOCUMENTS_PATH` | `documents` | Subdirectory for documents |
+| `ARCHIVE_BACKUPS_PATH` | `backups` | Subdirectory for backups |
+| `ARCHIVE_FALLBACK_TO_LOCAL` | `true` | Use local storage if drive unavailable |
+
+### Important Notes
+
+- **Performance**: Archived documents don't slow down search (embeddings stay on SSD)
+- **Fallback**: If external drive unmounted, system continues with local storage
+- **Backups**: Kept for 28 days (configurable in `backup_to_archive.sh`)
+- **Re-indexing**: Uses existing extracted text from PostgreSQL (doesn't re-extract from archived files)
+
 ## Common Tasks
 
 ### Add a new API endpoint

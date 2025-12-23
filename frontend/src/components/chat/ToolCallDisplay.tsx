@@ -48,22 +48,22 @@ export default function ToolCallDisplay({ toolCall }: ToolCallDisplayProps) {
 
       {/* Thought (if present) */}
       {toolCall.thought && (
-        <div className="text-sm text-stone-700 dark:text-stone-300 mb-2 italic">
+        <div className="text-sm text-gray-700 dark:text-gray-300 mb-2 italic">
           💭 {toolCall.thought}
         </div>
       )}
 
       {/* Parameters */}
       <div className="text-sm">
-        <span className="text-stone-600 dark:text-stone-400 font-medium">Parameters: </span>
+        <span className="text-gray-600 dark:text-gray-400 font-medium">Parameters: </span>
         {Object.keys(toolCall.parameters).length === 1 &&
         typeof Object.values(toolCall.parameters)[0] === 'string' &&
         (Object.values(toolCall.parameters)[0] as string).length < 100 ? (
-          <span className="text-stone-800 dark:text-stone-200">
+          <span className="text-gray-800 dark:text-gray-200">
             {formatParameters(toolCall.parameters)}
           </span>
         ) : (
-          <pre className="mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded p-2 overflow-x-auto text-xs font-mono">
+          <pre className="mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-2 overflow-x-auto text-xs font-mono">
             {formatParameters(toolCall.parameters)}
           </pre>
         )}

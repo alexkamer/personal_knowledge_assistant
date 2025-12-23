@@ -62,23 +62,23 @@ class ErrorBoundary extends Component<Props, State> {
               <div className="p-2 bg-red-100 rounded-full">
                 <AlertTriangle className="text-red-600" size={24} />
               </div>
-              <h2 className="text-xl font-semibold text-stone-900">
+              <h2 className="text-xl font-semibold text-gray-900">
                 {fallbackTitle}
               </h2>
             </div>
 
-            <p className="text-stone-600 mb-4">
+            <p className="text-gray-600 mb-4">
               An unexpected error occurred. Please try refreshing the page or contact support if the problem persists.
             </p>
 
             {isDevelopment && this.state.error && (
-              <div className="mb-4 p-3 bg-stone-50 rounded border border-stone-200">
+              <div className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
                 <p className="text-sm font-mono text-red-600 mb-2">
                   {this.state.error.toString()}
                 </p>
                 {this.state.errorInfo && (
-                  <details className="text-xs text-stone-600">
-                    <summary className="cursor-pointer hover:text-stone-900">
+                  <details className="text-xs text-gray-600">
+                    <summary className="cursor-pointer hover:text-gray-900">
                       Stack trace
                     </summary>
                     <pre className="mt-2 whitespace-pre-wrap">
@@ -99,7 +99,7 @@ class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-stone-200 text-stone-700 rounded-md hover:bg-stone-300 transition-colors"
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
               >
                 Reload Page
               </button>

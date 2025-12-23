@@ -49,20 +49,20 @@ function SettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200 dark:border-stone-800 rounded-lg p-6">
+      <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-lg p-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6 border-b border-stone-200 dark:border-stone-800 pb-4">
-          <Settings size={20} className="text-stone-700 dark:text-stone-300" />
+        <div className="flex items-center gap-3 mb-6 border-b border-gray-700 pb-4">
+          <Settings size={20} className="text-gray-400" />
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-stone-900 dark:text-white">Settings</h1>
-            <p className="text-xs text-stone-600 dark:text-stone-400">Configure your AI assistant</p>
+            <h1 className="text-xl font-semibold tracking-tight text-white">Settings</h1>
+            <p className="text-xs text-gray-400">Configure your AI assistant</p>
           </div>
         </div>
 
         {/* Model Selection Section */}
         <div className="mb-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-3">AI Model Selection</h2>
-          <p className="text-xs text-stone-600 dark:text-stone-400 mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-3">AI Model Selection</h2>
+          <p className="text-xs text-gray-400 mb-4">
             Choose which local LLM model to use for answering your questions.
           </p>
 
@@ -73,25 +73,25 @@ function SettingsPage() {
                 onClick={() => handleModelSelect(model.id)}
                 className={`relative p-4 border rounded-md cursor-pointer transition-all duration-150 ${
                   selectedModel === model.id
-                    ? 'border-stone-900 dark:border-white bg-stone-900 dark:bg-white text-white dark:text-stone-900'
-                    : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:border-stone-300 dark:hover:border-stone-600'
+                    ? 'border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-900/80 backdrop-blur-md hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className={`text-sm font-semibold ${selectedModel === model.id ? 'text-white dark:text-stone-900' : 'text-stone-900 dark:text-white'}`}>
+                      <h3 className={`text-sm font-semibold ${selectedModel === model.id ? 'text-white dark:text-gray-900' : 'text-white'}`}>
                         {model.name}
                       </h3>
                       {selectedModel === model.id && (
-                        <CheckCircle size={16} className={selectedModel === model.id ? 'text-white dark:text-stone-900' : ''} />
+                        <CheckCircle size={16} className={selectedModel === model.id ? 'text-white dark:text-gray-900' : ''} />
                       )}
                     </div>
-                    <p className={`text-xs mt-1 ${selectedModel === model.id ? 'text-stone-200 dark:text-stone-700' : 'text-stone-600 dark:text-stone-400'}`}>
+                    <p className={`text-xs mt-1 ${selectedModel === model.id ? 'text-gray-200 dark:text-gray-700' : 'text-gray-400'}`}>
                       {model.description}
                     </p>
                     <div className="flex gap-4 mt-2">
-                      <span className={`text-xs ${selectedModel === model.id ? 'text-stone-300 dark:text-stone-600' : 'text-stone-500 dark:text-stone-500'}`}>
+                      <span className={`text-xs ${selectedModel === model.id ? 'text-gray-300 dark:text-gray-600' : 'text-gray-500 dark:text-gray-500'}`}>
                         {model.size} • {model.speed}
                       </span>
                     </div>
@@ -111,9 +111,9 @@ function SettingsPage() {
         )}
 
         {/* Info Section */}
-        <div className="mt-6 p-4 bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 rounded-md">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-2">About Local Models</h3>
-          <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
+        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-700 rounded-md">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">About Local Models</h3>
+          <p className="text-xs text-gray-400 leading-relaxed">
             All models run locally on your machine using Ollama. Your data never leaves your computer, ensuring complete privacy.
           </p>
         </div>

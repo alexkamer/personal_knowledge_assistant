@@ -17,7 +17,7 @@ export function LoadingSkeleton({ type = 'card', count = 1, className = '' }: Lo
         {skeletons.map((i) => (
           <div
             key={i}
-            className={`bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/50 dark:border-stone-800/50 rounded-2xl shadow-lg p-5 animate-pulse ${className}`}
+            className={`bg-white/90 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl shadow-lg p-5 animate-pulse ${className}`}
           >
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-stone-200 to-stone-300 dark:from-stone-700 dark:to-stone-800 rounded-xl" />
@@ -39,7 +39,7 @@ export function LoadingSkeleton({ type = 'card', count = 1, className = '' }: Lo
         {skeletons.map((i) => (
           <div
             key={i}
-            className={`flex items-center gap-3 p-4 bg-white/90 dark:bg-stone-900/80 backdrop-blur-xl border border-stone-200/50 dark:border-stone-800/50 rounded-xl animate-pulse ${className}`}
+            className={`flex items-center gap-3 p-4 bg-white/90 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-xl animate-pulse ${className}`}
           >
             <div className="w-10 h-10 bg-gradient-to-br from-stone-200 to-stone-300 dark:from-stone-700 dark:to-stone-800 rounded-lg" />
             <div className="flex-1 space-y-2">
