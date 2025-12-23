@@ -314,7 +314,12 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
   }, []);
 
   const handleSourceClick = React.useCallback((source: SourceCitation) => {
-    setSelectedSource(source);
+    // For web sources, open URL directly in new tab instead of showing modal
+    if (source.source_type === 'web') {
+      window.open(source.source_id, '_blank', 'noopener,noreferrer');
+    } else {
+      setSelectedSource(source);
+    }
   }, []);
 
   const handleFeedback = React.useCallback(async (messageId: string, isPositive: boolean) => {
