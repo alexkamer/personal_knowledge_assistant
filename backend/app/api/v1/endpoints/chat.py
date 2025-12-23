@@ -153,19 +153,29 @@ async def chat(
         model_to_use = request.model or settings.gemini_default_model if settings.gemini_api_key else "qwen2.5:14b"
 
         if _is_gemini_model(model_to_use):
-            # Use Gemini service
+            # Use Gemini service with system prompt for better response quality
             gemini_service = get_gemini_service()
 
-            # Build prompt with context and history
+            # Build user prompt (context + history + question)
             prompt_parts = []
+
+            # Add context if available
             if context:
-                prompt_parts.append(f"Context:\n{context}\n")
+                prompt_parts.append(f"## Relevant Context from Your Knowledge Base\n\n{context}")
+
+            # Add conversation history
             if conversation_history:
+                prompt_parts.append("\n## Conversation History\n")
                 for msg in conversation_history:
-                    prompt_parts.append(f"{msg['role'].capitalize()}: {msg['content']}")
-            prompt_parts.append(f"User: {request.message}\n\nProvide a helpful, accurate response based on the context provided.")
+                    role_label = "You" if msg['role'] == 'user' else "Assistant"
+                    prompt_parts.append(f"{role_label}: {msg['content']}")
+
+            # Add current question
+            prompt_parts.append(f"\n## Current Question\n\nUser: {request.message}")
 
             full_prompt = "\n".join(prompt_parts)
+
+            # System prompt is handled in GeminiService._build_system_prompt()
             response_text = await gemini_service.generate_response(
                 prompt=full_prompt,
                 model=model_to_use,
@@ -416,21 +426,29 @@ async def chat_stream(
                     yield f'data: {json.dumps({"type": "chunk", "content": response})}\n\n'
                     complete_response = response
                 elif is_gemini:
-                    # Use Gemini service for streaming
+                    # Use Gemini service with system prompt for better response quality
                     gemini_service = get_gemini_service()
 
-                    # Build prompt with context and history
+                    # Build user prompt (context + history + question)
                     prompt_parts = []
+
+                    # Add context if available
                     if context:
-                        prompt_parts.append(f"Context:\n{context}\n")
+                        prompt_parts.append(f"## Relevant Context from Your Knowledge Base\n\n{context}")
+
+                    # Add conversation history
                     if conversation_history:
+                        prompt_parts.append("\n## Conversation History\n")
                         for msg in conversation_history:
-                            prompt_parts.append(f"{msg['role'].capitalize()}: {msg['content']}")
-                    prompt_parts.append(f"User: {clean_message}\n\nProvide a helpful, accurate response based on the context provided.")
+                            role_label = "You" if msg['role'] == 'user' else "Assistant"
+                            prompt_parts.append(f"{role_label}: {msg['content']}")
+
+                    # Add current question
+                    prompt_parts.append(f"\n## Current Question\n\nUser: {clean_message}")
 
                     full_prompt = "\n".join(prompt_parts)
 
-                    # Stream Gemini response
+                    # Stream Gemini response (system prompt handled in GeminiService)
                     full_response = []
                     async for chunk in gemini_service.generate_response_stream(
                         prompt=full_prompt,
