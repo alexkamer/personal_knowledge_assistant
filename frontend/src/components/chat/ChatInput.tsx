@@ -53,7 +53,9 @@ export function ChatInput({
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0); // Track drag enter/leave events
 
   // Update message when initialValue changes (from prefilled questions)
   useEffect(() => {
@@ -116,6 +118,45 @@ export function ChatInput({
   const handleRemoveFile = (index: number) => {
     setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
     setFileError(null);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounterRef.current = 0;
+
+    setFileError(null);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const validFiles = validateFiles(files);
+      if (validFiles.length > 0) {
+        setAttachedFiles([...attachedFiles, ...validFiles]);
+      }
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -334,7 +375,13 @@ export function ChatInput({
           />
 
           <div className="flex-1">
-            <div className="relative">
+            <div
+              className="relative"
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -344,6 +391,21 @@ export function ChatInput({
                 rows={3}
                 className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-700 rounded-xl resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed transition-all"
               />
+
+              {/* Drag and Drop Overlay */}
+              {isDragging && (
+                <div className="absolute inset-0 bg-indigo-50 dark:bg-indigo-900/20 border-2 border-dashed border-indigo-500 rounded-xl flex items-center justify-center z-10 pointer-events-none">
+                  <div className="text-center">
+                    <Paperclip className="w-8 h-8 mx-auto mb-2 text-indigo-600 dark:text-indigo-400" />
+                    <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                      Drop files here
+                    </p>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                      PDF, DOCX, TXT, MD (max 25MB)
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Attach File Button (inside textarea) */}
               <button
