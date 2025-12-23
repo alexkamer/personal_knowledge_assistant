@@ -42,7 +42,7 @@ export const chatService = {
    * Send a message and get streaming AI response using Server-Sent Events.
    */
   async sendMessageStream(
-    request: ChatRequest,
+    request: ChatRequest & { files?: File[] },
     onChunk: (chunk: string) => void,
     onSources: (sources: any[]) => void,
     onConversationId: (conversationId: string) => void,
@@ -54,12 +54,44 @@ export const chatService = {
     onToolCall?: (toolCall: ToolCall) => void,
     onToolResult?: (toolResult: ToolResult) => void
   ): Promise<void> {
+    // Build FormData if files are included, otherwise use JSON
+    const hasFiles = request.files && request.files.length > 0;
+    let body: FormData | string;
+    let headers: Record<string, string> = {};
+
+    if (hasFiles) {
+      // Use FormData for file uploads
+      const formData = new FormData();
+      formData.append('message', request.message);
+
+      // Add files
+      request.files!.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      // Add other parameters
+      if (request.conversation_id) formData.append('conversation_id', request.conversation_id);
+      if (request.conversation_title) formData.append('conversation_title', request.conversation_title);
+      if (request.model) formData.append('model', request.model);
+      if (request.top_k !== undefined) formData.append('top_k', request.top_k.toString());
+      formData.append('include_web_search', request.include_web_search ? 'true' : 'false');
+      formData.append('include_notes', request.include_notes ? 'true' : 'false');
+      formData.append('socratic_mode', request.socratic_mode ? 'true' : 'false');
+      formData.append('skip_rag', request.skip_rag ? 'true' : 'false');
+
+      body = formData;
+      // Don't set Content-Type header, browser will set it with boundary for multipart/form-data
+    } else {
+      // Use JSON for regular messages
+      const { files, ...requestWithoutFiles } = request;
+      body = JSON.stringify(requestWithoutFiles);
+      headers['Content-Type'] = 'application/json';
+    }
+
     const response = await fetch(`${API_BASE_URL}/chat/stream`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
+      headers,
+      body,
     });
 
     if (!response.ok) {

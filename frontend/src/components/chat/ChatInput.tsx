@@ -1,15 +1,16 @@
 /**
  * Chat input component with glass-morphism design and model switcher.
  */
-import React, { useState, useEffect } from 'react';
-import { Send, ChevronDown, Globe, MessageSquare, GraduationCap } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, ChevronDown, Globe, MessageSquare, GraduationCap, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ChatAttachment } from './ChatAttachment';
 
 // Source filter options
 export type SourceFilter = 'general' | 'docs' | 'web';
 
 interface ChatInputProps {
-  onSend: (message: string) => void;
+  onSend: (message: string, files?: File[]) => void;
   disabled?: boolean;
   placeholder?: string;
   initialValue?: string;
@@ -32,6 +33,10 @@ const AVAILABLE_MODELS = [
   { id: 'gemma3:latest', name: 'Gemma 3', description: 'Balanced', category: 'local' },
 ];
 
+const MAX_FILE_SIZE_MB = 25;
+const MAX_FILES = 5;
+const ALLOWED_FILE_TYPES = ['.pdf', '.docx', '.txt', '.md'];
+
 export function ChatInput({
   onSend,
   disabled = false,
@@ -46,6 +51,9 @@ export function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState(initialValue);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Update message when initialValue changes (from prefilled questions)
   useEffect(() => {
@@ -54,12 +62,70 @@ export function ChatInput({
     }
   }, [initialValue]);
 
+  const validateFiles = (files: FileList | File[]): File[] => {
+    const fileArray = Array.from(files);
+    const validFiles: File[] = [];
+    let error: string | null = null;
+
+    // Check total count
+    if (attachedFiles.length + fileArray.length > MAX_FILES) {
+      setFileError(`Maximum ${MAX_FILES} files allowed`);
+      return [];
+    }
+
+    for (const file of fileArray) {
+      // Check file size
+      const sizeMB = file.size / (1024 * 1024);
+      if (sizeMB > MAX_FILE_SIZE_MB) {
+        error = `File "${file.name}" exceeds ${MAX_FILE_SIZE_MB}MB limit`;
+        break;
+      }
+
+      // Check file type
+      const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!ALLOWED_FILE_TYPES.includes(extension)) {
+        error = `File type "${extension}" not supported. Allowed: ${ALLOWED_FILE_TYPES.join(', ')}`;
+        break;
+      }
+
+      validFiles.push(file);
+    }
+
+    if (error) {
+      setFileError(error);
+      return [];
+    }
+
+    return validFiles;
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null);
+    if (e.target.files) {
+      const validFiles = validateFiles(e.target.files);
+      if (validFiles.length > 0) {
+        setAttachedFiles([...attachedFiles, ...validFiles]);
+      }
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
+    setFileError(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = message.trim();
     if (trimmed && !disabled) {
-      onSend(trimmed);
+      onSend(trimmed, attachedFiles.length > 0 ? attachedFiles : undefined);
       setMessage('');
+      setAttachedFiles([]);
+      setFileError(null);
     }
   };
 
@@ -233,20 +299,67 @@ export function ChatInput({
           </div>
         </div>
 
+        {/* Attached Files Display */}
+        {attachedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 px-1">
+            {attachedFiles.map((file, index) => (
+              <ChatAttachment
+                key={`${file.name}-${index}`}
+                filename={file.name}
+                size={file.size}
+                onRemove={() => handleRemoveFile(index)}
+                status="pending"
+              />
+            ))}
+          </div>
+        )}
+
+        {/* File Error Message */}
+        {fileError && (
+          <div className="px-1 text-sm text-red-600 dark:text-red-400">
+            {fileError}
+          </div>
+        )}
+
         {/* Input Area */}
         <div className="flex gap-3 items-end">
+          {/* File Input (hidden) */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={ALLOWED_FILE_TYPES.join(',')}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
           <div className="flex-1">
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              disabled={disabled}
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed transition-all"
-            />
+            <div className="relative">
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholder}
+                disabled={disabled}
+                rows={3}
+                className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-700 rounded-xl resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed transition-all"
+              />
+
+              {/* Attach File Button (inside textarea) */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={disabled || attachedFiles.length >= MAX_FILES}
+                className="absolute right-3 bottom-3 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title={attachedFiles.length >= MAX_FILES ? `Maximum ${MAX_FILES} files allowed` : 'Attach files (PDF, DOCX, TXT, MD)'}
+              >
+                <Paperclip size={18} />
+              </button>
+            </div>
+
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               Press Enter to send, Shift+Enter for new line
+              {attachedFiles.length > 0 && ` • ${attachedFiles.length}/${MAX_FILES} files attached`}
             </p>
           </div>
 

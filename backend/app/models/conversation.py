@@ -57,6 +57,9 @@ class Message(Base, UUIDMixin, TimestampMixin):
     # Token tracking
     token_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
+    # Additional metadata (e.g., attachments) - use 'metadata_' to avoid SQLAlchemy reserved name
+    metadata_: Mapped[Optional[dict]] = mapped_column('metadata', JSON, nullable=True)
+
     # Relationships
     conversation: Mapped["Conversation"] = relationship(
         "Conversation", back_populates="messages"

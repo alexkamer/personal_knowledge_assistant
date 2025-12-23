@@ -27,6 +27,17 @@ class MessageFeedbackCreate(BaseModel):
     comment: Optional[str] = Field(None, description="Optional feedback comment")
 
 
+class AttachmentMetadata(BaseModel):
+    """Schema for file attachment metadata."""
+
+    filename: str = Field(..., description="Original filename")
+    file_type: str = Field(..., description="MIME type of the file")
+    size_bytes: int = Field(..., description="File size in bytes")
+    extracted_length: int = Field(..., description="Number of characters extracted from file")
+    processing_status: str = Field(default="processed", description="Processing status (processed, error)")
+    error_message: Optional[str] = Field(None, description="Error message if processing failed")
+
+
 class MessageFeedbackResponse(BaseModel):
     """Schema for message feedback response."""
 
@@ -50,6 +61,7 @@ class MessageResponse(MessageBase):
     sources: Optional[List[dict]] = None  # Parsed from retrieved_chunks
     feedback: Optional[MessageFeedbackResponse] = None
     suggested_questions: Optional[List[str]] = None
+    attachments: Optional[List[AttachmentMetadata]] = None
 
     class Config:
         from_attributes = True

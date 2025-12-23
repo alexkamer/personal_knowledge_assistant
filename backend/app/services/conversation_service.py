@@ -162,6 +162,7 @@ class ConversationService:
         content: str,
         retrieved_chunks: Optional[list[dict]] = None,
         model_used: Optional[str] = None,
+        metadata: Optional[dict] = None,
     ) -> Message:
         """
         Add a message to a conversation.
@@ -173,6 +174,7 @@ class ConversationService:
             content: Message content
             retrieved_chunks: Optional list of retrieved chunk citations
             model_used: Optional model name used for generation
+            metadata: Optional metadata dict (e.g., for attachments)
 
         Returns:
             Created message
@@ -183,6 +185,7 @@ class ConversationService:
             content=content,
             retrieved_chunks=json.dumps(retrieved_chunks) if retrieved_chunks else None,
             model_used=model_used,
+            metadata_=metadata,
         )
         db.add(message)
         await db.commit()

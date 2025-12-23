@@ -10,6 +10,15 @@ export interface MessageFeedback {
   created_at: string;
 }
 
+export interface Attachment {
+  filename: string;
+  file_type: string;
+  size_bytes: number;
+  extracted_length?: number;
+  processing_status?: 'pending' | 'processed' | 'error';
+  error_message?: string;
+}
+
 export interface Message {
   id: string;
   conversation_id: string;
@@ -21,11 +30,12 @@ export interface Message {
   feedback?: MessageFeedback;
   suggested_questions?: string[];
   metadata?: Record<string, any>;
+  attachments?: Attachment[];  // Added for displaying attachments
 }
 
 export interface SourceCitation {
   index: number;
-  source_type: 'note' | 'document' | 'web';
+  source_type: 'note' | 'document' | 'web' | 'attachment';
   source_id: string;
   chunk_id?: string;
   source_title: string;

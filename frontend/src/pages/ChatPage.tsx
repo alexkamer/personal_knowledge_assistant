@@ -308,7 +308,7 @@ export function ChatPage() {
     localStorage.setItem('preferred_model', selectedModel);
   }, [selectedModel]);
 
-  const handleSendMessage = useCallback(async (message: string) => {
+  const handleSendMessage = useCallback(async (message: string, files?: File[]) => {
     try {
       setErrorMessage(null);
       // Store the user message for immediate display
@@ -327,6 +327,7 @@ export function ChatPage() {
           include_notes: sourceFilter === 'docs' ? true : false, // docs mode includes all sources
           socratic_mode: socraticMode,
           skip_rag: sourceFilter === 'general', // Skip RAG for general knowledge mode
+          files, // Pass files to service
         },
         // onChunk
         (chunk) => {

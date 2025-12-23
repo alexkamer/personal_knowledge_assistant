@@ -4,9 +4,9 @@ Chat endpoints for RAG-powered question answering.
 import json
 import logging
 import re
-from typing import Annotated
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,6 +32,7 @@ from app.services.rag_orchestrator import get_rag_orchestrator
 from app.services.agent_service import get_agent_service
 from app.services.socratic_service import SocraticService
 from app.services.title_generator_service import get_title_generator_service
+from app.services.attachment_processor import get_attachment_processor
 from app.utils.token_counter import get_token_counter
 
 logger = logging.getLogger(__name__)
@@ -252,27 +253,73 @@ async def chat(
 
 @router.post("/stream")
 async def chat_stream(
-    request: ChatRequest,
+    message: str = Form(...),
+    files: List[UploadFile] = File(default=[]),
+    conversation_id: Optional[str] = Form(None),
+    conversation_title: Optional[str] = Form(None),
+    model: Optional[str] = Form(None),
+    top_k: Optional[int] = Form(None),
+    include_web_search: bool = Form(False),
+    include_notes: bool = Form(False),
+    socratic_mode: bool = Form(False),
+    skip_rag: bool = Form(False),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """
-    Send a message and get a streaming AI-powered response using RAG.
+    Send a message (optionally with file attachments) and get a streaming AI-powered response using RAG.
 
     Returns Server-Sent Events (SSE) stream with chunks of the response.
+
+    Accepts multipart/form-data with:
+    - message: User's message text
+    - files: Optional file attachments (PDF, DOCX, TXT, MD)
+    - Other parameters as form fields
     """
 
     async def generate_stream():
         """Generator function for streaming response."""
         try:
+            # Process file attachments if provided
+            attachment_metadata = []
+            attachment_contexts = []
+            if files:
+                try:
+                    yield f'data: {json.dumps({"type": "status", "status": f"Processing {len(files)} attachment(s)..."})}\n\n'
+
+                    attachment_processor = get_attachment_processor()
+                    attachment_metadata, attachment_contexts = await attachment_processor.process_attachments(files)
+
+                    # Calculate total extracted length
+                    total_extracted = sum(m.extracted_length for m in attachment_metadata if m.processing_status == "processed")
+
+                    if total_extracted > 0:
+                        yield f'data: {json.dumps({"type": "status", "status": f"Extracted {total_extracted:,} characters from attachments"})}\n\n'
+
+                    # Check for errors
+                    errors = [m for m in attachment_metadata if m.processing_status == "error"]
+                    if errors:
+                        error_names = ", ".join(e.filename for e in errors)
+                        logger.warning(f"Failed to process attachments: {error_names}")
+                        yield f'data: {json.dumps({"type": "status", "status": f"Warning: Failed to process {len(errors)} file(s)"})}\n\n'
+
+                except ValueError as e:
+                    # Validation error (file too large, wrong type, etc.)
+                    yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'
+                    return
+                except Exception as e:
+                    logger.error(f"Failed to process attachments: {e}")
+                    yield f'data: {json.dumps({"type": "error", "error": "Failed to process attachments"})}\n\n'
+                    return
+
             # Parse agent mention from message
             agent_service = get_agent_service()
-            agent_name, clean_message = agent_service.parse_agent_mention(request.message)
+            agent_name, clean_message = agent_service.parse_agent_mention(message)
             agent_config = agent_service.get_agent(agent_name)
 
             # Get or create conversation
-            if request.conversation_id:
+            if conversation_id:
                 conversation = await ConversationService.get_conversation(
-                    db, request.conversation_id
+                    db, conversation_id
                 )
                 if not conversation:
                     yield f'data: {json.dumps({"error": "Conversation not found"})}\n\n'
@@ -280,7 +327,7 @@ async def chat_stream(
             else:
                 # Create new conversation with a placeholder title
                 # We'll generate a proper title after getting the AI response
-                title = request.conversation_title or clean_message[:50]
+                title = conversation_title or clean_message[:50]
                 conversation_data = ConversationCreate(title=title)
                 conversation = await ConversationService.create_conversation(
                     db, conversation_data
@@ -293,16 +340,24 @@ async def chat_stream(
             yield f'data: {json.dumps({"type": "agent", "agent": {"name": agent_config.name, "display_name": agent_config.display_name, "description": agent_config.description}})}\n\n'
 
             # Add user message (with original message including @ mention)
+            # Include attachment metadata in message.metadata field
+            user_message_metadata = None
+            if attachment_metadata:
+                user_message_metadata = {
+                    "attachments": [m.model_dump() for m in attachment_metadata]
+                }
+
             user_message = await ConversationService.add_message(
                 db=db,
                 conversation_id=str(conversation.id),
                 role="user",
-                content=request.message,  # Keep original with @ mention
+                content=message,  # Keep original with @ mention
+                metadata=user_message_metadata,
             )
 
             # Calculate and store token count for user message
             token_counter = get_token_counter()
-            user_message.token_count = token_counter.count_tokens(request.message)
+            user_message.token_count = token_counter.count_tokens(message)
             await db.commit()
             await db.refresh(user_message)
 
@@ -312,8 +367,8 @@ async def chat_stream(
             # Retrieve relevant context using RAG Orchestrator (skip for conversational queries or general mode)
             context = ""
             citations = []
-            metadata = {}
-            if not is_conversational and not request.skip_rag and agent_config.use_rag:
+            rag_metadata = {}
+            if not is_conversational and not skip_rag and agent_config.use_rag:
                 # Send status: analyzing query
                 yield f'data: {json.dumps({"type": "status", "status": "Analyzing your question..."})}\n\n'
 
@@ -321,12 +376,13 @@ async def chat_stream(
                 yield f'data: {json.dumps({"type": "status", "status": "Searching knowledge base..."})}\n\n'
 
                 orchestrator = get_rag_orchestrator()
-                context, citations, metadata = await orchestrator.process_query(
+                context, citations, rag_metadata = await orchestrator.process_query(
                     db=db,
                     query=clean_message,  # Use clean message without @ mention
-                    force_web_search=request.include_web_search if request.include_web_search is not None else None,
+                    force_web_search=include_web_search if include_web_search is not None else None,
                     top_k=agent_config.rag_top_k,  # Use agent's RAG settings
-                    exclude_notes=not request.include_notes,  # Invert: include_notes=True means exclude_notes=False
+                    exclude_notes=not include_notes,  # Invert: include_notes=True means exclude_notes=False
+                    attachment_contexts=attachment_contexts,  # Pass attachment contexts
                 )
 
                 # Send status: processing results
@@ -338,22 +394,22 @@ async def chat_stream(
             else:
                 if is_conversational:
                     logger.info("Detected conversational query, skipping RAG retrieval")
-                    metadata = {"query_type": "conversational"}
+                    rag_metadata = {"query_type": "conversational"}
                     yield f'data: {json.dumps({"type": "status", "status": "Generating answer..."})}\n\n'
-                elif request.skip_rag:
+                elif skip_rag:
                     logger.info("User requested general knowledge mode (skip_rag=True)")
-                    metadata = {"query_type": "general_knowledge"}
+                    rag_metadata = {"query_type": "general_knowledge"}
                     yield f'data: {json.dumps({"type": "status", "status": "Generating answer..."})}\n\n'
                 else:
                     logger.info(f"Agent {agent_config.name} has RAG disabled")
-                    metadata = {"query_type": "no_rag"}
+                    rag_metadata = {"query_type": "no_rag"}
                     yield f'data: {json.dumps({"type": "status", "status": "Generating answer..."})}\n\n'
 
             # Send sources with metadata
             sources_data = {
                 "type": "sources",
                 "sources": citations,
-                "metadata": metadata  # Include query type, complexity, etc.
+                "metadata": rag_metadata  # Include query type, complexity, etc.
             }
             yield f'data: {json.dumps(sources_data)}\n\n'
 
@@ -368,7 +424,7 @@ async def chat_stream(
 
             # Check if agent uses tools
             complete_response = ""
-            model_to_use = request.model or agent_config.model
+            model_to_use = model or agent_config.model
             is_gemini = _is_gemini_model(model_to_use)
 
             llm_service = get_llm_service()  # Initialize for both paths
@@ -416,7 +472,7 @@ async def chat_stream(
 
             else:
                 # Standard RAG path without tools
-                if request.socratic_mode:
+                if socratic_mode:
                     # Socratic Learning Mode: Guide user through questions
                     socratic_service = SocraticService(llm_service)
                     response = await socratic_service.generate_socratic_response(
@@ -435,6 +491,12 @@ async def chat_stream(
 
                     # Build user prompt (context + history + question)
                     prompt_parts = []
+
+                    # Add attachment context FIRST (always include if present, even when RAG is skipped)
+                    if attachment_contexts:
+                        prompt_parts.append("## Attached Documents\n")
+                        for attachment in attachment_contexts:
+                            prompt_parts.append(f"\n[{attachment['source']}]\n{attachment['content']}\n")
 
                     # Add context if available
                     if context:
@@ -465,9 +527,17 @@ async def chat_stream(
                     complete_response = "".join(full_response)
                 else:
                     # Standard mode with Ollama: Direct answer
+                    # Prepend attachment context if present
+                    full_context = context
+                    if attachment_contexts:
+                        attachment_section = "## Attached Documents\n\n"
+                        for attachment in attachment_contexts:
+                            attachment_section += f"[{attachment['source']}]\n{attachment['content']}\n\n"
+                        full_context = attachment_section + ("\n" + context if context else "")
+
                     stream = await llm_service.generate_answer(
                         query=clean_message,  # Use clean message without @ mention
-                        context=context,
+                        context=full_context,
                         conversation_history=conversation_history,
                         model=model_to_use,  # Use agent's model if not specified
                         stream=True,
@@ -503,10 +573,10 @@ async def chat_stream(
 
             # Generate suggested follow-up questions (in background after done event)
             suggested_questions = await llm_service.generate_follow_up_questions(
-                query=request.message,
+                query=clean_message,
                 answer=complete_response,
                 context=context,
-                model=request.model,
+                model=model_to_use,
             )
 
             # Update message with suggested questions
@@ -517,7 +587,7 @@ async def chat_stream(
                 yield f'data: {json.dumps({"type": "suggested_questions", "questions": suggested_questions})}\n\n'
 
             # Generate a concise AI title for new conversations (in background)
-            if not request.conversation_id and not request.conversation_title:
+            if not conversation_id and not conversation_title:
                 try:
                     title_generator = get_title_generator_service()
                     generated_title = await title_generator.generate_title(

@@ -3,11 +3,12 @@
  */
 import React from 'react';
 import { Bot, User, FileText, StickyNote, Globe, Copy, RotateCw, Check, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Message, SourceCitation } from '@/types/chat';
+import type { Message, SourceCitation, Attachment } from '@/types/chat';
 import { SourcePreviewModal } from './SourcePreviewModal';
 import { MetadataBadges } from './MetadataBadges';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { FloatingMessageCard } from './FloatingMessageCard';
+import { ChatAttachment } from './ChatAttachment';
 import { apiClient } from '@/services/api';
 
 interface MessageListProps {
@@ -67,9 +68,26 @@ const MessageItem = React.memo<MessageItemProps>(({
         <div className="flex-1 min-w-0">
           <div className="text-gray-900 dark:text-gray-100">
           {message.role === 'user' ? (
-            <div className="whitespace-pre-wrap break-words">
-              {message.content}
-            </div>
+            <>
+              <div className="whitespace-pre-wrap break-words">
+                {message.content}
+              </div>
+
+              {/* Display attachments for user messages */}
+              {message.metadata?.attachments && message.metadata.attachments.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {message.metadata.attachments.map((attachment: Attachment, index: number) => (
+                    <ChatAttachment
+                      key={`${attachment.filename}-${index}`}
+                      filename={attachment.filename}
+                      size={attachment.size_bytes}
+                      status={attachment.processing_status}
+                      errorMessage={attachment.error_message}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
             <MarkdownRenderer content={message.content} />
           )}

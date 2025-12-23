@@ -29,6 +29,7 @@ class RAGOrchestrator:
         force_web_search: bool = None,
         top_k: int = None,
         exclude_notes: bool = True,
+        attachment_contexts: List[Dict[str, str]] = None,
     ) -> Tuple[str, List[dict], Dict[str, Any]]:
         """
         Process a query through the intelligent RAG pipeline.
@@ -39,6 +40,8 @@ class RAGOrchestrator:
             force_web_search: Force web search on/off (overrides analysis)
             top_k: Override for number of chunks to retrieve (for agent config)
             exclude_notes: Exclude notes from search (default: True for reputable sources only)
+            attachment_contexts: List of attachment contexts to prepend (optional)
+                Each dict has "source" and "content" keys
 
         Returns:
             Tuple of (context, citations, metadata)
@@ -101,6 +104,35 @@ class RAGOrchestrator:
             min_relevance_threshold=settings.min_relevance_threshold
         )
 
+        # Step 6.5: Prepend attachment contexts if provided
+        if attachment_contexts:
+            logger.info(f"Injecting {len(attachment_contexts)} attachment contexts")
+            attachment_context_parts = ["\n=== ATTACHED DOCUMENTS ===\n"]
+            attachment_citations = []
+
+            for idx, attachment in enumerate(attachment_contexts, 1):
+                attachment_context_parts.append(
+                    f"\n[{attachment['source']}]\n{attachment['content']}\n"
+                )
+                # Add attachment as a citation with perfect relevance
+                attachment_citations.append({
+                    "index": idx,
+                    "source_type": "attachment",
+                    "source_id": f"attachment-{idx}",
+                    "source_title": attachment["source"],
+                    "chunk_index": 0,
+                    "distance": 1.0,  # Perfect relevance for attachments
+                })
+
+            # Prepend attachments to context
+            attachment_section = "".join(attachment_context_parts)
+            context = attachment_section + "\n" + context
+
+            # Shift citation indices for existing citations and prepend attachment citations
+            for citation in citations:
+                citation["index"] += len(attachment_contexts)
+            citations = attachment_citations + citations
+
         # Step 7: Decide on web search
         should_use_web = self._decide_web_search(
             chunks=chunks,
@@ -123,6 +155,7 @@ class RAGOrchestrator:
             "chunks_retrieved": len(chunks),
             "unique_sources": len(citations),
             "web_search_used": should_use_web,
+            "attachments_count": len(attachment_contexts) if attachment_contexts else 0,
         }
 
         logger.info(f"Query processing complete: {metadata}")
