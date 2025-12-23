@@ -256,6 +256,7 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
   const [feedbackLoading, setFeedbackLoading] = React.useState<string | null>(null);
   const [expandedSources, setExpandedSources] = React.useState<Set<string>>(new Set());
   const [isUserScrolling, setIsUserScrolling] = React.useState(false);
+  const previousMessageCountRef = React.useRef(messages.length);
 
   // Detect if user has manually scrolled away from bottom (throttled for performance)
   const handleScroll = React.useCallback(() => {
@@ -281,17 +282,24 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
     };
   }, [handleScroll]);
 
-  // Only auto-scroll if user hasn't manually scrolled up
+  // Auto-scroll behavior: force scroll when new message added, otherwise respect user scroll
   React.useEffect(() => {
-    // Check current scroll position before auto-scrolling
-    if (scrollContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const messageCountIncreased = messages.length > previousMessageCountRef.current;
+    previousMessageCountRef.current = messages.length;
 
-      // Only auto-scroll if user is near the bottom (within 400px threshold - more forgiving)
-      if (distanceFromBottom < 400) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
+    if (!scrollContainerRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+    // Force scroll to bottom when new message is added (user sent message)
+    if (messageCountIncreased) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setIsUserScrolling(false); // Reset scroll tracking since we're forcing scroll
+    }
+    // Otherwise, only auto-scroll if user is near the bottom (during streaming)
+    else if (distanceFromBottom < 400) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
