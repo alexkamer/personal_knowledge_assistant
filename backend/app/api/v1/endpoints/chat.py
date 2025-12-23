@@ -683,6 +683,7 @@ async def get_chunk(
     from app.models.chunk import Chunk
     from app.models.note import Note
     from app.models.document import Document
+    from app.models.youtube_video import YouTubeVideo
 
     # Get the chunk
     result = await db.execute(select(Chunk).where(Chunk.id == chunk_id))
@@ -714,14 +715,28 @@ async def get_chunk(
         result = await db.execute(select(Document).where(Document.id == chunk.document_id))
         document = result.scalar_one_or_none()
         if document:
-            source_title = document.title
+            source_title = document.filename
             source_type = "document"
             metadata = {
                 "document_id": str(document.id),
-                "file_name": document.file_name,
+                "file_name": document.filename,
                 "file_type": document.file_type,
                 "file_size": document.file_size,
                 "created_at": document.created_at.isoformat(),
+            }
+    elif chunk.youtube_video_id:
+        result = await db.execute(select(YouTubeVideo).where(YouTubeVideo.id == chunk.youtube_video_id))
+        video = result.scalar_one_or_none()
+        if video:
+            source_title = video.title
+            source_type = "youtube"
+            metadata = {
+                "youtube_video_id": str(video.id),
+                "video_id": video.video_id,
+                "channel_title": video.channel_title,
+                "published_at": video.published_at.isoformat() if video.published_at else None,
+                "duration": video.duration,
+                "view_count": video.view_count,
             }
 
     return {

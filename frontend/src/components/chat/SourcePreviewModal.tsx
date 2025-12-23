@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { X, FileText, StickyNote, Globe, ExternalLink, Loader2 } from 'lucide-react';
 import type { SourceCitation, ChunkDetail } from '@/types/chat';
 import { apiClient } from '@/services/api';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface SourcePreviewModalProps {
   source: SourceCitation | null;
@@ -110,17 +111,21 @@ export function SourcePreviewModal({ source, onClose }: SourcePreviewModalProps)
               <p>Web sources don't have stored content. Click "Open original source" below to view the webpage.</p>
             </div>
           ) : chunkDetail ? (
-            <div className="prose prose-sm max-w-none">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
-                Content
-              </h3>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
-                  {chunkDetail.content}
-                </p>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
+                  Content
+                </h3>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-gray-200">
+                    <div className="whitespace-pre-wrap leading-relaxed font-mono text-sm">
+                      {chunkDetail.content}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
                 <span>Tokens: {chunkDetail.token_count}</span>
                 <span>•</span>
                 <span>Chunk: {chunkDetail.chunk_index}</span>

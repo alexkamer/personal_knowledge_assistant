@@ -96,7 +96,11 @@ export const FloatingMessageCard = React.memo<FloatingMessageCardProps>(({
                 {/* Show content when available */}
                 {message.content && (
                   <div className="prose dark:prose-invert prose-sm max-w-none">
-                    <MarkdownRenderer content={message.content} />
+                    <MarkdownRenderer
+                      content={message.content}
+                      sources={message.sources}
+                      onSourceClick={onSourceClick}
+                    />
                   </div>
                 )}
               </>

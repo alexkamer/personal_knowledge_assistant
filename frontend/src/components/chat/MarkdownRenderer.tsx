@@ -7,10 +7,71 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Check, Copy } from 'lucide-react';
+import type { SourceCitation } from '@/types/chat';
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  sources?: SourceCitation[];
+  onSourceClick?: (source: SourceCitation) => void;
+}
+
+// Helper to parse text and replace [N] or (Source N) with clickable citations
+function parseCitations(text: string, sources?: SourceCitation[], onSourceClick?: (source: SourceCitation) => void): React.ReactNode {
+  if (!sources || !onSourceClick) {
+    return text;
+  }
+
+  // Match citation patterns: [1], [2], (Source 1), (Source 2), etc.
+  const citationPattern = /\[(\d+)\]|\(Source\s+(\d+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = citationPattern.exec(text)) !== null) {
+    const fullMatch = match[0];
+    // Extract number from either [N] or (Source N) format
+    const numberStr = match[1] || match[2];
+    const citationNumber = parseInt(numberStr, 10);
+
+    // Add text before citation
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+
+    // Find the source by citation number
+    const source = sources.find(s => s.index === citationNumber);
+
+    if (source) {
+      // Add clickable citation
+      parts.push(
+        <sup
+          key={`cite-${match.index}`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onSourceClick(source);
+          }}
+          className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded cursor-pointer transition-colors ml-0.5"
+          title={source.source_title}
+        >
+          {citationNumber}
+        </sup>
+      );
+    } else {
+      // Keep the original text if source not found
+      parts.push(fullMatch);
+    }
+
+    lastIndex = match.index + fullMatch.length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
 }
 
 interface CodeProps {
@@ -87,7 +148,7 @@ function CodeBlock({ inline, className, children, ...props }: CodeProps) {
   );
 }
 
-export function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className = '', sources, onSourceClick }: MarkdownRendererProps) {
   return (
     <div className={`prose prose-sm dark:prose-invert max-w-none ${className}`}>
       <ReactMarkdown
@@ -120,10 +181,28 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
           h3: ({ node, ...props }) => (
             <h3 className="text-lg font-bold mt-4 mb-2" {...props} />
           ),
-          // Custom paragraph styling
-          p: ({ node, ...props }) => (
-            <p className="my-2 leading-relaxed" {...props} />
-          ),
+          // Custom paragraph styling with citation parsing
+          p: ({ node, children, ...props }) => {
+            // Extract text content from children recursively
+            const extractText = (node: React.ReactNode): string => {
+              if (typeof node === 'string') return node;
+              if (typeof node === 'number') return String(node);
+              if (Array.isArray(node)) return node.map(extractText).join('');
+              if (node && typeof node === 'object' && 'props' in node) {
+                return extractText(node.props.children);
+              }
+              return '';
+            };
+
+            const textContent = extractText(children);
+            const parsedContent = parseCitations(textContent, sources, onSourceClick);
+
+            return (
+              <p className="my-2 leading-relaxed" {...props}>
+                {parsedContent}
+              </p>
+            );
+          },
           // Custom blockquote styling
           blockquote: ({ node, ...props }) => (
             <blockquote
