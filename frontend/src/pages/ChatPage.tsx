@@ -130,7 +130,10 @@ export function ChatPage() {
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false); // Default to false for faster responses
   const [includeNotes, setIncludeNotes] = useState<boolean>(false); // Default to false - only use reputable sources
   const [socraticMode, setSocraticMode] = useState<boolean>(false); // Default to false - direct answers
-  const [selectedModel, setSelectedModel] = useState<string>('qwen2.5:14b'); // Default model
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    // Load from localStorage or default to qwen2.5:14b
+    return localStorage.getItem('preferred_model') || 'qwen2.5:14b';
+  });
 
   // Streaming state (consolidated with useReducer for performance)
   const [streamingState, dispatchStreaming] = useReducer(streamingReducer, initialStreamingState);
@@ -283,14 +286,16 @@ export function ChatPage() {
     }
   }, [location]);
 
+  // Save selected model to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('preferred_model', selectedModel);
+  }, [selectedModel]);
+
   const handleSendMessage = useCallback(async (message: string) => {
     try {
       setErrorMessage(null);
       dispatchStreaming({ type: 'START_STREAMING' });
       setPrefillQuestion(''); // Clear prefill after sending
-
-      // Get preferred model from localStorage
-      const preferredModel = localStorage.getItem('preferred_model') || undefined;
 
       let newConversationId = selectedConversationId;
 
@@ -299,7 +304,7 @@ export function ChatPage() {
           message,
           conversation_id: selectedConversationId || undefined,
           conversation_title: selectedConversationId ? undefined : undefined,  // Let backend generate title
-          model: preferredModel,
+          model: selectedModel,
           include_web_search: webSearchEnabled,
           include_notes: includeNotes,
           socratic_mode: socraticMode,
@@ -361,7 +366,7 @@ export function ChatPage() {
       setErrorMessage(errorDetail);
       dispatchStreaming({ type: 'RESET' });
     }
-  }, [selectedConversationId, webSearchEnabled, includeNotes, socraticMode, updateURLParam, queryClient]);
+  }, [selectedConversationId, selectedModel, webSearchEnabled, includeNotes, socraticMode, updateURLParam, queryClient]);
 
   const handleNewChat = useCallback(() => {
     updateURLParam('conv', null);
