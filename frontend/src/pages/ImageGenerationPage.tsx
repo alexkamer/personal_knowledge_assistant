@@ -92,6 +92,14 @@ export function ImageGenerationPage() {
     handleInitiateGeneration(prompt);
   }, []);
 
+  // Handle generate graphic from sports tab
+  const handleGenerateFromSports = useCallback((prompt: string) => {
+    setActiveTab('generate');
+    // Sports graphics prompts are already highly detailed and structured,
+    // so we bypass the wizard and generate directly
+    handleDirectGeneration(prompt, negativePrompt);
+  }, [negativePrompt]);
+
   const handleInitiateGeneration = useCallback(
     async (prompt: string) => {
       // If wizard is enabled, start the wizard flow
@@ -437,7 +445,7 @@ export function ImageGenerationPage() {
       ) : activeTab === 'sports' ? (
         /* Sports Graphics View */
         <div className="flex-1 overflow-hidden">
-          <NBAScoresDisplay />
+          <NBAScoresDisplay onGenerateGraphic={handleGenerateFromSports} />
         </div>
       ) : (
         /* Gallery View */
