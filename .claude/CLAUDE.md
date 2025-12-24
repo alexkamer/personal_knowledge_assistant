@@ -672,12 +672,75 @@ This project has access to several Model Context Protocol (MCP) servers that ext
   - Frontend: `frontend/src/pages/ChatPage.test.tsx:223-348` (5 tests)
   - Backend: `backend/tests/unit/test_rag_orchestrator.py:492-633` (3 tests)
 
+### Sports Graphics Generation (2025-12-24)
+- **What**: Generate professional sports score graphics with real team logos from ESPN
+- **Why**: Create shareable graphics for NBA/NHL game results with authentic team branding
+- **How**:
+  - Integrates ESPN API for live game scores and team data
+  - Fetches team logos from ESPN URLs and converts to base64
+  - Passes logos as reference images to Gemini for accurate logo rendering
+  - Simplified prompts focus on logos, scores, and team colors
+  - Uses quotes for exact text rendering per Gemini best practices
+- **Tech Stack**:
+  - **API**: ESPN Scoreboard API (`site.api.espn.com/apis/site/v2/sports`)
+  - **Image Generation**: Google Gemini (`gemini-2.5-flash-image`) with reference images
+  - **Sports**: NBA and NHL with date selector
+- **Files**:
+  - Frontend:
+    - `src/components/sports/NBAScoresDisplay.tsx` - Scores UI and graphic prompt builder
+    - `src/services/sportsScoresService.ts` - ESPN API integration
+    - `src/types/sportsScores.ts` - TypeScript types for ESPN responses
+    - `src/pages/ImageGenerationPage.tsx:96-101, 161-236` - Logo fetching and generation
+  - Backend:
+    - `app/schemas/image_generation.py:39-41` - Model configuration
+    - `app/services/image_generation_service.py` - Gemini integration
+- **Key Features**:
+  - Live game scores with team records
+  - Quarter/period-by-quarter scoring breakdown
+  - Game leaders (top scorers, rebounds, assists)
+  - "Generate Graphic" button on each game
+  - Automatic logo download and base64 conversion
+  - Reference images ensure authentic team logos
+- **Quota Management**:
+  - Uses Google AI API free tier (not Vertex AI)
+  - Rate limits: Check usage at https://ai.dev/usage
+  - Error 429 indicates quota exceeded - wait ~16s or upgrade plan
+  - To use Vertex AI instead, set `GOOGLE_GENAI_USE_VERTEXAI=true` in environment
+
 ## Project Status
 
 - [x] Phase 1: Foundation - Infrastructure setup
 - [x] Phase 2: Note Management - CRUD operations
 - [x] Phase 3: Document Processing - Upload and embedding pipeline
 - [x] Phase 4: RAG & Chat - AI-powered Q&A with real-time feedback
-- [ ] Phase 5: Polish - UI/UX improvements and optimization
+- [x] Phase 5: Image Generation - Sports graphics with team logos
+- [ ] Phase 6: Polish - UI/UX improvements and optimization
 
-Last updated: 2025-12-16
+## Troubleshooting
+
+### Gemini API Quota Issues
+
+**Error 429: RESOURCE_EXHAUSTED**
+```
+You exceeded your current quota, please check your plan and billing details.
+Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests
+```
+
+**Solutions**:
+1. **Wait**: Free tier resets quickly (~16 seconds)
+2. **Check usage**: https://ai.dev/usage?tab=rate-limit
+3. **Upgrade plan**: Switch from free tier to paid
+4. **Switch to Vertex AI**: Set environment variables:
+   ```bash
+   export GOOGLE_GENAI_USE_VERTEXAI=true
+   export GOOGLE_CLOUD_PROJECT=your-project-id
+   export GOOGLE_CLOUD_LOCATION=us-central1
+   export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json
+   ```
+
+**Current Configuration**:
+- Using Google AI API (free tier) by default
+- Backend automatically uses `GOOGLE_API_KEY` from `.env`
+- Reference images supported with `gemini-2.5-flash-image`
+
+Last updated: 2025-12-24
