@@ -63,6 +63,7 @@ export function ImageGenerationPage() {
   // Wizard state
   const [useWizard, setUseWizard] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
+  const [wizardLoading, setWizardLoading] = useState(false);
   const [wizardData, setWizardData] = useState<{
     basicPrompt: string;
     category: string;
@@ -75,6 +76,7 @@ export function ImageGenerationPage() {
       if (useWizard) {
         try {
           setErrorMessage(null);
+          setWizardLoading(true);
           const response = await promptRefinementService.analyzePrompt({ prompt });
           setWizardData({
             basicPrompt: prompt,
@@ -82,9 +84,11 @@ export function ImageGenerationPage() {
             questions: response.questions,
           });
           setShowWizard(true);
+          setWizardLoading(false);
         } catch (error: any) {
           console.error('Failed to analyze prompt:', error);
           setErrorMessage('Failed to start prompt wizard. Generating with basic prompt instead.');
+          setWizardLoading(false);
           // Fall back to direct generation
           handleDirectGeneration(prompt, negativePrompt);
         }
@@ -256,6 +260,23 @@ export function ImageGenerationPage() {
         negativePrompt={negativePrompt}
         onNegativePromptChange={setNegativePrompt}
       />
+
+      {/* Wizard Loading Modal */}
+      {wizardLoading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-8 max-w-md">
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+              <h3 className="text-lg font-semibold text-white">Preparing Your Wizard</h3>
+              <p className="text-sm text-gray-400 text-center">
+                AI is analyzing your prompt and generating personalized refinement questions...
+                <br />
+                This takes about 20-30 seconds.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Prompt Refinement Wizard */}
       {showWizard && wizardData && (
