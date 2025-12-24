@@ -1,9 +1,19 @@
 """
 Pydantic schemas for image generation.
 """
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+class ReferenceImage(BaseModel):
+    """Reference image for guided generation."""
+
+    image_data: str = Field(..., description="Base64 encoded image data")
+    mime_type: str = Field(..., description="Image MIME type (e.g., image/jpeg, image/png)")
+    image_type: Literal["human", "object", "style"] = Field(
+        "object", description="Type of reference image"
+    )
 
 
 class ImageGenerationRequest(BaseModel):
@@ -21,6 +31,33 @@ class ImageGenerationRequest(BaseModel):
     model: Literal["gemini-2.5-flash-image", "gemini-3-pro-image-preview"] = Field(
         "gemini-2.5-flash-image", description="Imagen model to use"
     )
+    reference_images: Optional[List[ReferenceImage]] = Field(
+        None, description="Reference images for guided generation (max 14 total: 5 human, 6 object, 3 style)"
+    )
+
+    @field_validator("reference_images")
+    @classmethod
+    def validate_reference_images(cls, v: Optional[List[ReferenceImage]]) -> Optional[List[ReferenceImage]]:
+        """Validate reference image limits."""
+        if v is None:
+            return v
+
+        if len(v) > 14:
+            raise ValueError("Maximum 14 reference images allowed")
+
+        # Count by type
+        human_count = sum(1 for img in v if img.image_type == "human")
+        object_count = sum(1 for img in v if img.image_type == "object")
+        style_count = sum(1 for img in v if img.image_type == "style")
+
+        if human_count > 5:
+            raise ValueError("Maximum 5 human reference images allowed")
+        if object_count > 6:
+            raise ValueError("Maximum 6 object reference images allowed")
+        if style_count > 3:
+            raise ValueError("Maximum 3 style reference images allowed")
+
+        return v
 
 
 class GeneratedImage(BaseModel):

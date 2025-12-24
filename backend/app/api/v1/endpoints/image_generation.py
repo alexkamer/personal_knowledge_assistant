@@ -49,6 +49,14 @@ async def generate_images_stream(
             image_word = "image" if request.number_of_images == 1 else "images"
             yield f'data: {json.dumps({"type": "status", "status": f"Generating {request.number_of_images} {image_word}..."})}\n\n'
 
+            # Prepare reference images if provided
+            reference_images = None
+            if request.reference_images:
+                reference_images = [
+                    {"image_data": img.image_data, "mime_type": img.mime_type}
+                    for img in request.reference_images
+                ]
+
             # Generate images using service
             service = get_image_generation_service()
             images = await service.generate_images(
@@ -58,6 +66,7 @@ async def generate_images_stream(
                 number_of_images=request.number_of_images,
                 negative_prompt=request.negative_prompt,
                 model=request.model,
+                reference_images=reference_images,
             )
 
             # Send images with metadata

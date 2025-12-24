@@ -51,6 +51,7 @@ class ImageGenerationService:
         number_of_images: int = 1,
         negative_prompt: Optional[str] = None,
         model: str = "gemini-2.5-flash-image",
+        reference_images: Optional[List[Dict[str, str]]] = None,
     ) -> List[Dict[str, str]]:
         """
         Generate images using Gemini Imagen API.
@@ -62,6 +63,7 @@ class ImageGenerationService:
             number_of_images: Number of images to generate (1-4)
             negative_prompt: What NOT to include in the image (optional)
             model: Imagen model to use
+            reference_images: List of reference images with image_data (base64) and mime_type
 
         Returns:
             List of dicts with 'image_data' (base64) and 'format' (png/jpeg)
@@ -73,15 +75,30 @@ class ImageGenerationService:
             raise Exception("Gemini API key not configured")
 
         try:
+            ref_count = len(reference_images) if reference_images else 0
             logger.info(
                 f"Generating {number_of_images} image(s) with {model} "
-                f"(aspect_ratio={aspect_ratio}, size={image_size})"
+                f"(aspect_ratio={aspect_ratio}, size={image_size}, ref_images={ref_count})"
             )
 
             # Build the prompt with negative prompt if provided
             full_prompt = prompt
             if negative_prompt:
                 full_prompt = f"{prompt}\n\nNegative prompt: {negative_prompt}"
+
+            # Build contents array with text prompt and reference images
+            contents = [full_prompt]
+
+            # Add reference images if provided
+            if reference_images:
+                for ref_img in reference_images:
+                    contents.append({
+                        "inline_data": {
+                            "mime_type": ref_img["mime_type"],
+                            "data": ref_img["image_data"],
+                        }
+                    })
+                logger.info(f"Added {len(reference_images)} reference image(s) to request")
 
             # Generate images using the correct API
             # Note: number_of_images is handled by making multiple requests
@@ -93,7 +110,7 @@ class ImageGenerationService:
 
                 response = self.client.models.generate_content(
                     model=model,
-                    contents=full_prompt,
+                    contents=contents,
                     config=types.GenerateContentConfig(
                         response_modalities=["IMAGE"],
                     ),

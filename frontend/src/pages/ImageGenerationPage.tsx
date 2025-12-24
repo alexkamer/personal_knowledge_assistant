@@ -6,9 +6,10 @@ import { AlertCircle } from 'lucide-react';
 import { ImagePromptInput } from '@/components/images/ImagePromptInput';
 import { ImageMessageList } from '@/components/images/ImageMessageList';
 import { PromptRefinementWizard } from '@/components/images/PromptRefinementWizard';
+import { ReferenceImageUpload } from '@/components/images/ReferenceImageUpload';
 import { imageGenerationService } from '@/services/imageGenerationService';
 import { promptRefinementService } from '@/services/promptRefinementService';
-import type { ImageGenerationMessage, GeneratedImage, ImageGenerationMetadata } from '@/types/imageGeneration';
+import type { ImageGenerationMessage, GeneratedImage, ImageGenerationMetadata, ReferenceImage } from '@/types/imageGeneration';
 import type { Question } from '@/types/promptRefinement';
 
 // Streaming state types
@@ -59,6 +60,7 @@ export function ImageGenerationPage() {
   const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('2K');
   const [numberOfImages, setNumberOfImages] = useState(1);
   const [negativePrompt, setNegativePrompt] = useState('');
+  const [referenceImages, setReferenceImages] = useState<ReferenceImage[]>([]);
 
   // Wizard state
   const [useWizard, setUseWizard] = useState(true);
@@ -151,6 +153,7 @@ export function ImageGenerationPage() {
             aspect_ratio: aspectRatio,
             image_size: imageSize,
             number_of_images: numberOfImages,
+            reference_images: referenceImages.length > 0 ? referenceImages : undefined,
           },
           // onStatus
           (status: string) => {
@@ -185,7 +188,7 @@ export function ImageGenerationPage() {
         dispatchStreaming({ type: 'RESET' });
       }
     },
-    [aspectRatio, imageSize, numberOfImages]
+    [aspectRatio, imageSize, numberOfImages, referenceImages]
   );
 
   return (
@@ -248,18 +251,32 @@ export function ImageGenerationPage() {
       </div>
 
       {/* Input Form (fixed at bottom) */}
-      <ImagePromptInput
-        onGenerate={handleInitiateGeneration}
-        disabled={streamingState.isStreaming}
-        aspectRatio={aspectRatio}
-        onAspectRatioChange={setAspectRatio}
-        imageSize={imageSize}
-        onImageSizeChange={setImageSize}
-        numberOfImages={numberOfImages}
-        onNumberOfImagesChange={setNumberOfImages}
-        negativePrompt={negativePrompt}
-        onNegativePromptChange={setNegativePrompt}
-      />
+      <div className="border-t border-gray-800 bg-gray-900">
+        {/* Reference Images Section */}
+        {referenceImages.length > 0 || !streamingState.isStreaming ? (
+          <div className="max-w-6xl mx-auto px-6 py-4">
+            <ReferenceImageUpload
+              images={referenceImages}
+              onChange={setReferenceImages}
+              disabled={streamingState.isStreaming}
+            />
+          </div>
+        ) : null}
+
+        {/* Prompt Input */}
+        <ImagePromptInput
+          onGenerate={handleInitiateGeneration}
+          disabled={streamingState.isStreaming}
+          aspectRatio={aspectRatio}
+          onAspectRatioChange={setAspectRatio}
+          imageSize={imageSize}
+          onImageSizeChange={setImageSize}
+          numberOfImages={numberOfImages}
+          onNumberOfImagesChange={setNumberOfImages}
+          negativePrompt={negativePrompt}
+          onNegativePromptChange={setNegativePrompt}
+        />
+      </div>
 
       {/* Wizard Loading Modal */}
       {wizardLoading && (

@@ -2,6 +2,13 @@
  * TypeScript types for image generation feature.
  */
 
+export interface ReferenceImage {
+  image_data: string; // Base64 encoded image data
+  mime_type: string; // e.g., "image/jpeg", "image/png"
+  image_type: 'human' | 'object' | 'style';
+  preview_url?: string; // Local URL for preview (not sent to API)
+}
+
 export interface ImageGenerationRequest {
   prompt: string;
   negative_prompt?: string;
@@ -9,6 +16,7 @@ export interface ImageGenerationRequest {
   image_size: '1K' | '2K' | '4K';
   number_of_images: number; // 1-4
   model?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
+  reference_images?: ReferenceImage[];
 }
 
 export interface GeneratedImage {
