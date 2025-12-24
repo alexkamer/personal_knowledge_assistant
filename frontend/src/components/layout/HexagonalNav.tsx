@@ -3,7 +3,7 @@
  * Inspired by Linear and Vercel's minimalist aesthetic
  */
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MessageSquare, Search, StickyNote, FileText, Youtube, Settings } from 'lucide-react';
+import { MessageSquare, Search, StickyNote, FileText, Image, Youtube, Settings } from 'lucide-react';
 import { useState } from 'react';
 
 interface NavMode {
@@ -37,6 +37,12 @@ const navModes: NavMode[] = [
     icon: FileText,
     label: 'Documents',
     description: 'Upload and manage documents (PDF, Word, Markdown, etc.)'
+  },
+  {
+    path: '/images',
+    icon: Image,
+    label: 'Images',
+    description: 'Generate AI-powered images with Gemini Imagen'
   },
   {
     path: '/youtube',

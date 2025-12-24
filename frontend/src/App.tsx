@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import NotesPage from './pages/NotesPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { ChatPage } from './pages/ChatPage';
+import { ImageGenerationPage } from './pages/ImageGenerationPage';
 import { YouTubePage } from './pages/YouTubePage';
 import { ResearchPage } from './pages/ResearchPage';
 import SettingsPage from './pages/SettingsPage';
@@ -64,6 +65,14 @@ function App() {
                   element={
                     <ErrorBoundary fallbackTitle="Documents Error">
                       <DocumentsPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/images"
+                  element={
+                    <ErrorBoundary fallbackTitle="Image Generation Error">
+                      <ImageGenerationPage />
                     </ErrorBoundary>
                   }
                 />
