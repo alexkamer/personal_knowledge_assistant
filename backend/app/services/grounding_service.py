@@ -4,6 +4,7 @@ Two-step process: Search first, then generate image with verified data.
 """
 import logging
 import os
+from datetime import datetime
 from typing import Optional
 
 try:
@@ -91,8 +92,14 @@ class GroundingService:
         Returns:
             Enhanced prompt with real game data
         """
-        # Build search query
-        search_query = f"""Search for information about: {original_prompt}
+        # Get current date/time for context
+        now = datetime.now()
+        today = now.strftime("%A, %B %d, %Y")  # e.g., "Tuesday, December 24, 2024"
+
+        # Build search query with current date context
+        search_query = f"""Today is {today}.
+
+Search for information about: {original_prompt}
 
 I need the following SPECIFIC details:
 - Exact final score (e.g., Team A 130, Team B 110)
@@ -132,7 +139,13 @@ Create a stylish sports graphic that accurately displays this information. Use t
         Returns:
             Enhanced prompt with real weather data
         """
-        search_query = f"""Search for weather information about: {original_prompt}
+        # Get current date/time for context
+        now = datetime.now()
+        today = now.strftime("%A, %B %d, %Y")
+
+        search_query = f"""Today is {today}.
+
+Search for weather information about: {original_prompt}
 
 I need:
 - Current or forecasted temperature (exact number)
@@ -168,7 +181,13 @@ Create a weather graphic that accurately displays this information."""
         Returns:
             Enhanced prompt with real news data
         """
-        search_query = f"""Search for news/information about: {original_prompt}
+        # Get current date/time for context
+        now = datetime.now()
+        today = now.strftime("%A, %B %d, %Y")
+
+        search_query = f"""Today is {today}.
+
+Search for news/information about: {original_prompt}
 
 I need:
 - Key facts and figures
