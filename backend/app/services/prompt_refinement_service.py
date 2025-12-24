@@ -410,6 +410,7 @@ Generate 4-6 questions that are SPECIFIC to this exact prompt. Make options conc
     ) -> Dict[str, str]:
         """
         Build an enhanced prompt from user answers.
+        Works with both template-based and dynamically generated questions.
 
         Args:
             basic_prompt: The original user prompt
@@ -425,49 +426,16 @@ Generate 4-6 questions that are SPECIFIC to this exact prompt. Make options conc
         # Build enhanced prompt by combining basic prompt with answers
         enhanced_parts = [basic_prompt]
 
-        # Add style if provided
-        if "style" in answers and answers["style"]:
-            enhanced_parts.append(answers["style"].lower())
+        # For dynamically generated questions, simply append all answers
+        # Skip the "extras" field as it's usually a text input we'll add at the end
+        for question_id, answer in answers.items():
+            if question_id == "extras":
+                continue  # Handle extras at the end
+            if answer and answer.strip():
+                # Clean up the answer and add it
+                enhanced_parts.append(answer.strip().lower())
 
-        # Add setting/environment if provided
-        if "setting" in answers and answers["setting"]:
-            enhanced_parts.append(f"set in {answers['setting'].lower()}")
-
-        # Add time/season if provided
-        if "time" in answers and answers["time"]:
-            enhanced_parts.append(f"during {answers['time'].lower()}")
-        if "season" in answers and answers["season"]:
-            enhanced_parts.append(f"in {answers['season'].lower()}")
-
-        # Add mood/atmosphere
-        if "mood" in answers and answers["mood"]:
-            enhanced_parts.append(f"{answers['mood'].lower()} atmosphere")
-
-        # Add action if provided
-        if "action" in answers and answers["action"]:
-            enhanced_parts.append(answers["action"].lower())
-
-        # Add lighting if provided
-        if "lighting" in answers and answers["lighting"]:
-            enhanced_parts.append(f"with {answers['lighting'].lower()}")
-
-        # Add angle if provided
-        if "angle" in answers and answers["angle"]:
-            enhanced_parts.append(f"{answers['angle'].lower()} perspective")
-
-        # Add colors if provided
-        if "colors" in answers and answers["colors"]:
-            enhanced_parts.append(f"{answers['colors'].lower()} color palette")
-
-        # Add complexity if provided
-        if "complexity" in answers and answers["complexity"]:
-            enhanced_parts.append(answers["complexity"].lower())
-
-        # Add detail level if provided
-        if "detail" in answers and answers["detail"]:
-            enhanced_parts.append(answers["detail"].lower())
-
-        # Add user's extra details if provided
+        # Add user's extra details if provided (from free-text question)
         if "extras" in answers and answers["extras"] and answers["extras"].strip():
             enhanced_parts.append(answers["extras"])
 
