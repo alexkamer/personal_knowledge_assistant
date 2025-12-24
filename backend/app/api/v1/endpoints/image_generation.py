@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.schemas.image_generation import ImageGenerationRequest
 from app.services.image_generation_service import get_image_generation_service
+from app.services.image_context_service import get_image_context_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -48,22 +49,56 @@ async def generate_images_stream(
                 yield f'data: {json.dumps({"type": "error", "error": "Prompt cannot be empty"})}\n\n'
                 return
 
+            # Handle conversation context if provided
+            context_service = get_image_context_service()
+            enhanced_prompt = request.prompt
+            is_iterative = False
+
+            if request.conversation_context:
+                # Check if prompt is iterative
+                yield f'data: {json.dumps({"type": "status", "status": "Analyzing prompt context..."})}\n\n'
+
+                is_iterative = await context_service.is_iterative_prompt(
+                    request.prompt,
+                    request.conversation_context.previous_prompt
+                )
+
+                if is_iterative:
+                    # Enhance prompt with previous context
+                    enhanced_prompt = await context_service.enhance_prompt_with_context(
+                        request.prompt,
+                        request.conversation_context.previous_prompt,
+                        request.conversation_context.previous_metadata
+                    )
+
+                    yield f'data: {json.dumps({"type": "status", "status": "Building on previous image..."})}\n\n'
+                    logger.info(f"Iterative prompt detected. Enhanced: {enhanced_prompt}")
+
             # Send status: generating images
             image_word = "image" if request.number_of_images == 1 else "images"
             yield f'data: {json.dumps({"type": "status", "status": f"Generating {request.number_of_images} {image_word}..."})}\n\n'
 
-            # Prepare reference images if provided
+            # Prepare reference images
             reference_images = None
             if request.reference_images:
                 reference_images = [
                     {"image_data": img.image_data, "mime_type": img.mime_type}
                     for img in request.reference_images
                 ]
+            elif is_iterative and request.conversation_context and request.conversation_context.previous_image_data:
+                # Automatically use previous image as reference for iterative prompts
+                reference_images = [
+                    {
+                        "image_data": request.conversation_context.previous_image_data,
+                        "mime_type": "image/png"  # Assume PNG for generated images
+                    }
+                ]
+                logger.info("Using previous image as reference for iterative generation")
 
             # Generate images using service
             service = get_image_generation_service()
             images = await service.generate_images(
-                prompt=request.prompt,
+                prompt=enhanced_prompt,  # Use enhanced prompt if iterative
                 aspect_ratio=request.aspect_ratio,
                 image_size=request.image_size,
                 number_of_images=request.number_of_images,

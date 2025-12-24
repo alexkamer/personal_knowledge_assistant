@@ -9,6 +9,12 @@ export interface ReferenceImage {
   preview_url?: string; // Local URL for preview (not sent to API)
 }
 
+export interface ConversationContext {
+  previous_prompt: string;
+  previous_image_data?: string; // Base64 of first image from previous generation
+  previous_metadata?: Record<string, any>;
+}
+
 export interface ImageGenerationRequest {
   prompt: string;
   negative_prompt?: string;
@@ -17,6 +23,7 @@ export interface ImageGenerationRequest {
   number_of_images: number; // 1-4
   model?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
   reference_images?: ReferenceImage[];
+  conversation_context?: ConversationContext;
 }
 
 export interface GeneratedImage {

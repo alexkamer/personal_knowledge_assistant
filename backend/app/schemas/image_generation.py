@@ -16,6 +16,14 @@ class ReferenceImage(BaseModel):
     )
 
 
+class ConversationContext(BaseModel):
+    """Previous generation context for iterative prompts."""
+
+    previous_prompt: str = Field(..., description="Previous prompt used")
+    previous_image_data: Optional[str] = Field(None, description="Base64 of previous image to use as reference")
+    previous_metadata: Optional[dict] = Field(None, description="Metadata from previous generation")
+
+
 class ImageGenerationRequest(BaseModel):
     """Request schema for image generation."""
 
@@ -33,6 +41,9 @@ class ImageGenerationRequest(BaseModel):
     )
     reference_images: Optional[List[ReferenceImage]] = Field(
         None, description="Reference images for guided generation (max 14 total: 5 human, 6 object, 3 style)"
+    )
+    conversation_context: Optional[ConversationContext] = Field(
+        None, description="Context from previous generation for iterative prompts"
     )
 
     @field_validator("reference_images")

@@ -59,6 +59,13 @@ export function ImageGenerationPage() {
   const [messages, setMessages] = useState<ImageGenerationMessage[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Conversation memory (last generation for iterative prompts)
+  const [lastGeneration, setLastGeneration] = useState<{
+    prompt: string;
+    images: GeneratedImage[];
+    metadata: ImageGenerationMetadata;
+  } | null>(null);
+
   // Form controls state
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '16:9' | '9:16' | '4:3' | '3:4'>('1:1');
   const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('2K');
@@ -156,6 +163,13 @@ export function ImageGenerationPage() {
         };
         setMessages((prev) => [...prev, promptMessage]);
 
+        // Build conversation context if we have a previous generation
+        const conversation_context = lastGeneration ? {
+          previous_prompt: lastGeneration.prompt,
+          previous_image_data: lastGeneration.images[0]?.image_data,
+          previous_metadata: lastGeneration.metadata,
+        } : undefined;
+
         // Generate images with streaming status updates
         await imageGenerationService.generateImagesStream(
           {
@@ -165,6 +179,7 @@ export function ImageGenerationPage() {
             image_size: imageSize,
             number_of_images: numberOfImages,
             reference_images: referenceImages.length > 0 ? referenceImages : undefined,
+            conversation_context,
           },
           // onStatus
           (status: string) => {
@@ -181,6 +196,14 @@ export function ImageGenerationPage() {
               created_at: new Date().toISOString(),
             };
             setMessages((prev) => [...prev, imageMessage]);
+
+            // Save this generation for potential iteration
+            setLastGeneration({
+              prompt,
+              images,
+              metadata,
+            });
+
             dispatchStreaming({ type: 'RESET' });
           },
           // onDone
@@ -199,7 +222,7 @@ export function ImageGenerationPage() {
         dispatchStreaming({ type: 'RESET' });
       }
     },
-    [aspectRatio, imageSize, numberOfImages, referenceImages]
+    [aspectRatio, imageSize, numberOfImages, referenceImages, lastGeneration]
   );
 
   return (
@@ -215,21 +238,52 @@ export function ImageGenerationPage() {
               </p>
             </div>
 
-            {/* Wizard toggle (only show on Generate tab) */}
+            {/* Wizard toggle and conversation controls (only show on Generate tab) */}
             {activeTab === 'generate' && (
-              <label className="flex items-center gap-3 cursor-pointer">
-                <span className="text-sm text-gray-400">Prompt Wizard</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={useWizard}
-                    onChange={(e) => setUseWizard(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-indigo-600 transition-colors"></div>
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
-                </div>
-              </label>
+              <div className="flex items-center gap-4">
+                {/* Conversation context indicator */}
+                {lastGeneration && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-green-400 flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                        />
+                      </svg>
+                      Memory Active
+                    </span>
+                    <button
+                      onClick={() => setLastGeneration(null)}
+                      className="text-xs text-gray-400 hover:text-white transition-colors underline"
+                      title="Start fresh conversation"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <span className="text-sm text-gray-400">Prompt Wizard</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={useWizard}
+                      onChange={(e) => setUseWizard(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-indigo-600 transition-colors"></div>
+                    <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                  </div>
+                </label>
+              </div>
             )}
           </div>
 
