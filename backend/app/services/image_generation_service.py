@@ -93,6 +93,44 @@ class ImageGenerationService:
             if negative_prompt:
                 full_prompt = f"{prompt}\n\nNegative prompt: {negative_prompt}"
 
+            # Enhance prompt for Google Search grounding with specific instructions
+            if enable_google_search:
+                # Detect if this is a sports/news/weather prompt and add specific requirements
+                prompt_lower = prompt.lower()
+
+                if any(word in prompt_lower for word in ['game', 'match', 'score', 'sport', 'nba', 'nfl', 'mlb', 'nhl', 'soccer', 'football', 'basketball']):
+                    full_prompt = f"""{prompt}
+
+IMPORTANT: Use Google Search to find the ACTUAL game results, scores, and details. Include:
+- Final score (e.g., Team A 130 - Team B 110)
+- Date of the game
+- Top scorers with points (e.g., Player Name: 28 pts)
+- Both teams' current records (e.g., 20-15, 18-17)
+- Stadium/venue if relevant
+
+Make sure ALL information is accurate and based on real search results."""
+                    logger.info("Enhanced prompt for sports game with specific data requirements")
+
+                elif any(word in prompt_lower for word in ['weather', 'forecast', 'temperature', 'rain', 'snow']):
+                    full_prompt = f"""{prompt}
+
+Use Google Search to find the ACTUAL weather forecast. Include:
+- Current or forecasted temperature
+- Weather conditions (sunny, rainy, etc.)
+- Date/time period
+- Location"""
+                    logger.info("Enhanced prompt for weather with specific data requirements")
+
+                elif any(word in prompt_lower for word in ['news', 'announcement', 'today', 'yesterday', 'recent', 'latest']):
+                    full_prompt = f"""{prompt}
+
+Use Google Search to find the ACTUAL news/event details. Include:
+- Key facts and figures
+- Dates and times
+- Relevant people or organizations
+- Accurate quotes or statistics"""
+                    logger.info("Enhanced prompt for news with specific data requirements")
+
             # Build contents array with text prompt and reference images
             contents = [full_prompt]
 
@@ -123,6 +161,11 @@ class ImageGenerationService:
                 if enable_google_search:
                     config_kwargs["tools"] = [{"google_search": {}}]
                     logger.info("Google Search grounding enabled for real-time information")
+
+                    # Automatically use Pro model for better grounding accuracy
+                    if model == "gemini-2.5-flash-image":
+                        model = "gemini-3-pro-image-preview"
+                        logger.info("Switched to gemini-3-pro-image-preview for better Google Search grounding")
 
                 response = self.client.models.generate_content(
                     model=model,
