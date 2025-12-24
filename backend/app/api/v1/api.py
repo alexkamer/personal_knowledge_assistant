@@ -13,6 +13,7 @@ from app.api.v1.endpoints import (
     knowledge_evolution,
     learning_gaps,
     notes,
+    prompt_refinement,
     research,
     research_projects,
     research_briefings,
@@ -37,3 +38,4 @@ api_router.include_router(research.router, prefix="/research", tags=["research"]
 api_router.include_router(research_projects.router, prefix="/research", tags=["research_projects"])
 api_router.include_router(research_briefings.router, prefix="/research", tags=["research_briefings"])
 api_router.include_router(image_generation.router, prefix="/images", tags=["images"])
+api_router.include_router(prompt_refinement.router, prefix="/prompts", tags=["prompts"])

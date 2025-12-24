@@ -5,8 +5,11 @@ import { useState, useCallback, useReducer } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { ImagePromptInput } from '@/components/images/ImagePromptInput';
 import { ImageMessageList } from '@/components/images/ImageMessageList';
+import { PromptRefinementWizard } from '@/components/images/PromptRefinementWizard';
 import { imageGenerationService } from '@/services/imageGenerationService';
+import { promptRefinementService } from '@/services/promptRefinementService';
 import type { ImageGenerationMessage, GeneratedImage, ImageGenerationMetadata } from '@/types/imageGeneration';
+import type { Question } from '@/types/promptRefinement';
 
 // Streaming state types
 interface StreamingState {
@@ -57,8 +60,72 @@ export function ImageGenerationPage() {
   const [numberOfImages, setNumberOfImages] = useState(1);
   const [negativePrompt, setNegativePrompt] = useState('');
 
-  const handleGenerate = useCallback(
+  // Wizard state
+  const [useWizard, setUseWizard] = useState(true);
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardData, setWizardData] = useState<{
+    basicPrompt: string;
+    category: string;
+    questions: Question[];
+  } | null>(null);
+
+  const handleInitiateGeneration = useCallback(
     async (prompt: string) => {
+      // If wizard is enabled, start the wizard flow
+      if (useWizard) {
+        try {
+          setErrorMessage(null);
+          const response = await promptRefinementService.analyzePrompt({ prompt });
+          setWizardData({
+            basicPrompt: prompt,
+            category: response.category,
+            questions: response.questions,
+          });
+          setShowWizard(true);
+        } catch (error: any) {
+          console.error('Failed to analyze prompt:', error);
+          setErrorMessage('Failed to start prompt wizard. Generating with basic prompt instead.');
+          // Fall back to direct generation
+          handleDirectGeneration(prompt, negativePrompt);
+        }
+      } else {
+        // Direct generation without wizard
+        handleDirectGeneration(prompt, negativePrompt);
+      }
+    },
+    [useWizard, negativePrompt]
+  );
+
+  const handleWizardComplete = useCallback(
+    async (answers: Record<string, string>) => {
+      if (!wizardData) return;
+
+      try {
+        setErrorMessage(null);
+        setShowWizard(false);
+
+        // Build enhanced prompt from answers
+        const response = await promptRefinementService.buildPrompt({
+          basic_prompt: wizardData.basicPrompt,
+          answers,
+          category: wizardData.category,
+        });
+
+        // Use the enhanced prompt and auto-generated negative prompt
+        handleDirectGeneration(response.enhanced_prompt, response.negative_prompt);
+      } catch (error: any) {
+        console.error('Failed to build enhanced prompt:', error);
+        setErrorMessage('Failed to build enhanced prompt. Using basic prompt instead.');
+        setShowWizard(false);
+        // Fall back to basic prompt
+        handleDirectGeneration(wizardData.basicPrompt, negativePrompt);
+      }
+    },
+    [wizardData, negativePrompt]
+  );
+
+  const handleDirectGeneration = useCallback(
+    async (prompt: string, negative: string) => {
       try {
         setErrorMessage(null);
         dispatchStreaming({ type: 'START_STREAMING' });
@@ -76,7 +143,7 @@ export function ImageGenerationPage() {
         await imageGenerationService.generateImagesStream(
           {
             prompt,
-            negative_prompt: negativePrompt || undefined,
+            negative_prompt: negative || undefined,
             aspect_ratio: aspectRatio,
             image_size: imageSize,
             number_of_images: numberOfImages,
@@ -114,7 +181,7 @@ export function ImageGenerationPage() {
         dispatchStreaming({ type: 'RESET' });
       }
     },
-    [aspectRatio, imageSize, numberOfImages, negativePrompt]
+    [aspectRatio, imageSize, numberOfImages]
   );
 
   return (
@@ -122,10 +189,29 @@ export function ImageGenerationPage() {
       {/* Header */}
       <header className="border-b border-gray-800 px-6 py-4 flex-shrink-0">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold text-white">Image Generation</h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Create stunning images with AI-powered generation
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-white">Image Generation</h1>
+              <p className="text-sm text-gray-400 mt-1">
+                Create stunning images with AI-powered generation
+              </p>
+            </div>
+
+            {/* Wizard toggle */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <span className="text-sm text-gray-400">Prompt Wizard</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={useWizard}
+                  onChange={(e) => setUseWizard(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-indigo-600 transition-colors"></div>
+                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+              </div>
+            </label>
+          </div>
         </div>
       </header>
 
@@ -159,7 +245,7 @@ export function ImageGenerationPage() {
 
       {/* Input Form (fixed at bottom) */}
       <ImagePromptInput
-        onGenerate={handleGenerate}
+        onGenerate={handleInitiateGeneration}
         disabled={streamingState.isStreaming}
         aspectRatio={aspectRatio}
         onAspectRatioChange={setAspectRatio}
@@ -170,6 +256,20 @@ export function ImageGenerationPage() {
         negativePrompt={negativePrompt}
         onNegativePromptChange={setNegativePrompt}
       />
+
+      {/* Prompt Refinement Wizard */}
+      {showWizard && wizardData && (
+        <PromptRefinementWizard
+          basicPrompt={wizardData.basicPrompt}
+          category={wizardData.category}
+          questions={wizardData.questions}
+          onComplete={handleWizardComplete}
+          onCancel={() => {
+            setShowWizard(false);
+            setWizardData(null);
+          }}
+        />
+      )}
     </div>
   );
 }
