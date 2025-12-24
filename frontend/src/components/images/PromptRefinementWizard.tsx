@@ -32,18 +32,19 @@ export function PromptRefinementWizard({
   const promptPreview = useMemo(() => {
     const parts = [basicPrompt];
 
-    if (answers.style) parts.push(answers.style.toLowerCase());
-    if (answers.setting) parts.push(`set in ${answers.setting.toLowerCase()}`);
-    if (answers.time) parts.push(`during ${answers.time.toLowerCase()}`);
-    if (answers.season) parts.push(`in ${answers.season.toLowerCase()}`);
-    if (answers.mood) parts.push(`${answers.mood.toLowerCase()} atmosphere`);
-    if (answers.action) parts.push(answers.action.toLowerCase());
-    if (answers.lighting) parts.push(`with ${answers.lighting.toLowerCase()}`);
-    if (answers.angle) parts.push(`${answers.angle.toLowerCase()} perspective`);
-    if (answers.colors) parts.push(`${answers.colors.toLowerCase()} color palette`);
-    if (answers.complexity) parts.push(answers.complexity.toLowerCase());
-    if (answers.detail) parts.push(answers.detail.toLowerCase());
-    if (answers.extras && answers.extras.trim()) parts.push(answers.extras);
+    // For dynamically generated questions, simply append all answers
+    // Skip the "extras" field as it's usually a text input we'll add at the end
+    Object.entries(answers).forEach(([questionId, answer]) => {
+      if (questionId === 'extras') return; // Handle extras at the end
+      if (answer && answer.trim()) {
+        parts.push(answer.trim().toLowerCase());
+      }
+    });
+
+    // Add user's extra details if provided (from free-text question)
+    if (answers.extras && answers.extras.trim()) {
+      parts.push(answers.extras);
+    }
 
     parts.push('professional', 'high quality', 'detailed');
 
