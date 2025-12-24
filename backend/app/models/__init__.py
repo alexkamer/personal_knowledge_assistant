@@ -14,6 +14,7 @@ from app.models.research_task import ResearchTask
 from app.models.research_source import ResearchSource
 from app.models.research_project import ResearchProject
 from app.models.research_briefing import ResearchBriefing
+from app.models.generated_image import GeneratedImage
 
 __all__ = [
     "Note",
@@ -30,4 +31,5 @@ __all__ = [
     "ResearchSource",
     "ResearchProject",
     "ResearchBriefing",
+    "GeneratedImage",
 ]

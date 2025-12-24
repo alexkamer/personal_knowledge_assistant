@@ -20,6 +20,7 @@ export interface ImageGenerationRequest {
 }
 
 export interface GeneratedImage {
+  id?: string; // UUID from backend (if saved)
   image_data: string; // Base64 encoded image data
   format: 'png' | 'jpeg';
 }

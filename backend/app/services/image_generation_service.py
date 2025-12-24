@@ -5,6 +5,7 @@ import base64
 import logging
 import os
 from typing import Dict, List, Optional
+from uuid import uuid4
 
 try:
     from google import genai
@@ -15,7 +16,11 @@ except ImportError:
     logger_temp = logging.getLogger(__name__)
     logger_temp.warning("google-genai package not installed. Install with: pip install google-genai")
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.config import settings
+from app.models.generated_image import GeneratedImage
+from app.utils.image_utils import create_thumbnail, get_image_dimensions
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +147,83 @@ class ImageGenerationService:
 
         except Exception as e:
             logger.error(f"Error generating images: {e}", exc_info=True)
+            raise
+
+    async def save_images_to_database(
+        self,
+        images: List[Dict[str, str]],
+        prompt: str,
+        metadata: Dict[str, str],
+        db: AsyncSession,
+    ) -> List[GeneratedImage]:
+        """
+        Save generated images to the database with thumbnails.
+
+        Args:
+            images: List of generated images with image_data and format
+            prompt: Original prompt used for generation
+            metadata: Generation metadata (aspect_ratio, model, negative_prompt, etc.)
+            db: Database session
+
+        Returns:
+            List of saved GeneratedImage model instances
+
+        Raises:
+            Exception: If database save fails
+        """
+        try:
+            saved_images = []
+
+            for img_data in images:
+                image_base64 = img_data["image_data"]
+                image_format = img_data["format"]
+
+                # Generate thumbnail (256x256)
+                try:
+                    thumbnail = create_thumbnail(image_base64, size=(256, 256), format=image_format.upper())
+                except Exception as e:
+                    logger.warning(f"Failed to create thumbnail: {e}")
+                    thumbnail = None
+
+                # Get image dimensions
+                try:
+                    dimensions = get_image_dimensions(image_base64)
+                    width, height = dimensions if dimensions else (None, None)
+                except Exception as e:
+                    logger.warning(f"Failed to get image dimensions: {e}")
+                    width, height = None, None
+
+                # Create database record
+                db_image = GeneratedImage(
+                    id=str(uuid4()),
+                    prompt=prompt,
+                    negative_prompt=metadata.get("negative_prompt"),
+                    image_data=image_base64,
+                    thumbnail_data=thumbnail,
+                    image_format=image_format,
+                    metadata_=metadata,
+                    width=width,
+                    height=height,
+                    is_favorite=False,
+                    tags=[],
+                )
+
+                db.add(db_image)
+                saved_images.append(db_image)
+
+            # Commit all images at once
+            await db.commit()
+
+            # Refresh to get timestamps
+            for img in saved_images:
+                await db.refresh(img)
+
+            logger.info(f"Saved {len(saved_images)} image(s) to database")
+            return saved_images
+
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Failed to save images to database: {e}", exc_info=True)
             raise
 
 

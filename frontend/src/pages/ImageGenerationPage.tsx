@@ -2,9 +2,10 @@
  * Image Generation Page - AI-powered image generation using Gemini Imagen.
  */
 import { useState, useCallback, useReducer } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { ImagePromptInput } from '@/components/images/ImagePromptInput';
 import { ImageMessageList } from '@/components/images/ImageMessageList';
+import { ImageGallery } from '@/components/images/ImageGallery';
 import { PromptRefinementWizard } from '@/components/images/PromptRefinementWizard';
 import { ReferenceImageUpload } from '@/components/images/ReferenceImageUpload';
 import { imageGenerationService } from '@/services/imageGenerationService';
@@ -48,6 +49,9 @@ function streamingReducer(state: StreamingState, action: StreamingAction): Strea
 }
 
 export function ImageGenerationPage() {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'generate' | 'gallery'>('generate');
+
   // Streaming state
   const [streamingState, dispatchStreaming] = useReducer(streamingReducer, initialStreamingState);
 
@@ -71,6 +75,13 @@ export function ImageGenerationPage() {
     category: string;
     questions: Question[];
   } | null>(null);
+
+  // Handle regenerate from gallery
+  const handleRegenerateFromGallery = useCallback((prompt: string) => {
+    setActiveTab('generate');
+    // Trigger generation with the prompt
+    handleInitiateGeneration(prompt);
+  }, []);
 
   const handleInitiateGeneration = useCallback(
     async (prompt: string) => {
@@ -204,20 +215,49 @@ export function ImageGenerationPage() {
               </p>
             </div>
 
-            {/* Wizard toggle */}
-            <label className="flex items-center gap-3 cursor-pointer">
-              <span className="text-sm text-gray-400">Prompt Wizard</span>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={useWizard}
-                  onChange={(e) => setUseWizard(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-indigo-600 transition-colors"></div>
-                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
-              </div>
-            </label>
+            {/* Wizard toggle (only show on Generate tab) */}
+            {activeTab === 'generate' && (
+              <label className="flex items-center gap-3 cursor-pointer">
+                <span className="text-sm text-gray-400">Prompt Wizard</span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={useWizard}
+                    onChange={(e) => setUseWizard(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-indigo-600 transition-colors"></div>
+                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                </div>
+              </label>
+            )}
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={() => setActiveTab('generate')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                activeTab === 'generate'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Generate
+            </button>
+
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                activeTab === 'gallery'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:text-white'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" />
+              Gallery
+            </button>
           </div>
         </div>
       </header>
@@ -241,42 +281,52 @@ export function ImageGenerationPage() {
         </div>
       )}
 
-      {/* Message List (scrollable) */}
-      <div className="flex-1 overflow-hidden">
-        <ImageMessageList
-          messages={messages}
-          isStreaming={streamingState.isStreaming}
-          status={streamingState.status}
-        />
-      </div>
-
-      {/* Input Form (fixed at bottom) */}
-      <div className="border-t border-gray-800 bg-gray-900">
-        {/* Reference Images Section */}
-        {referenceImages.length > 0 || !streamingState.isStreaming ? (
-          <div className="max-w-6xl mx-auto px-6 py-4">
-            <ReferenceImageUpload
-              images={referenceImages}
-              onChange={setReferenceImages}
-              disabled={streamingState.isStreaming}
+      {/* Content Area */}
+      {activeTab === 'generate' ? (
+        <>
+          {/* Message List (scrollable) */}
+          <div className="flex-1 overflow-hidden">
+            <ImageMessageList
+              messages={messages}
+              isStreaming={streamingState.isStreaming}
+              status={streamingState.status}
             />
           </div>
-        ) : null}
 
-        {/* Prompt Input */}
-        <ImagePromptInput
-          onGenerate={handleInitiateGeneration}
-          disabled={streamingState.isStreaming}
-          aspectRatio={aspectRatio}
-          onAspectRatioChange={setAspectRatio}
-          imageSize={imageSize}
-          onImageSizeChange={setImageSize}
-          numberOfImages={numberOfImages}
-          onNumberOfImagesChange={setNumberOfImages}
-          negativePrompt={negativePrompt}
-          onNegativePromptChange={setNegativePrompt}
-        />
-      </div>
+          {/* Input Form (fixed at bottom) */}
+          <div className="border-t border-gray-800 bg-gray-900">
+            {/* Reference Images Section */}
+            {referenceImages.length > 0 || !streamingState.isStreaming ? (
+              <div className="max-w-6xl mx-auto px-6 py-4">
+                <ReferenceImageUpload
+                  images={referenceImages}
+                  onChange={setReferenceImages}
+                  disabled={streamingState.isStreaming}
+                />
+              </div>
+            ) : null}
+
+            {/* Prompt Input */}
+            <ImagePromptInput
+              onGenerate={handleInitiateGeneration}
+              disabled={streamingState.isStreaming}
+              aspectRatio={aspectRatio}
+              onAspectRatioChange={setAspectRatio}
+              imageSize={imageSize}
+              onImageSizeChange={setImageSize}
+              numberOfImages={numberOfImages}
+              onNumberOfImagesChange={setNumberOfImages}
+              negativePrompt={negativePrompt}
+              onNegativePromptChange={setNegativePrompt}
+            />
+          </div>
+        </>
+      ) : (
+        /* Gallery View */
+        <div className="flex-1 overflow-hidden">
+          <ImageGallery onRegeneratePrompt={handleRegenerateFromGallery} />
+        </div>
+      )}
 
       {/* Wizard Loading Modal */}
       {wizardLoading && (

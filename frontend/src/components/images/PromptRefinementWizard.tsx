@@ -23,10 +23,20 @@ export function PromptRefinementWizard({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentStep, setCurrentStep] = useState(0);
   const [showPreview, setShowPreview] = useState(true);
+  const [customInputs, setCustomInputs] = useState<Record<string, string>>({});
 
   const currentQuestion = questions[currentStep];
   const isLastQuestion = currentStep === questions.length - 1;
   const progress = ((currentStep + 1) / questions.length) * 100;
+
+  // Get the actual answer (use custom input if "custom" is selected)
+  const getActualAnswer = (questionId: string): string | undefined => {
+    const answer = answers[questionId];
+    if (answer === 'custom') {
+      return customInputs[questionId];
+    }
+    return answer;
+  };
 
   // Build live prompt preview
   const promptPreview = useMemo(() => {
@@ -34,25 +44,44 @@ export function PromptRefinementWizard({
 
     // For dynamically generated questions, simply append all answers
     // Skip the "extras" field as it's usually a text input we'll add at the end
-    Object.entries(answers).forEach(([questionId, answer]) => {
+    Object.keys(answers).forEach((questionId) => {
       if (questionId === 'extras') return; // Handle extras at the end
-      if (answer && answer.trim()) {
-        parts.push(answer.trim().toLowerCase());
+
+      const actualAnswer = getActualAnswer(questionId);
+      if (actualAnswer && actualAnswer.trim()) {
+        parts.push(actualAnswer.trim().toLowerCase());
       }
     });
 
     // Add user's extra details if provided (from free-text question)
-    if (answers.extras && answers.extras.trim()) {
-      parts.push(answers.extras);
+    const extrasAnswer = getActualAnswer('extras');
+    if (extrasAnswer && extrasAnswer.trim()) {
+      parts.push(extrasAnswer);
     }
 
     parts.push('professional', 'high quality', 'detailed');
 
     return parts.join(', ');
-  }, [basicPrompt, answers]);
+  }, [basicPrompt, answers, customInputs]);
 
   const handleAnswer = (value: string) => {
     setAnswers((prev) => ({
+      ...prev,
+      [currentQuestion.id]: value,
+    }));
+
+    // Clear custom input if switching away from "custom" option
+    if (value !== 'custom') {
+      setCustomInputs((prev) => {
+        const updated = { ...prev };
+        delete updated[currentQuestion.id];
+        return updated;
+      });
+    }
+  };
+
+  const handleCustomInput = (value: string) => {
+    setCustomInputs((prev) => ({
       ...prev,
       [currentQuestion.id]: value,
     }));
@@ -60,7 +89,15 @@ export function PromptRefinementWizard({
 
   const handleNext = () => {
     if (isLastQuestion) {
-      onComplete(answers);
+      // Build final answers with custom inputs resolved
+      const finalAnswers: Record<string, string> = {};
+      Object.keys(answers).forEach((questionId) => {
+        const actualAnswer = getActualAnswer(questionId);
+        if (actualAnswer) {
+          finalAnswers[questionId] = actualAnswer;
+        }
+      });
+      onComplete(finalAnswers);
     } else {
       setCurrentStep((prev) => prev + 1);
     }
@@ -86,7 +123,14 @@ export function PromptRefinementWizard({
       return true;
     }
     // Single-select requires an answer
-    return answers[currentQuestion.id] !== undefined;
+    const hasAnswer = answers[currentQuestion.id] !== undefined;
+
+    // If "custom" is selected, require custom input
+    if (hasAnswer && answers[currentQuestion.id] === 'custom') {
+      return customInputs[currentQuestion.id]?.trim().length > 0;
+    }
+
+    return hasAnswer;
   };
 
   return (
@@ -196,6 +240,47 @@ export function PromptRefinementWizard({
                     <span className="ml-3 text-white">{option}</span>
                   </label>
                 ))}
+
+                {/* Custom option */}
+                <div className="space-y-2">
+                  <label
+                    className={`
+                      flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all
+                      ${
+                        answers[currentQuestion.id] === 'custom'
+                          ? 'border-indigo-500 bg-indigo-500/10'
+                          : 'border-gray-700 bg-gray-900 hover:border-gray-600'
+                      }
+                    `}
+                  >
+                    <input
+                      type="radio"
+                      name={currentQuestion.id}
+                      value="custom"
+                      checked={answers[currentQuestion.id] === 'custom'}
+                      onChange={(e) => handleAnswer(e.target.value)}
+                      className="w-4 h-4 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-gray-900"
+                    />
+                    <span className="ml-3 text-white font-medium">✏️ Custom (write your own)</span>
+                  </label>
+
+                  {/* Custom input field (shown when "custom" is selected) */}
+                  {answers[currentQuestion.id] === 'custom' && (
+                    <div className="pl-8 pt-2">
+                      <input
+                        type="text"
+                        value={customInputs[currentQuestion.id] || ''}
+                        onChange={(e) => handleCustomInput(e.target.value)}
+                        placeholder="Enter your custom detail..."
+                        autoFocus
+                        className="w-full px-4 py-3 bg-gray-950 border-2 border-indigo-500 rounded-lg text-white placeholder-gray-500 focus:border-indigo-400 focus:outline-none"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        💡 Tip: Be specific! E.g., "Vintage 1960s Polaroid style with warm tones"
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

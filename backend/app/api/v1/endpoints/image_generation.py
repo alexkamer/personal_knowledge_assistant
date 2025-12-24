@@ -4,9 +4,11 @@ Image generation endpoints for Gemini Imagen API.
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.schemas.image_generation import ImageGenerationRequest
 from app.services.image_generation_service import get_image_generation_service
 
@@ -17,6 +19,7 @@ router = APIRouter()
 @router.post("/generate/stream")
 async def generate_images_stream(
     request: ImageGenerationRequest,
+    db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """
     Generate images and stream status updates via SSE.
@@ -69,17 +72,34 @@ async def generate_images_stream(
                 reference_images=reference_images,
             )
 
+            # Save images to database
+            metadata = {
+                "prompt": request.prompt,
+                "aspect_ratio": request.aspect_ratio,
+                "image_size": request.image_size,
+                "model": request.model,
+                "negative_prompt": request.negative_prompt,
+            }
+
+            try:
+                saved_images = await service.save_images_to_database(
+                    images=images,
+                    prompt=request.prompt,
+                    metadata=metadata,
+                    db=db,
+                )
+                # Add image IDs to response
+                for i, saved_img in enumerate(saved_images):
+                    images[i]["id"] = saved_img.id
+            except Exception as e:
+                logger.error(f"Failed to save images to database: {e}", exc_info=True)
+                # Continue anyway - at least return the generated images
+
             # Send images with metadata
             images_data = {
                 "type": "images",
                 "images": images,
-                "metadata": {
-                    "prompt": request.prompt,
-                    "aspect_ratio": request.aspect_ratio,
-                    "image_size": request.image_size,
-                    "model": request.model,
-                    "negative_prompt": request.negative_prompt,
-                },
+                "metadata": metadata,
             }
             yield f"data: {json.dumps(images_data)}\n\n"
 
