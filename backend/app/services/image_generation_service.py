@@ -86,7 +86,8 @@ class ImageGenerationService:
             ref_count = len(reference_images) if reference_images else 0
             logger.info(
                 f"Generating {number_of_images} image(s) with {model} "
-                f"(aspect_ratio={aspect_ratio}, size={image_size}, ref_images={ref_count})"
+                f"(aspect_ratio={aspect_ratio}, size={image_size}, ref_images={ref_count}, "
+                f"enable_google_search={enable_google_search})"
             )
 
             # Build the prompt with negative prompt if provided
