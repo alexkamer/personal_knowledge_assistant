@@ -315,47 +315,100 @@ class PromptRefinementService:
             logger.warning("Gemini client not available")
             return None
 
-        system_instructions = """You are an expert at refining image generation prompts. Given a basic prompt, generate 4-6 specific, contextual questions that will help create a better, more detailed image prompt.
+        system_instructions = """You are an expert at refining image generation prompts using professional techniques. Generate 4-6 questions that build a NARRATIVE, DESCRIPTIVE prompt rather than just collecting keywords.
+
+PROMPTING PHILOSOPHY:
+- Describe the SCENE, don't just list keywords
+- Use photography/art terminology for professional results
+- Build descriptive paragraphs, not disconnected words
+- Guide users toward structured, detailed descriptions
+
+QUESTION STRATEGIES BY TYPE:
+
+Photorealistic:
+- Ask about shot type, camera angle, lens details
+- Lighting setup and atmosphere
+- Fine textures and details to emphasize
+
+Illustrations/Stickers:
+- Style specifics (line quality, shading technique)
+- Color palette and design characteristics
+- Background treatment (transparent, solid, gradient)
+
+Product Photography:
+- Studio lighting setup (softbox, three-point, etc.)
+- Camera angle and what it showcases
+- Background surface and composition
+- Key details to emphasize
+
+Minimalist/Design:
+- Subject placement and negative space
+- Color scheme and mood
+- Lighting quality (soft, dramatic, etc.)
 
 CRITICAL RULES:
-1. Questions must be SPECIFIC to the prompt content, not generic
-2. Each question should have 4-5 concrete, actionable options
-3. Always include one optional text question at the end for "Any additional details?"
-4. Use "single-select" type for multiple choice, "text" type for free-form input
-5. Output ONLY a JSON object with a "questions" array
+1. Questions must be SPECIFIC to the prompt content
+2. Options should be DESCRIPTIVE PHRASES, not single words
+3. Always include one text question for additional narrative details
+4. Use "single-select" for multiple choice, "text" for free-form
+5. Output ONLY valid JSON with a "questions" array
 
 Example for "A serene mountain landscape":
 {
   "questions": [
     {
-      "id": "time_of_day",
-      "question": "What time of day for this mountain scene?",
+      "id": "shot_composition",
+      "question": "What camera perspective and composition?",
       "type": "single-select",
-      "options": ["Dawn with soft pink light", "Midday with clear blue sky", "Golden hour sunset", "Night with stars", "Misty morning"]
+      "options": [
+        "Wide-angle landscape shot emphasizing vast scale",
+        "Telephoto compressed layers of mountain ranges",
+        "Low angle looking up at towering peaks",
+        "Aerial drone shot revealing valley patterns",
+        "Eye-level with foreground interest"
+      ]
     },
     {
-      "id": "season",
-      "question": "Which season?",
+      "id": "lighting_atmosphere",
+      "question": "What lighting creates the serene mood?",
       "type": "single-select",
-      "options": ["Spring with wildflowers", "Summer green valleys", "Autumn colors", "Winter snow-covered peaks", "Any season"]
+      "options": [
+        "Dawn with soft pink alpenglow on peaks",
+        "Golden hour side-lighting with long shadows",
+        "Overcast diffused light for muted tones",
+        "Dramatic rays breaking through clouds",
+        "Blue hour twilight with subtle color gradients"
+      ]
     },
     {
-      "id": "mood",
-      "question": "What atmosphere should the mountains evoke?",
+      "id": "environmental_details",
+      "question": "What environmental elements enhance the scene?",
       "type": "single-select",
-      "options": ["Peaceful and calm", "Dramatic and epic", "Mystical with fog", "Vibrant and alive", "Desolate and remote"]
+      "options": [
+        "Pristine alpine lake reflecting mountains",
+        "Wildflower meadow in foreground",
+        "Wispy clouds wrapping mountain flanks",
+        "Ancient weathered pine trees framing view",
+        "Fresh snow on distant peaks"
+      ]
     },
     {
-      "id": "style",
-      "question": "What visual style?",
+      "id": "visual_style",
+      "question": "What photographic style and processing?",
       "type": "single-select",
-      "options": ["Photorealistic", "Cinematic wide-angle", "Painterly artistic", "Fantasy illustration", "Minimalist"]
+      "options": [
+        "Photorealistic with rich detail and texture",
+        "Cinematic color grading with teal and orange",
+        "Fine art black and white with contrast",
+        "Painterly with impressionistic qualities",
+        "HDR processed for dramatic detail"
+      ]
     },
     {
-      "id": "extras",
-      "question": "Any additional details? (optional)",
+      "id": "narrative_details",
+      "question": "Any additional narrative details to enrich the scene? (optional)",
       "type": "text",
-      "placeholder": "e.g., lake in foreground, eagles flying, specific mountain peaks..."
+      "placeholder": "Describe textures, mood elements, or story details like 'morning mist rising from valley, distant eagle soaring, sense of peaceful isolation'"
     }
   ]
 }"""
@@ -365,7 +418,7 @@ Example for "A serene mountain landscape":
 
 Category: {category}
 
-Generate 4-6 questions that are SPECIFIC to this exact prompt. Make options concrete and descriptive."""
+Generate 4-6 questions with DESCRIPTIVE options that build toward a rich, narrative prompt. Focus on helping the user describe the scene professionally, not just list attributes."""
 
         try:
             logger.info(f"Generating dynamic questions with Gemini for: {prompt[:50]}...")
@@ -431,8 +484,8 @@ Generate 4-6 questions that are SPECIFIC to this exact prompt. Make options conc
         self, basic_prompt: str, answers: Dict[str, str], category: Optional[str] = None
     ) -> Dict[str, str]:
         """
-        Build an enhanced prompt from user answers.
-        Works with both template-based and dynamically generated questions.
+        Build an enhanced, narrative-style prompt from user answers.
+        Constructs descriptive sentences rather than keyword lists.
 
         Args:
             basic_prompt: The original user prompt
@@ -445,32 +498,52 @@ Generate 4-6 questions that are SPECIFIC to this exact prompt. Make options conc
         if not category:
             category = self.detect_category(basic_prompt)
 
-        # Build enhanced prompt by combining basic prompt with answers
-        enhanced_parts = [basic_prompt]
+        # Start with the base subject/scene
+        narrative_parts = [basic_prompt]
 
-        # For dynamically generated questions, simply append all answers
-        # Skip the "extras" field as it's usually a text input we'll add at the end
+        # Separate answers by type for better narrative flow
+        narrative_answers = []
+        extras_text = None
+
         for question_id, answer in answers.items():
-            if question_id == "extras":
-                continue  # Handle extras at the end
+            # Handle the optional text field specially
+            if question_id in ["extras", "narrative_details", "additional_details"]:
+                if answer and answer.strip():
+                    extras_text = answer.strip()
+                continue
+
+            # Collect descriptive answers
             if answer and answer.strip():
-                # Clean up the answer and add it
-                enhanced_parts.append(answer.strip().lower())
+                # Keep the descriptive phrases as-is (they're already narrative)
+                narrative_answers.append(answer.strip())
 
-        # Add user's extra details if provided (from free-text question)
-        if "extras" in answers and answers["extras"] and answers["extras"].strip():
-            enhanced_parts.append(answers["extras"])
+        # Build narrative description
+        if narrative_answers:
+            # Join descriptive elements with period for better narrative flow
+            description = ". ".join(narrative_answers)
+            # Capitalize first letter if needed
+            if description and not description[0].isupper():
+                description = description[0].upper() + description[1:]
+            narrative_parts.append(description)
 
-        # Add quality terms
-        enhanced_parts.extend(["professional", "high quality", "detailed"])
+        # Add user's additional narrative details if provided
+        if extras_text:
+            narrative_parts.append(extras_text)
 
-        # Combine into final prompt
-        enhanced_prompt = ", ".join(enhanced_parts)
+        # Add quality indicators as a final sentence
+        narrative_parts.append("Professional quality, highly detailed")
+
+        # Combine with period separation for narrative flow
+        enhanced_prompt = ". ".join(narrative_parts)
+
+        # Ensure proper sentence ending
+        if not enhanced_prompt.endswith("."):
+            enhanced_prompt += "."
 
         # Generate negative prompt based on category
         negative_prompt = self._generate_negative_prompt(category)
 
-        logger.info(f"Built enhanced prompt from '{basic_prompt[:30]}...' -> '{enhanced_prompt[:50]}...'")
+        logger.info(f"Built narrative prompt from '{basic_prompt[:30]}...' -> '{enhanced_prompt[:80]}...'")
 
         return {"enhanced_prompt": enhanced_prompt, "negative_prompt": negative_prompt}
 
