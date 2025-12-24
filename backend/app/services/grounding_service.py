@@ -92,12 +92,14 @@ class GroundingService:
         Returns:
             Enhanced prompt with real game data
         """
-        # Get current date/time for context
+        # Get current date/time for context (system time)
         now = datetime.now()
-        today = now.strftime("%A, %B %d, %Y")  # e.g., "Tuesday, December 24, 2024"
+        today = now.strftime("%A, %B %d, %Y")  # e.g., "Wednesday, December 24, 2025"
+
+        logger.info(f"Current date for grounding: {today}")
 
         # Build search query with current date context
-        search_query = f"""Today is {today}.
+        search_query = f"""Today is {today}. The current date is {now.strftime('%Y-%m-%d')}.
 
 Search for information about: {original_prompt}
 
@@ -139,11 +141,13 @@ Create a stylish sports graphic that accurately displays this information. Use t
         Returns:
             Enhanced prompt with real weather data
         """
-        # Get current date/time for context
+        # Get current date/time for context (system time)
         now = datetime.now()
         today = now.strftime("%A, %B %d, %Y")
 
-        search_query = f"""Today is {today}.
+        logger.info(f"Current date for weather grounding: {today}")
+
+        search_query = f"""Today is {today}. The current date is {now.strftime('%Y-%m-%d')}.
 
 Search for weather information about: {original_prompt}
 
@@ -181,11 +185,13 @@ Create a weather graphic that accurately displays this information."""
         Returns:
             Enhanced prompt with real news data
         """
-        # Get current date/time for context
+        # Get current date/time for context (system time)
         now = datetime.now()
         today = now.strftime("%A, %B %d, %Y")
 
-        search_query = f"""Today is {today}.
+        logger.info(f"Current date for news grounding: {today}")
+
+        search_query = f"""Today is {today}. The current date is {now.strftime('%Y-%m-%d')}.
 
 Search for news/information about: {original_prompt}
 
