@@ -57,6 +57,7 @@ class ImageGenerationService:
         negative_prompt: Optional[str] = None,
         model: str = "gemini-2.5-flash-image",
         reference_images: Optional[List[Dict[str, str]]] = None,
+        enable_google_search: bool = False,
     ) -> List[Dict[str, str]]:
         """
         Generate images using Gemini Imagen API.
@@ -69,6 +70,7 @@ class ImageGenerationService:
             negative_prompt: What NOT to include in the image (optional)
             model: Imagen model to use
             reference_images: List of reference images with image_data (base64) and mime_type
+            enable_google_search: Enable Google Search grounding for real-time info (sports, news, weather)
 
         Returns:
             List of dicts with 'image_data' (base64) and 'format' (png/jpeg)
@@ -113,12 +115,19 @@ class ImageGenerationService:
             for i in range(number_of_images):
                 logger.info(f"Generating image {i+1}/{number_of_images}")
 
+                # Build config with Google Search grounding if enabled
+                config_kwargs = {
+                    "response_modalities": ["Text", "Image"] if enable_google_search else ["IMAGE"],
+                }
+
+                if enable_google_search:
+                    config_kwargs["tools"] = [{"google_search": {}}]
+                    logger.info("Google Search grounding enabled for real-time information")
+
                 response = self.client.models.generate_content(
                     model=model,
                     contents=contents,
-                    config=types.GenerateContentConfig(
-                        response_modalities=["IMAGE"],
-                    ),
+                    config=types.GenerateContentConfig(**config_kwargs),
                 )
 
                 # Extract base64 images from response

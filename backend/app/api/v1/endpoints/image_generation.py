@@ -105,6 +105,7 @@ async def generate_images_stream(
                 negative_prompt=request.negative_prompt,
                 model=request.model,
                 reference_images=reference_images,
+                enable_google_search=request.enable_google_search,
             )
 
             # Save images to database

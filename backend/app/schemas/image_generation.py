@@ -45,6 +45,9 @@ class ImageGenerationRequest(BaseModel):
     conversation_context: Optional[ConversationContext] = Field(
         None, description="Context from previous generation for iterative prompts"
     )
+    enable_google_search: bool = Field(
+        False, description="Enable Google Search grounding for real-time information (news, weather, sports, etc.)"
+    )
 
     @field_validator("reference_images")
     @classmethod

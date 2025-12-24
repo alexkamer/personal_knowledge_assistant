@@ -75,6 +75,7 @@ export function ImageGenerationPage() {
 
   // Wizard state
   const [useWizard, setUseWizard] = useState(true);
+  const [enableGoogleSearch, setEnableGoogleSearch] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [wizardLoading, setWizardLoading] = useState(false);
   const [wizardData, setWizardData] = useState<{
@@ -180,6 +181,7 @@ export function ImageGenerationPage() {
             number_of_images: numberOfImages,
             reference_images: referenceImages.length > 0 ? referenceImages : undefined,
             conversation_context,
+            enable_google_search: enableGoogleSearch,
           },
           // onStatus
           (status: string) => {
@@ -280,6 +282,38 @@ export function ImageGenerationPage() {
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-indigo-600 transition-colors"></div>
+                    <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                  </div>
+                </label>
+
+                <label
+                  className="flex items-center gap-3 cursor-pointer"
+                  title="Use Google Search for real-time information (news, sports, weather)"
+                >
+                  <span className="text-sm text-gray-400 flex items-center gap-1">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                    Google Search
+                  </span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={enableGoogleSearch}
+                      onChange={(e) => setEnableGoogleSearch(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
                     <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
                   </div>
                 </label>

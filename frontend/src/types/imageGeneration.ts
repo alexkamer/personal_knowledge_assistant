@@ -24,6 +24,7 @@ export interface ImageGenerationRequest {
   model?: 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
   reference_images?: ReferenceImage[];
   conversation_context?: ConversationContext;
+  enable_google_search?: boolean; // Enable Google Search grounding for real-time info
 }
 
 export interface GeneratedImage {
