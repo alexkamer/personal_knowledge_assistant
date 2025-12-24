@@ -225,7 +225,7 @@ export function ImageGenerationPage() {
             aspect_ratio: aspectRatio,
             image_size: imageSize,
             number_of_images: numberOfImages,
-            model: logoUrls && logoUrls.length > 0 ? 'gemini-3-pro-image-preview' : undefined,
+            model: logoUrls && logoUrls.length > 0 ? 'gemini-2.0-flash-preview-image-generation' : undefined,
             reference_images: allReferenceImages.length > 0 ? allReferenceImages : undefined,
             conversation_context,
             enable_google_search: enableGoogleSearch,
