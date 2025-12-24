@@ -3,10 +3,18 @@ Service for analyzing and refining image generation prompts.
 """
 import json
 import logging
+import os
 import re
 from typing import Dict, List, Optional
 
-import ollama
+try:
+    from google import genai
+    from google.genai import types
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+    logger_temp = logging.getLogger(__name__)
+    logger_temp.warning("google-genai package not installed. Install with: pip install google-genai")
 
 from app.core.config import settings
 
@@ -17,10 +25,27 @@ class PromptRefinementService:
     """Service for analyzing prompts and generating refinement questions."""
 
     def __init__(self):
-        """Initialize the service with Ollama client."""
-        self.ollama_client = ollama.AsyncClient(host=settings.ollama_base_url)
-        self.llm_model = "llama3.2:3b"  # Use fast model for quick question generation
-        self.use_dynamic_questions = True  # Toggle for LLM-generated questions
+        """Initialize the service with Gemini client."""
+        if not GENAI_AVAILABLE:
+            logger.error("google-genai package not installed - falling back to template questions")
+            self.client = None
+            self.use_dynamic_questions = False
+            return
+
+        if not settings.gemini_api_key:
+            logger.warning("Gemini API key not configured - falling back to template questions")
+            self.client = None
+            self.use_dynamic_questions = False
+            return
+
+        # Set GOOGLE_API_KEY environment variable for genai client
+        os.environ['GOOGLE_API_KEY'] = settings.gemini_api_key
+
+        # Initialize client
+        self.client = genai.Client()
+        self.llm_model = "gemini-2.0-flash-exp"  # Fast Gemini model with structured output
+        self.use_dynamic_questions = True  # Enable LLM-generated questions
+        logger.info("Prompt refinement service initialized with Gemini Flash")
 
     # Category detection patterns
     CATEGORY_PATTERNS = {
@@ -277,7 +302,7 @@ class PromptRefinementService:
 
     async def generate_dynamic_questions(self, prompt: str, category: str) -> List[Dict]:
         """
-        Use LLM to generate contextual refinement questions.
+        Use Gemini Flash to generate contextual refinement questions.
 
         Args:
             prompt: The user's basic prompt
@@ -286,14 +311,18 @@ class PromptRefinementService:
         Returns:
             List of question objects with id, question, type, and options
         """
-        system_prompt = """You are an expert at refining image generation prompts. Given a basic prompt, generate 4-6 specific, contextual questions that will help create a better, more detailed image prompt.
+        if not self.client:
+            logger.warning("Gemini client not available")
+            return None
+
+        system_instructions = """You are an expert at refining image generation prompts. Given a basic prompt, generate 4-6 specific, contextual questions that will help create a better, more detailed image prompt.
 
 CRITICAL RULES:
 1. Questions must be SPECIFIC to the prompt content, not generic
 2. Each question should have 4-5 concrete, actionable options
 3. Always include one optional text question at the end for "Any additional details?"
-4. Output ONLY valid JSON, no explanation
-5. Use "single-select" type for multiple choice, "text" type for free-form input
+4. Use "single-select" type for multiple choice, "text" type for free-form input
+5. Output ONLY a JSON object with a "questions" array
 
 Example for "A serene mountain landscape":
 {
@@ -339,42 +368,35 @@ Category: {category}
 Generate 4-6 questions that are SPECIFIC to this exact prompt. Make options concrete and descriptive."""
 
         try:
-            logger.info(f"Generating dynamic questions for: {prompt[:50]}...")
-            response = await self.ollama_client.chat(
+            logger.info(f"Generating dynamic questions with Gemini for: {prompt[:50]}...")
+
+            # Use Gemini with JSON response mode for reliable structured output
+            response = self.client.models.generate_content(
                 model=self.llm_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
-                options={
-                    "temperature": 0.7,
-                    "top_p": 0.9,
-                },
+                contents=user_message,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instructions,
+                    temperature=0.7,
+                    response_mime_type="application/json",  # Force JSON output
+                ),
             )
 
             # Parse the JSON response
-            content = response["message"]["content"].strip()
-
-            # Remove markdown code blocks if present
-            if content.startswith("```"):
-                content = content.split("```")[1]
-                if content.startswith("json"):
-                    content = content[4:]
-                content = content.strip()
-
-            # Parse JSON
+            content = response.text.strip()
             result = json.loads(content)
             questions = result.get("questions", [])
 
-            logger.info(f"Generated {len(questions)} dynamic questions")
+            logger.info(f"Generated {len(questions)} dynamic questions in {len(content)} chars")
             return questions
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
-            logger.error(f"Response content: {content[:200]}...")
+            logger.error(f"Failed to parse Gemini response as JSON: {e}")
+            logger.error(f"Response content: {content[:200] if 'content' in locals() else 'N/A'}...")
             return None
         except Exception as e:
-            logger.error(f"Error generating dynamic questions: {e}")
+            logger.error(f"Error generating dynamic questions with Gemini: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return None
 
     async def get_questions(self, prompt: str) -> Dict:
