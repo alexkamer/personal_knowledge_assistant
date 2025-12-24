@@ -27,7 +27,7 @@ class ConversationContext(BaseModel):
 class ImageGenerationRequest(BaseModel):
     """Request schema for image generation."""
 
-    prompt: str = Field(..., min_length=1, max_length=2000, description="Text description of the image to generate")
+    prompt: str = Field(..., min_length=1, max_length=10000, description="Text description of the image to generate")
     negative_prompt: Optional[str] = Field(
         None, max_length=1000, description="What NOT to include in the image"
     )
