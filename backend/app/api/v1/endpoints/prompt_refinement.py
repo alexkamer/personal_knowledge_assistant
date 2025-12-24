@@ -25,10 +25,11 @@ async def analyze_prompt(request: AnalyzePromptRequest) -> AnalyzePromptResponse
 
     This endpoint detects the category of the prompt (person, animal, landscape, etc.)
     and returns contextually relevant questions to help refine the prompt.
+    Uses LLM to generate dynamic, context-specific questions.
     """
     try:
         service = get_prompt_refinement_service()
-        result = service.get_questions(request.prompt)
+        result = await service.get_questions(request.prompt)
 
         return AnalyzePromptResponse(
             category=result["category"], prompt=result["prompt"], questions=result["questions"]

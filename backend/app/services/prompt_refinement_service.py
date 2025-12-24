@@ -1,15 +1,26 @@
 """
 Service for analyzing and refining image generation prompts.
 """
+import json
 import logging
 import re
 from typing import Dict, List, Optional
+
+import ollama
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class PromptRefinementService:
     """Service for analyzing prompts and generating refinement questions."""
+
+    def __init__(self):
+        """Initialize the service with Ollama client."""
+        self.ollama_client = ollama.AsyncClient(host=settings.ollama_base_url)
+        self.llm_model = "qwen2.5:14b"  # Use primary model for better reasoning
+        self.use_dynamic_questions = True  # Toggle for LLM-generated questions
 
     # Category detection patterns
     CATEGORY_PATTERNS = {
@@ -264,9 +275,112 @@ class PromptRefinementService:
         logger.info(f"Using default category for prompt: {prompt[:50]}...")
         return "default"
 
-    def get_questions(self, prompt: str) -> Dict:
+    async def generate_dynamic_questions(self, prompt: str, category: str) -> List[Dict]:
+        """
+        Use LLM to generate contextual refinement questions.
+
+        Args:
+            prompt: The user's basic prompt
+            category: Detected category
+
+        Returns:
+            List of question objects with id, question, type, and options
+        """
+        system_prompt = """You are an expert at refining image generation prompts. Given a basic prompt, generate 4-6 specific, contextual questions that will help create a better, more detailed image prompt.
+
+CRITICAL RULES:
+1. Questions must be SPECIFIC to the prompt content, not generic
+2. Each question should have 4-5 concrete, actionable options
+3. Always include one optional text question at the end for "Any additional details?"
+4. Output ONLY valid JSON, no explanation
+5. Use "single-select" type for multiple choice, "text" type for free-form input
+
+Example for "A serene mountain landscape":
+{
+  "questions": [
+    {
+      "id": "time_of_day",
+      "question": "What time of day for this mountain scene?",
+      "type": "single-select",
+      "options": ["Dawn with soft pink light", "Midday with clear blue sky", "Golden hour sunset", "Night with stars", "Misty morning"]
+    },
+    {
+      "id": "season",
+      "question": "Which season?",
+      "type": "single-select",
+      "options": ["Spring with wildflowers", "Summer green valleys", "Autumn colors", "Winter snow-covered peaks", "Any season"]
+    },
+    {
+      "id": "mood",
+      "question": "What atmosphere should the mountains evoke?",
+      "type": "single-select",
+      "options": ["Peaceful and calm", "Dramatic and epic", "Mystical with fog", "Vibrant and alive", "Desolate and remote"]
+    },
+    {
+      "id": "style",
+      "question": "What visual style?",
+      "type": "single-select",
+      "options": ["Photorealistic", "Cinematic wide-angle", "Painterly artistic", "Fantasy illustration", "Minimalist"]
+    },
+    {
+      "id": "extras",
+      "question": "Any additional details? (optional)",
+      "type": "text",
+      "placeholder": "e.g., lake in foreground, eagles flying, specific mountain peaks..."
+    }
+  ]
+}"""
+
+        user_message = f"""Generate refinement questions for this image prompt:
+"{prompt}"
+
+Category: {category}
+
+Generate 4-6 questions that are SPECIFIC to this exact prompt. Make options concrete and descriptive."""
+
+        try:
+            logger.info(f"Generating dynamic questions for: {prompt[:50]}...")
+            response = await self.ollama_client.chat(
+                model=self.llm_model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                options={
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                },
+            )
+
+            # Parse the JSON response
+            content = response["message"]["content"].strip()
+
+            # Remove markdown code blocks if present
+            if content.startswith("```"):
+                content = content.split("```")[1]
+                if content.startswith("json"):
+                    content = content[4:]
+                content = content.strip()
+
+            # Parse JSON
+            result = json.loads(content)
+            questions = result.get("questions", [])
+
+            logger.info(f"Generated {len(questions)} dynamic questions")
+            return questions
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
+            logger.error(f"Response content: {content[:200]}...")
+            return None
+        except Exception as e:
+            logger.error(f"Error generating dynamic questions: {e}")
+            return None
+
+    async def get_questions(self, prompt: str) -> Dict:
         """
         Get refinement questions based on the prompt.
+        Uses LLM-generated questions if enabled, falls back to templates.
 
         Args:
             prompt: The user's basic prompt
@@ -275,8 +389,20 @@ class PromptRefinementService:
             Dict with category and questions
         """
         category = self.detect_category(prompt)
-        questions = self.CATEGORY_QUESTIONS.get(category, self.CATEGORY_QUESTIONS["default"])
 
+        # Try to generate dynamic questions if enabled
+        if self.use_dynamic_questions:
+            try:
+                dynamic_questions = await self.generate_dynamic_questions(prompt, category)
+                if dynamic_questions:
+                    logger.info(f"Using {len(dynamic_questions)} LLM-generated questions")
+                    return {"category": category, "prompt": prompt, "questions": dynamic_questions}
+            except Exception as e:
+                logger.warning(f"Failed to generate dynamic questions, falling back to templates: {e}")
+
+        # Fall back to template questions
+        logger.info("Using template questions")
+        questions = self.CATEGORY_QUESTIONS.get(category, self.CATEGORY_QUESTIONS["default"])
         return {"category": category, "prompt": prompt, "questions": questions}
 
     def build_enhanced_prompt(

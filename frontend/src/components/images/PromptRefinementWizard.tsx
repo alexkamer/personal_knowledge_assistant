@@ -2,7 +2,7 @@
  * Wizard component for refining image generation prompts.
  * Guides users through questions to create detailed, high-quality prompts.
  */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Question } from '@/types/promptRefinement';
 
 interface PromptRefinementWizardProps {
@@ -22,10 +22,33 @@ export function PromptRefinementWizard({
 }: PromptRefinementWizardProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentStep, setCurrentStep] = useState(0);
+  const [showPreview, setShowPreview] = useState(true);
 
   const currentQuestion = questions[currentStep];
   const isLastQuestion = currentStep === questions.length - 1;
   const progress = ((currentStep + 1) / questions.length) * 100;
+
+  // Build live prompt preview
+  const promptPreview = useMemo(() => {
+    const parts = [basicPrompt];
+
+    if (answers.style) parts.push(answers.style.toLowerCase());
+    if (answers.setting) parts.push(`set in ${answers.setting.toLowerCase()}`);
+    if (answers.time) parts.push(`during ${answers.time.toLowerCase()}`);
+    if (answers.season) parts.push(`in ${answers.season.toLowerCase()}`);
+    if (answers.mood) parts.push(`${answers.mood.toLowerCase()} atmosphere`);
+    if (answers.action) parts.push(answers.action.toLowerCase());
+    if (answers.lighting) parts.push(`with ${answers.lighting.toLowerCase()}`);
+    if (answers.angle) parts.push(`${answers.angle.toLowerCase()} perspective`);
+    if (answers.colors) parts.push(`${answers.colors.toLowerCase()} color palette`);
+    if (answers.complexity) parts.push(answers.complexity.toLowerCase());
+    if (answers.detail) parts.push(answers.detail.toLowerCase());
+    if (answers.extras && answers.extras.trim()) parts.push(answers.extras);
+
+    parts.push('professional', 'high quality', 'detailed');
+
+    return parts.join(', ');
+  }, [basicPrompt, answers]);
 
   const handleAnswer = (value: string) => {
     setAnswers((prev) => ({
@@ -108,6 +131,39 @@ export function PromptRefinementWizard({
             </div>
           </div>
         </div>
+
+        {/* Live Prompt Preview */}
+        {showPreview && (
+          <div className="border-b border-gray-700 px-6 py-4 bg-gray-900/50">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-gray-300">Enhanced Prompt Preview</h4>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
+              >
+                Hide
+              </button>
+            </div>
+            <div className="bg-gray-950 rounded-lg p-3 border border-gray-700">
+              <p className="text-sm text-gray-300 font-mono leading-relaxed">{promptPreview}</p>
+            </div>
+            <div className="mt-2 text-xs text-gray-500">
+              {Object.keys(answers).length} of {questions.length} questions answered
+            </div>
+          </div>
+        )}
+
+        {/* Show preview button if hidden */}
+        {!showPreview && (
+          <div className="border-b border-gray-700 px-6 py-2">
+            <button
+              onClick={() => setShowPreview(true)}
+              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              ↓ Show Enhanced Prompt Preview
+            </button>
+          </div>
+        )}
 
         {/* Question content */}
         <div className="p-6 space-y-6">
