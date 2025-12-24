@@ -93,11 +93,11 @@ export function ImageGenerationPage() {
   }, []);
 
   // Handle generate graphic from sports tab
-  const handleGenerateFromSports = useCallback((prompt: string) => {
+  const handleGenerateFromSports = useCallback((prompt: string, logoUrls: string[]) => {
     setActiveTab('generate');
     // Sports graphics prompts are already highly detailed and structured,
-    // so we bypass the wizard and generate directly
-    handleDirectGeneration(prompt, negativePrompt);
+    // so we bypass the wizard and generate directly with logo reference images
+    handleDirectGeneration(prompt, negativePrompt, logoUrls);
   }, [negativePrompt]);
 
   const handleInitiateGeneration = useCallback(
@@ -159,7 +159,7 @@ export function ImageGenerationPage() {
   );
 
   const handleDirectGeneration = useCallback(
-    async (prompt: string, negative: string) => {
+    async (prompt: string, negative: string, logoUrls?: string[]) => {
       try {
         setErrorMessage(null);
         dispatchStreaming({ type: 'START_STREAMING' });
@@ -180,6 +180,43 @@ export function ImageGenerationPage() {
           previous_metadata: lastGeneration.metadata,
         } : undefined;
 
+        // Fetch and convert logo images to base64 if provided
+        let logoReferenceImages: any[] = [];
+        if (logoUrls && logoUrls.length > 0) {
+          dispatchStreaming({ type: 'UPDATE_STATUS', payload: 'Fetching team logos...' });
+
+          for (const url of logoUrls) {
+            try {
+              const response = await fetch(url);
+              const blob = await response.blob();
+              const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const base64String = reader.result as string;
+                  // Remove data URL prefix (data:image/png;base64,)
+                  const base64Data = base64String.split(',')[1];
+                  resolve(base64Data);
+                };
+                reader.readAsDataURL(blob);
+              });
+
+              logoReferenceImages.push({
+                image_data: base64,
+                mime_type: blob.type || 'image/png',
+                image_type: 'object',
+              });
+            } catch (error) {
+              console.error('Failed to fetch logo:', url, error);
+            }
+          }
+        }
+
+        // Combine logo images with any existing reference images
+        const allReferenceImages = [
+          ...logoReferenceImages,
+          ...(referenceImages.length > 0 ? referenceImages : []),
+        ];
+
         // Generate images with streaming status updates
         await imageGenerationService.generateImagesStream(
           {
@@ -188,7 +225,8 @@ export function ImageGenerationPage() {
             aspect_ratio: aspectRatio,
             image_size: imageSize,
             number_of_images: numberOfImages,
-            reference_images: referenceImages.length > 0 ? referenceImages : undefined,
+            model: logoUrls && logoUrls.length > 0 ? 'gemini-3-pro-image-preview' : undefined,
+            reference_images: allReferenceImages.length > 0 ? allReferenceImages : undefined,
             conversation_context,
             enable_google_search: enableGoogleSearch,
           },

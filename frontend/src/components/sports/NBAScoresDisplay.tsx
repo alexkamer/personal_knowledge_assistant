@@ -8,7 +8,7 @@ import { sportsScoresService, type SportType } from '@/services/sportsScoresServ
 import type { NBAScoreboardResponse, GameEvent, Competitor } from '@/types/sportsScores';
 
 interface NBAScoresDisplayProps {
-  onGenerateGraphic?: (prompt: string) => void;
+  onGenerateGraphic?: (prompt: string, logoUrls: string[]) => void;
 }
 
 export function NBAScoresDisplay({ onGenerateGraphic }: NBAScoresDisplayProps) {
@@ -135,158 +135,31 @@ export function NBAScoresDisplay({ onGenerateGraphic }: NBAScoresDisplayProps) {
     const homeTeam = getHomeTeam(game);
     const awayTeam = getAwayTeam(game);
     const isFinal = isGameFinal(game);
-    const isLive = isGameLive(game);
 
     if (!homeTeam || !awayTeam) return '';
 
-    const sportName = selectedSport === 'nba' ? 'NBA' : 'NHL';
-    const gameDate = sportsScoresService.parseAPIDate(selectedDate);
-    const formattedDate = gameDate.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    // Simple, focused prompt for logos and scores only
+    let prompt = `Create a clean, professional sports score graphic.\n\n`;
 
-    let prompt = `Create a professional ${sportName} sports graphic for:\n\n`;
-
-    // Game info
-    prompt += `${awayTeam.team.displayName} vs ${homeTeam.team.displayName}\n`;
-    prompt += `Date: ${formattedDate}\n`;
-    prompt += `Venue: ${game.competitions[0]?.venue.fullName}\n\n`;
-
-    // Score
+    // Team info and scores with quotes for exact text
+    prompt += `"${awayTeam.team.displayName}" ${awayTeam.score} vs "${homeTeam.team.displayName}" ${homeTeam.score}\n`;
     if (isFinal) {
-      prompt += `FINAL SCORE:\n`;
-      prompt += `${awayTeam.team.abbreviation}: ${awayTeam.score}${awayTeam.winner ? ' (WIN)' : ''}\n`;
-      prompt += `${homeTeam.team.abbreviation}: ${homeTeam.score}${homeTeam.winner ? ' (WIN)' : ''}\n\n`;
-
-      // Line scores
-      if (awayTeam.linescores && awayTeam.linescores.length > 0) {
-        const periodLabel = selectedSport === 'nba' ? 'Quarter' : 'Period';
-        prompt += `${periodLabel}-by-${periodLabel} Scoring:\n`;
-
-        // Away team line score
-        prompt += `${awayTeam.team.abbreviation}: `;
-        const awayScores = awayTeam.linescores.map((score, idx) => {
-          const label = getPeriodLabel(idx);
-          return `${label}:${score.value}`;
-        }).join(', ');
-        prompt += `${awayScores} = Total: ${awayTeam.score}\n`;
-
-        // Home team line score
-        prompt += `${homeTeam.team.abbreviation}: `;
-        const homeScores = homeTeam.linescores.map((score, idx) => {
-          const label = getPeriodLabel(idx);
-          return `${label}:${score.value}`;
-        }).join(', ');
-        prompt += `${homeScores} = Total: ${homeTeam.score}\n\n`;
-      }
-
-      // Leaders with player images
-      if (awayTeam.leaders && awayTeam.leaders.length > 0) {
-        prompt += `${awayTeam.team.abbreviation} Game Leaders:\n`;
-        awayTeam.leaders.slice(0, 3).forEach((category) => {
-          const leader = category.leaders[0];
-          if (leader) {
-            prompt += `- ${category.name}: ${leader.athlete.displayName} (${leader.displayValue})\n`;
-            if (leader.athlete.headshot) {
-              prompt += `  Player Photo URL: ${leader.athlete.headshot}\n`;
-            }
-          }
-        });
-        prompt += `\n`;
-      }
-
-      if (homeTeam.leaders && homeTeam.leaders.length > 0) {
-        prompt += `${homeTeam.team.abbreviation} Game Leaders:\n`;
-        homeTeam.leaders.slice(0, 3).forEach((category) => {
-          const leader = category.leaders[0];
-          if (leader) {
-            prompt += `- ${category.name}: ${leader.athlete.displayName} (${leader.displayValue})\n`;
-            if (leader.athlete.headshot) {
-              prompt += `  Player Photo URL: ${leader.athlete.headshot}\n`;
-            }
-          }
-        });
-      }
-    } else if (isLive) {
-      const status = game.competitions[0]?.status;
-      prompt += `LIVE GAME:\n`;
-      prompt += `${awayTeam.team.abbreviation}: ${awayTeam.score}\n`;
-      prompt += `${homeTeam.team.abbreviation}: ${homeTeam.score}\n`;
-      prompt += `${status.displayClock} - ${selectedSport === 'nba' ? 'Q' : 'P'}${status.period}\n`;
-    } else {
-      // Scheduled game
-      const gameTime = new Date(game.date);
-      const formattedTime = gameTime.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      });
-      prompt += `UPCOMING GAME:\n`;
-      prompt += `Time: ${formattedTime}\n`;
-
-      // Add team records
-      if (awayTeam.records && awayTeam.records.length > 0) {
-        prompt += `${awayTeam.team.abbreviation} Record: ${awayTeam.records[0].summary}\n`;
-      }
-      if (homeTeam.records && homeTeam.records.length > 0) {
-        prompt += `${homeTeam.team.abbreviation} Record: ${homeTeam.records[0].summary}\n`;
-      }
+      const winner = awayTeam.winner ? awayTeam.team.displayName : homeTeam.team.displayName;
+      prompt += `"FINAL" - "${winner}" wins\n`;
     }
+    prompt += `\n`;
 
-    // Add team logos and colors
-    prompt += `\n=== DESIGN SPECIFICATIONS ===\n`;
+    // Note about team logos (cannot fetch from URLs, user needs to upload them)
+    prompt += `Include the team logos for "${awayTeam.team.displayName}" and "${homeTeam.team.displayName}".\n`;
+    prompt += `Logo URLs (for reference): ${awayTeam.team.logo} and ${homeTeam.team.logo}\n\n`;
 
-    prompt += `Team Logos (CRITICAL - Preserve exact appearance):\n`;
-    prompt += `${awayTeam.team.displayName}:\n`;
-    prompt += `  - Logo URL: ${awayTeam.team.logo}\n`;
-    prompt += `  - This is the official ${awayTeam.team.displayName} logo\n`;
-    prompt += `  - Preserve all logo details exactly as they appear in the source image\n`;
-    prompt += `  - Maintain logo proportions and colors precisely\n`;
-    prompt += `${homeTeam.team.displayName}:\n`;
-    prompt += `  - Logo URL: ${homeTeam.team.logo}\n`;
-    prompt += `  - This is the official ${homeTeam.team.displayName} logo\n`;
-    prompt += `  - Preserve all logo details exactly as they appear in the source image\n`;
-    prompt += `  - Maintain logo proportions and colors precisely\n\n`;
-
+    // Team colors
     prompt += `Team Colors:\n`;
-    prompt += `${awayTeam.team.abbreviation}: Primary #${awayTeam.team.color}, Secondary #${awayTeam.team.alternateColor}\n`;
-    prompt += `${homeTeam.team.abbreviation}: Primary #${homeTeam.team.color}, Secondary #${homeTeam.team.alternateColor}\n\n`;
+    prompt += `"${awayTeam.team.abbreviation}": #${awayTeam.team.color}\n`;
+    prompt += `"${homeTeam.team.abbreviation}": #${homeTeam.team.color}\n\n`;
 
-    // Text rendering instructions
-    prompt += `Text Requirements (IMPORTANT - Gemini excels at text rendering):\n`;
-    prompt += `- Team names: Bold, sans-serif font, large and prominent\n`;
-    prompt += `- Scores: Extra large, bold, highly legible numbers\n`;
-    prompt += `- Player names: Clean, medium-weight sans-serif font\n`;
-    prompt += `- Stats: Clear, readable numbers and labels\n`;
-    prompt += `- All text must be sharp, crisp, and perfectly readable\n`;
-    prompt += `- Use high contrast between text and background\n\n`;
-
-    prompt += `Player Photos (CRITICAL - Use actual photos):\n`;
-    prompt += `- IMPORTANT: Use the actual player photo URLs provided above for each leader\n`;
-    prompt += `- These are real ESPN player headshots - fetch and use them exactly\n`;
-    prompt += `- DO NOT generate or modify player faces - use the original photos unchanged\n`;
-    prompt += `- Preserve each player's facial features, skin tone, and appearance exactly\n`;
-    prompt += `- Each player photo should remain completely recognizable as that specific athlete\n`;
-    prompt += `- Display photos next to their corresponding names and stats\n`;
-    prompt += `- Apply circular crop or rounded corners, but do not alter the face itself\n`;
-    prompt += `- Maintain high image quality for all player photos\n\n`;
-
-    prompt += `Critical Element Preservation:\n`;
-    prompt += `- Team logos: Must be fetched from URLs and used EXACTLY as provided\n`;
-    prompt += `- Player photos: Must be fetched from URLs and faces preserved EXACTLY\n`;
-    prompt += `- No modifications to logos or faces - only positioning and layout changes\n`;
-    prompt += `- These are real-world images that must remain recognizable and authentic\n\n`;
-
-    prompt += `Layout Style:\n`;
-    prompt += `- Modern, bold, professional sports broadcast graphic\n`;
-    prompt += `- Use the team colors listed above prominently\n`;
-    prompt += `- Split design or side-by-side team layout\n`;
-    prompt += `- Position team logos prominently (top corners or behind team sections)\n`;
-    prompt += `- Display player headshots from the URLs provided (actual photos, not AI-generated)\n`;
-    prompt += `- Clean hierarchy: scores most prominent, then team names, then stats\n`;
-    prompt += `- Professional sports network aesthetic (ESPN, FOX Sports style)\n`;
+    // Simple design instructions with quotes
+    prompt += `Design: Modern sports broadcast style. Display both team logos prominently with their scores. Use the exact team colors provided. Make the scores large and bold. Keep it clean and simple - focus on logos and scores only.`;
 
     return prompt;
   };
@@ -294,8 +167,15 @@ export function NBAScoresDisplay({ onGenerateGraphic }: NBAScoresDisplayProps) {
   const handleGenerateGraphic = (game: GameEvent) => {
     if (!onGenerateGraphic) return;
 
+    const homeTeam = getHomeTeam(game);
+    const awayTeam = getAwayTeam(game);
+
+    if (!homeTeam || !awayTeam) return;
+
     const prompt = buildGameGraphicPrompt(game);
-    onGenerateGraphic(prompt);
+    const logoUrls = [awayTeam.team.logo, homeTeam.team.logo];
+
+    onGenerateGraphic(prompt, logoUrls);
   };
 
   return (
