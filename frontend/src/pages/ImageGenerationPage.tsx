@@ -271,7 +271,7 @@ export function ImageGenerationPage() {
               <p className="text-sm text-gray-400 text-center">
                 AI is analyzing your prompt and generating personalized refinement questions...
                 <br />
-                This takes about 20-30 seconds.
+                This takes about 5-10 seconds.
               </p>
             </div>
           </div>

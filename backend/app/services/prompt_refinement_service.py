@@ -19,7 +19,7 @@ class PromptRefinementService:
     def __init__(self):
         """Initialize the service with Ollama client."""
         self.ollama_client = ollama.AsyncClient(host=settings.ollama_base_url)
-        self.llm_model = "qwen2.5:14b"  # Use primary model for better reasoning
+        self.llm_model = "llama3.2:3b"  # Use fast model for quick question generation
         self.use_dynamic_questions = True  # Toggle for LLM-generated questions
 
     # Category detection patterns
