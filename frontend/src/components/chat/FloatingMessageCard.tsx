@@ -9,6 +9,7 @@ import React from 'react';
 import { Copy, RotateCw, Check, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, FileText, StickyNote, Globe, User, Bot } from 'lucide-react';
 import type { Message, SourceCitation } from '@/types/chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { ToolCallCard } from './ToolCallCard';
 import { cn } from '@/lib/utils';
 
 interface FloatingMessageCardProps {
@@ -162,6 +163,27 @@ export const FloatingMessageCard = React.memo<FloatingMessageCardProps>(({
                     </>
                   )}
                 </div>
+
+                {/* Tool Calls - Agent Reasoning */}
+                {message.tool_calls && message.tool_calls.length > 0 && (
+                  <div className="border-t border-gray-600 pt-3">
+                    <h4 className="text-xs font-semibold text-gray-300 mb-2">
+                      🤖 Agent Reasoning
+                    </h4>
+                    <div className="space-y-2">
+                      {message.tool_calls.map((toolCall, index) => (
+                        <ToolCallCard
+                          key={`${message.id}-tool-${index}`}
+                          toolName={toolCall.tool}
+                          parameters={toolCall.parameters}
+                          result={toolCall.result}
+                          error={toolCall.error}
+                          status={toolCall.status}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Sources */}
                 {message.sources && message.sources.length > 0 && (

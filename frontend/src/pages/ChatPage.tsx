@@ -7,6 +7,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { Plus, MoreVertical, AlertCircle, Search, X, ChevronLeft, ChevronRight, Download, Pin, PinOff } from 'lucide-react';
 import { MessageList } from '@/components/chat/MessageList';
 import { ChatInput } from '@/components/chat/ChatInput';
+import { StreamingProgress } from '@/components/chat/StreamingProgress';
 import { Pagination } from '@/components/ui/Pagination';
 import { TokenUsage } from '@/components/chat/TokenUsage';
 import { LearningToolsFAB } from '@/components/chat/LearningToolsFAB';
@@ -132,6 +133,7 @@ export function ChatPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<'general' | 'docs' | 'web'>('general'); // Default to general (no RAG)
   const [socraticMode, setSocraticMode] = useState<boolean>(false); // Default to false - direct answers
+  const [agentMode, setAgentMode] = useState<boolean>(false); // Default to false - standard RAG
   const [selectedModel, setSelectedModel] = useState<string>(() => {
     // Load from localStorage or default to gemini-2.5-flash
     return localStorage.getItem('preferred_model') || 'gemini-2.5-flash';
@@ -139,6 +141,7 @@ export function ChatPage() {
 
   // Streaming state (consolidated with useReducer for performance)
   const [streamingState, dispatchStreaming] = useReducer(streamingReducer, initialStreamingState);
+  const streamAbortControllerRef = useRef<AbortController | null>(null);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
@@ -322,7 +325,44 @@ export function ChatPage() {
 
       let newConversationId = selectedConversationId;
 
-      await chatService.sendMessageStream(
+      // Use non-streaming mode when agent mode is enabled (for now)
+      if (agentMode) {
+        dispatchStreaming({ type: 'UPDATE_STATUS', payload: '🤖 Agent mode: Analyzing your question...' });
+
+        const response = await chatService.sendMessage({
+          message,
+          conversation_id: selectedConversationId || undefined,
+          conversation_title: selectedConversationId ? undefined : undefined,
+          model: selectedModel,
+          include_web_search: sourceFilter === 'web',
+          include_notes: sourceFilter === 'docs' ? true : false,
+          socratic_mode: socraticMode,
+          agent_mode: agentMode,
+          skip_rag: sourceFilter === 'general',
+        });
+
+        // Update conversation ID if new
+        if (!newConversationId) {
+          newConversationId = response.conversation_id;
+          updateURLParam('conv', response.conversation_id);
+        }
+
+        // Display the full response
+        dispatchStreaming({ type: 'UPDATE_CHUNK', payload: response.response });
+        dispatchStreaming({ type: 'UPDATE_SOURCES', payload: response.sources });
+        dispatchStreaming({ type: 'RESET' });
+
+        // Invalidate queries
+        if (newConversationId) {
+          queryClient.invalidateQueries({ queryKey: ['conversation', newConversationId] });
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        }
+
+        return;
+      }
+
+      // Standard streaming mode
+      const abortController = chatService.sendMessageStream(
         {
           message,
           conversation_id: selectedConversationId || undefined,
@@ -331,6 +371,7 @@ export function ChatPage() {
           include_web_search: sourceFilter === 'web',
           include_notes: sourceFilter === 'docs' ? true : false, // docs mode includes all sources
           socratic_mode: socraticMode,
+          agent_mode: agentMode,
           skip_rag: sourceFilter === 'general', // Skip RAG for general knowledge mode
           files, // Pass files to service
         },
@@ -385,13 +426,24 @@ export function ChatPage() {
           dispatchStreaming({ type: 'ADD_TOOL_RESULT', payload: toolResult });
         }
       );
+
+      // Store the abort controller for cancellation
+      streamAbortControllerRef.current = abortController;
     } catch (error: any) {
       console.error('Failed to send message:', error);
       const errorDetail = error?.message || 'Failed to send message';
       setErrorMessage(errorDetail);
       dispatchStreaming({ type: 'RESET' });
     }
-  }, [selectedConversationId, selectedModel, sourceFilter, socraticMode, updateURLParam, queryClient]);
+  }, [selectedConversationId, selectedModel, sourceFilter, socraticMode, agentMode, updateURLParam, queryClient]);
+
+  const handleStopGeneration = useCallback(() => {
+    if (streamAbortControllerRef.current) {
+      streamAbortControllerRef.current.abort();
+      streamAbortControllerRef.current = null;
+      dispatchStreaming({ type: 'RESET' });
+    }
+  }, []);
 
   const handleNewChat = useCallback(() => {
     updateURLParam('conv', null);
@@ -1058,6 +1110,16 @@ export function ChatPage() {
             </div>
           )}
 
+          {/* Streaming Progress - Show during agent mode streaming */}
+          {streamingState.isStreaming && agentMode && streamingState.message && (
+            <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-2">
+              <StreamingProgress
+                content={streamingState.message}
+                status={streamingState.status || 'Agent analyzing...'}
+              />
+            </div>
+          )}
+
           <MessageList
             messages={displayMessages}
             isLoading={isLoadingConversation}
@@ -1067,6 +1129,9 @@ export function ChatPage() {
               queryClient.invalidateQueries({ queryKey: ['conversations', selectedConversationId] });
             }}
             onQuestionClick={handleSendMessage}
+            isStreaming={streamingState.isStreaming}
+            streamingContent={streamingState.message}
+            streamingStatus={streamingState.status}
           />
 
           {/* Active Agent Indicator */}
@@ -1090,6 +1155,10 @@ export function ChatPage() {
             onSourceFilterChange={setSourceFilter}
             socraticMode={socraticMode}
             onSocraticModeToggle={() => setSocraticMode(!socraticMode)}
+            agentMode={agentMode}
+            onAgentModeToggle={() => setAgentMode(!agentMode)}
+            isStreaming={streamingState.isStreaming}
+            onStopGeneration={handleStopGeneration}
           />
 
           {/* Learning Tools FAB - Only show when conversation has messages */}

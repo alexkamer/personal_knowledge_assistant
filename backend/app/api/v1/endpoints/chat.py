@@ -123,25 +123,7 @@ async def chat(
         await db.commit()
         await db.refresh(user_message)
 
-        # Check if this is a conversational follow-up query
-        is_conversational = _is_conversational_query(request.message)
-
-        # Retrieve relevant context using RAG (skip for conversational queries)
-        context = ""
-        citations = []
-        if not is_conversational:
-            rag_service = get_rag_service()
-            context, citations = await rag_service.retrieve_and_assemble(
-                db=db,
-                query=request.message,
-                top_k=request.top_k,
-                include_web_search=request.include_web_search,
-                exclude_notes=not request.include_notes,  # Invert: include_notes=True means exclude_notes=False
-            )
-        else:
-            logger.info("Detected conversational query, skipping RAG retrieval")
-
-        # Get conversation history
+        # Get conversation history first (needed for all modes)
         messages = await ConversationService.get_conversation_messages(
             db, str(conversation.id)
         )
@@ -150,49 +132,163 @@ async def chat(
             for msg in messages[:-1]  # Exclude the message we just added
         ]
 
-        # Generate response using appropriate service (Gemini or Ollama)
+        # Determine model to use
         model_to_use = request.model or settings.gemini_default_model if settings.gemini_api_key else "qwen2.5:14b"
 
-        if _is_gemini_model(model_to_use):
-            # Use Gemini service with system prompt for better response quality
-            gemini_service = get_gemini_service()
+        # Initialize LLM service (needed for follow-up questions in both modes)
+        llm_service = get_llm_service()
 
-            # Build user prompt (context + history + question)
-            prompt_parts = []
+        # Initialize tool_calls (will be populated in agent mode)
+        tool_calls = []
 
-            # Add context if available
-            if context:
-                prompt_parts.append(f"## Relevant Context from Your Knowledge Base\n\n{context}")
+        # AGENT MODE: Let LLM decide when to retrieve knowledge
+        if request.agent_mode:
+            # Use Gemini's native function calling or Ollama's prompt-based approach
+            if _is_gemini_model(model_to_use):
+                logger.info("Agent mode enabled - using Gemini function calling")
+                from app.services.gemini_agent_orchestrator import get_gemini_agent_orchestrator
 
-            # Add conversation history
-            if conversation_history:
-                prompt_parts.append("\n## Conversation History\n")
-                for msg in conversation_history:
-                    role_label = "You" if msg['role'] == 'user' else "Assistant"
-                    prompt_parts.append(f"{role_label}: {msg['content']}")
+                gemini_orchestrator = get_gemini_agent_orchestrator()
 
-            # Add current question
-            prompt_parts.append(f"\n## Current Question\n\nUser: {request.message}")
+                try:
+                    response_text, citations, tool_calls = await gemini_orchestrator.process_with_tools(
+                        query=request.message,
+                        db=db,
+                        model=model_to_use,
+                        temperature=0.7,
+                        max_iterations=5,
+                    )
 
-            full_prompt = "\n".join(prompt_parts)
+                    # Context is not returned from agent mode (LLM generates the response)
+                    context = ""
 
-            # System prompt is handled in GeminiService._build_system_prompt()
-            response_text = await gemini_service.generate_response(
-                prompt=full_prompt,
-                model=model_to_use,
-            )
-        else:
-            # Use Ollama LLM service
-            llm_service = get_llm_service()
-            response_text = await llm_service.generate_answer(
-                query=request.message,
-                context=context,
-                conversation_history=conversation_history,
-                model=model_to_use,
-                stream=False,
-            )
+                except Exception as e:
+                    logger.error(f"Gemini agent mode failed, falling back to standard RAG: {e}", exc_info=True)
+                    # Fallback to standard RAG if agent mode fails
+                    request.agent_mode = False
 
-        # Add assistant message with citations
+            else:
+                # Ollama models use prompt-based tool calling
+                logger.info("Agent mode enabled - using tool orchestrator")
+                from app.services.tool_orchestrator import get_tool_orchestrator
+                from app.services.agent_service import AgentConfig
+                from app.services.tools.knowledge_search_tool import KnowledgeSearchTool
+
+                tool_orchestrator = get_tool_orchestrator()
+
+                # Configure agent with knowledge search tool
+                agent_config = AgentConfig(
+                    name="chat_agent",
+                    display_name="Chat Agent",
+                    description="Agentic chat assistant with autonomous knowledge retrieval",
+                    model=model_to_use,
+                    temperature=0.7,
+                    rag_top_k=10,
+                    system_prompt="""You are a helpful AI assistant with access to the user's personal knowledge base.
+
+You can use the knowledge_search tool to search for information when needed. Use it when:
+- The question requires specific facts from the user's documents or notes
+- You need context about previous conversations or stored information
+- The query asks about domain-specific knowledge
+
+DO NOT use the tool for:
+- Simple math or logic questions you can answer directly
+- General knowledge questions (e.g., "What is the capital of France?")
+- Basic conversation or greetings
+
+When you use the tool, analyze the results and provide a clear, helpful answer.""",
+                    use_tools=True,
+                    tool_access_list=["knowledge_search"],
+                    max_tool_iterations=5,
+                )
+
+                # Setup knowledge search tool with DB session
+                knowledge_tool = tool_orchestrator.tool_executor.registry.get_tool("knowledge_search")
+                if isinstance(knowledge_tool, KnowledgeSearchTool):
+                    knowledge_tool.set_db_session(db)
+
+                # Process with agentic reasoning
+                try:
+                    response_text = await tool_orchestrator.process_with_tools(
+                        query=request.message,
+                        agent_config=agent_config,
+                        db=db,
+                        max_iterations=5,
+                    )
+
+                    # Citations from agent mode (empty for now, could be enhanced later)
+                    citations = []
+                    context = ""
+
+                except Exception as e:
+                    logger.error(f"Agent mode failed, falling back to standard RAG: {e}")
+                    # Fallback to standard RAG if agent mode fails
+                    request.agent_mode = False
+
+        # STANDARD MODE: Traditional RAG pipeline
+        if not request.agent_mode:
+            # Check if this is a conversational follow-up query
+            is_conversational = _is_conversational_query(request.message)
+
+            # Retrieve relevant context using RAG (skip for conversational queries)
+            context = ""
+            citations = []
+            if not is_conversational:
+                rag_service = get_rag_service()
+                context, citations = await rag_service.retrieve_and_assemble(
+                    db=db,
+                    query=request.message,
+                    top_k=request.top_k,
+                    include_web_search=request.include_web_search,
+                    exclude_notes=not request.include_notes,  # Invert: include_notes=True means exclude_notes=False
+                )
+            else:
+                logger.info("Detected conversational query, skipping RAG retrieval")
+
+            # Generate response using appropriate service (Gemini or Ollama)
+            if _is_gemini_model(model_to_use):
+                # Use Gemini service with system prompt for better response quality
+                gemini_service = get_gemini_service()
+
+                # Build user prompt (context + history + question)
+                prompt_parts = []
+
+                # Add context if available
+                if context:
+                    prompt_parts.append(f"## Relevant Context from Your Knowledge Base\n\n{context}")
+
+                # Add conversation history
+                if conversation_history:
+                    prompt_parts.append("\n## Conversation History\n")
+                    for msg in conversation_history:
+                        role_label = "You" if msg['role'] == 'user' else "Assistant"
+                        prompt_parts.append(f"{role_label}: {msg['content']}")
+
+                # Add current question
+                prompt_parts.append(f"\n## Current Question\n\nUser: {request.message}")
+
+                full_prompt = "\n".join(prompt_parts)
+
+                # System prompt is handled in GeminiService._build_system_prompt()
+                response_text = await gemini_service.generate_response(
+                    prompt=full_prompt,
+                    model=model_to_use,
+                )
+            else:
+                # Use Ollama LLM service (already initialized above)
+                response_text = await llm_service.generate_answer(
+                    query=request.message,
+                    context=context,
+                    conversation_history=conversation_history,
+                    model=model_to_use,
+                    stream=False,
+                )
+
+        # Add assistant message with citations and tool calls
+        message_metadata = {}
+        if tool_calls:
+            message_metadata["tool_calls"] = tool_calls
+
         assistant_message = await ConversationService.add_message(
             db=db,
             conversation_id=str(conversation.id),
@@ -200,6 +296,7 @@ async def chat(
             content=response_text,
             retrieved_chunks=citations,
             model_used=model_to_use,
+            metadata=message_metadata if message_metadata else None,
         )
 
         # Generate suggested follow-up questions
@@ -241,6 +338,7 @@ async def chat(
             sources=citations,
             model_used=assistant_message.model_used or "",
             suggested_questions=suggested_questions if suggested_questions else None,
+            tool_calls=tool_calls if tool_calls else None,
         )
 
     except Exception as e:
@@ -262,6 +360,7 @@ async def chat_stream(
     include_web_search: bool = Form(False),
     include_notes: bool = Form(False),
     socratic_mode: bool = Form(False),
+    agent_mode: bool = Form(False),
     skip_rag: bool = Form(False),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
@@ -422,13 +521,84 @@ async def chat_stream(
                 for msg in messages[:-1]  # Exclude the message we just added
             ][-agent_config.max_conversation_history:]  # Limit based on agent
 
-            # Check if agent uses tools
+            # Check if agent uses tools OR agent mode is enabled
             complete_response = ""
             model_to_use = model or agent_config.model
             is_gemini = _is_gemini_model(model_to_use)
 
             llm_service = get_llm_service()  # Initialize for both paths
-            if agent_config.use_tools:
+
+            # NEW: Agent mode with streaming support (Gemini only)
+            if agent_mode and is_gemini:
+                logger.info("Using streaming agent mode with Gemini")
+                from app.services.gemini_agent_orchestrator import get_gemini_agent_orchestrator
+
+                agent_orchestrator = get_gemini_agent_orchestrator()
+
+                # Track tool calls and citations for database storage
+                all_tool_calls = []
+                all_citations = []
+
+                # Stream agent responses
+                async for event in agent_orchestrator.process_with_tools_stream(
+                    query=clean_message,
+                    db=db,
+                    model=model_to_use,
+                    temperature=agent_config.temperature,
+                ):
+                    event_type = event.get("type")
+
+                    if event_type == "status":
+                        # Stream status update
+                        yield f'data: {json.dumps({"type": "status", "status": event["status"]})}\n\n'
+
+                    elif event_type == "tool_call":
+                        # Stream tool call started
+                        tool_call = event["tool_call"]
+                        all_tool_calls.append(tool_call)
+                        yield f'data: {json.dumps({"type": "tool_call", "tool_call": tool_call})}\n\n'
+
+                    elif event_type == "tool_call_complete":
+                        # Stream tool call completion
+                        tool_call = event["tool_call"]
+                        # Update the stored tool call with result
+                        for i, tc in enumerate(all_tool_calls):
+                            if tc["tool"] == tool_call["tool"] and tc["parameters"] == tool_call["parameters"]:
+                                all_tool_calls[i] = tool_call
+                                break
+                        yield f'data: {json.dumps({"type": "tool_result", "tool_result": tool_call})}\n\n'
+
+                    elif event_type == "tool_call_error":
+                        # Stream tool call error
+                        tool_call = event["tool_call"]
+                        # Update the stored tool call with error
+                        for i, tc in enumerate(all_tool_calls):
+                            if tc["tool"] == tool_call["tool"] and tc["parameters"] == tool_call["parameters"]:
+                                all_tool_calls[i] = tool_call
+                                break
+                        yield f'data: {json.dumps({"type": "tool_error", "tool_error": tool_call})}\n\n'
+
+                    elif event_type == "content":
+                        # Stream response chunk
+                        chunk = event["content"]
+                        complete_response += chunk
+                        yield f'data: {json.dumps({"type": "chunk", "content": chunk})}\n\n'
+
+                    elif event_type == "done":
+                        # Capture citations and tool calls for database storage
+                        all_citations = event.get("citations", [])
+                        # tool_calls already tracked above
+                        logger.info(f"Agent mode complete: {len(all_citations)} citations, {len(all_tool_calls)} tool calls")
+
+                # Override citations and rag_metadata with agent results
+                citations = all_citations
+                rag_metadata = {
+                    "agent_mode": True,
+                    "tool_calls": all_tool_calls,
+                    "model": model_to_use,
+                }
+
+            elif agent_config.use_tools:
                 # Use tool orchestrator for multi-step reasoning
                 from app.services.tool_orchestrator import get_tool_orchestrator
 
@@ -674,7 +844,7 @@ async def get_conversation(
     )
     messages_with_feedback = result.scalars().all()
 
-    # Parse sources from retrieved_chunks
+    # Parse sources from retrieved_chunks and tool_calls from metadata
     message_responses = []
     for msg in messages_with_feedback:
         sources = None
@@ -684,8 +854,14 @@ async def get_conversation(
             except json.JSONDecodeError:
                 logger.warning(f"Failed to parse retrieved_chunks for message {msg.id}")
 
+        # Extract tool_calls from metadata
+        tool_calls = None
+        if msg.metadata_ and isinstance(msg.metadata_, dict):
+            tool_calls = msg.metadata_.get("tool_calls")
+
         message_response = MessageResponse.model_validate(msg)
         message_response.sources = sources
+        message_response.tool_calls = tool_calls
         message_responses.append(message_response)
 
     # Create response dict manually to avoid lazy loading issues

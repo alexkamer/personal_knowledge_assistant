@@ -31,6 +31,13 @@ export interface Message {
   suggested_questions?: string[];
   metadata?: Record<string, any>;
   attachments?: Attachment[];  // Added for displaying attachments
+  tool_calls?: Array<{
+    tool: string;
+    parameters: Record<string, any>;
+    status: 'pending' | 'success' | 'error';
+    result?: any;
+    error?: string;
+  }>;
 }
 
 export interface SourceCitation {
@@ -81,6 +88,7 @@ export interface ChatRequest {
   include_web_search?: boolean;
   include_notes?: boolean;
   socratic_mode?: boolean;
+  agent_mode?: boolean;
 }
 
 export interface ChatResponse {
@@ -90,6 +98,13 @@ export interface ChatResponse {
   sources: SourceCitation[];
   model_used: string;
   suggested_questions?: string[];
+  tool_calls?: Array<{
+    tool: string;
+    parameters: Record<string, any>;
+    status: 'pending' | 'success' | 'error';
+    result?: any;
+    error?: string;
+  }>;
 }
 
 export interface ConversationListResponse {

@@ -1,5 +1,7 @@
 # Personal Knowledge Assistant
 
+[![CI](https://github.com/alexkamer/personal_knowledge_assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/alexkamer/personal_knowledge_assistant/actions/workflows/ci.yml)
+
 A full-featured knowledge management system with AI-powered question answering, note-taking, and semantic search capabilities.
 
 ## Features
@@ -299,6 +301,32 @@ npm test -- ChatPage.test.tsx
 
 # Backend - specific test file
 uv run python -m pytest tests/unit/test_rag_orchestrator.py -v
+```
+
+### Continuous Integration
+
+This project uses GitHub Actions for automated testing. On every push and pull request:
+
+- ✅ **Backend Tests**: 351 tests with PostgreSQL service
+- ✅ **Frontend Tests**: 474 tests with coverage reporting
+- ✅ **Type Checking**: TypeScript and mypy validation
+- ✅ **Code Quality**: ESLint and Black formatting checks
+
+**View build status**: Check the badge at the top of this README or visit the [Actions tab](https://github.com/alexkamer/personal_knowledge_assistant/actions).
+
+**Local testing** (runs the same checks as CI):
+```bash
+# Backend
+cd backend
+uv run pytest tests/ -v
+
+# Frontend
+cd frontend
+npm test -- --coverage --watchAll=false
+npm run type-check
+
+# Code quality
+npm run lint
 ```
 
 ### Code Quality

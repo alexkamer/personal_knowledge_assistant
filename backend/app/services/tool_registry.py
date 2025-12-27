@@ -224,6 +224,7 @@ def _register_builtin_tools() -> None:
         DocumentSearchTool,
         WebSearchTool,
     )
+    from app.services.tools.knowledge_search_tool import KnowledgeSearchTool
 
     registry = get_tool_registry()
 
@@ -232,5 +233,6 @@ def _register_builtin_tools() -> None:
     registry.register(CalculatorTool, access_level="all")
     registry.register(CodeExecutorTool, access_level="all")
     registry.register(DocumentSearchTool, access_level="all")
+    registry.register(KnowledgeSearchTool, access_level="all")
 
     logger.info(f"Registered {len(registry.list_tools())} built-in tools")
