@@ -10,14 +10,12 @@ import type { Note } from '@/types/note';
 
 // Mock hooks
 vi.mock('@/hooks/useNotes', () => ({
-  useNotes: vi.fn(),
   useDeleteNote: vi.fn(),
   useUpdateNote: vi.fn(),
 }));
 
 describe('NotesList', () => {
   const mockOnSelectNote = vi.fn();
-  const mockRefetch = vi.fn();
   const mockDeleteNote = {
     mutateAsync: vi.fn(),
     isPending: false,
@@ -26,167 +24,57 @@ describe('NotesList', () => {
     mutateAsync: vi.fn(),
   };
 
-  const mockNotesData = {
-    notes: [
-      {
-        id: 'note-1',
-        title: 'JavaScript Basics',
-        content: '{"root":{"children":[{"type":"text","text":"Learn JavaScript fundamentals"}]}}',
-        tags_rel: [
-          { id: 'tag-1', name: 'javascript' },
-          { id: 'tag-2', name: 'programming' },
-        ],
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-03T00:00:00Z',
-      },
-      {
-        id: 'note-2',
-        title: 'React Components',
-        content: 'Build reusable UI components',
-        tags_rel: [{ id: 'tag-3', name: 'react' }],
-        created_at: '2025-01-02T00:00:00Z',
-        updated_at: '2025-01-02T00:00:00Z',
-      },
-      {
-        id: 'note-3',
-        title: 'Empty Note',
-        content: '',
-        tags_rel: [],
-        created_at: '2025-01-03T00:00:00Z',
-        updated_at: '2025-01-03T00:00:00Z',
-      },
-    ],
-    total: 3,
-  };
-
-  const mockUseNotes = {
-    data: mockNotesData,
-    isLoading: false,
-    error: null,
-    refetch: mockRefetch,
-  };
+  const mockNotes: Note[] = [
+    {
+      id: 'note-1',
+      title: 'JavaScript Basics',
+      content: '{"root":{"children":[{"type":"text","text":"Learn JavaScript fundamentals"}]}}',
+      tags_rel: [
+        { id: 'tag-1', name: 'javascript' },
+        { id: 'tag-2', name: 'programming' },
+      ],
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-03T00:00:00Z',
+    },
+    {
+      id: 'note-2',
+      title: 'React Components',
+      content: 'Build reusable UI components',
+      tags_rel: [{ id: 'tag-3', name: 'react' }],
+      created_at: '2025-01-02T00:00:00Z',
+      updated_at: '2025-01-02T00:00:00Z',
+    },
+    {
+      id: 'note-3',
+      title: 'Empty Note',
+      content: '',
+      tags_rel: [],
+      created_at: '2025-01-03T00:00:00Z',
+      updated_at: '2025-01-03T00:00:00Z',
+    },
+  ];
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(useNotesHook, 'useNotes').mockReturnValue(mockUseNotes as any);
     vi.spyOn(useNotesHook, 'useDeleteNote').mockReturnValue(mockDeleteNote as any);
     vi.spyOn(useNotesHook, 'useUpdateNote').mockReturnValue(mockUpdateNote as any);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
-  describe('Loading State', () => {
-    it('should display loading message', () => {
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        isLoading: true,
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
-
-      expect(screen.getByText('Loading notes...')).toBeInTheDocument();
-    });
-
-    it('should not display notes while loading', () => {
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        isLoading: true,
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
-
-      expect(screen.queryByText('JavaScript Basics')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Error State', () => {
-    it('should display error message', () => {
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        error: new Error('Network error'),
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
-
-      expect(screen.getByText('Failed to load notes')).toBeInTheDocument();
-      expect(screen.getByText('Network error')).toBeInTheDocument();
-    });
-
-    it('should display retry button on error', () => {
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        error: new Error('Network error'),
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
-
-      expect(screen.getByText('Retry')).toBeInTheDocument();
-    });
-
-    it('should call refetch when retry is clicked', async () => {
-      const user = userEvent.setup();
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        error: new Error('Network error'),
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
-
-      const retryButton = screen.getByText('Retry');
-      await user.click(retryButton);
-
-      expect(mockRefetch).toHaveBeenCalledTimes(1);
-    });
-
-    it('should display API error detail', () => {
-      const apiError = {
-        response: {
-          data: {
-            detail: 'Database connection failed',
-          },
-        },
-      };
-
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        error: apiError,
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
-
-      expect(screen.getByText('Database connection failed')).toBeInTheDocument();
-    });
-  });
+  // NOTE: Loading and error state tests removed - NotesPage now handles these states
+  // The NotesList component is now a presentational component that receives notes as props
 
   describe('Empty State', () => {
     it('should display empty state when no notes', () => {
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        data: { notes: [], total: 0 },
-      } as any);
+      render(<NotesList notes={[]} onSelectNote={mockOnSelectNote} />);
 
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
-
-      expect(screen.getByText(/No notes yet/)).toBeInTheDocument();
-      expect(screen.getByText(/Create your first note/)).toBeInTheDocument();
-    });
-
-    it('should not display search bar when no notes', () => {
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        data: { notes: [], total: 0 },
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
-
-      expect(
-        screen.queryByPlaceholderText('Search notes by title, content, or tags...')
-      ).not.toBeInTheDocument();
+      expect(screen.getByText(/No notes match your search/)).toBeInTheDocument();
     });
   });
 
   describe('Notes Display', () => {
     it('should display all notes', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText('JavaScript Basics')).toBeInTheDocument();
       expect(screen.getByText('React Components')).toBeInTheDocument();
@@ -194,26 +82,26 @@ describe('NotesList', () => {
     });
 
     it('should display note titles', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText('JavaScript Basics')).toBeInTheDocument();
     });
 
     it('should display note preview text', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText(/Learn JavaScript fundamentals/)).toBeInTheDocument();
       expect(screen.getByText(/Build reusable UI components/)).toBeInTheDocument();
     });
 
     it('should display "Empty note" for notes with no content', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText('Empty note')).toBeInTheDocument();
     });
 
     it('should display note tags', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText('#javascript')).toBeInTheDocument();
       expect(screen.getByText('#programming')).toBeInTheDocument();
@@ -221,14 +109,14 @@ describe('NotesList', () => {
     });
 
     it('should display updated dates using locale-independent patterns', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const dateElements = screen.getAllByText(/Jan|1|2|3|2025/i);
       expect(dateElements.length).toBeGreaterThan(0);
     });
 
     it('should display search bar', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(
         screen.getByPlaceholderText('Search notes by title, content, or tags...')
@@ -239,32 +127,34 @@ describe('NotesList', () => {
   describe('Note Selection', () => {
     it('should call onSelectNote when note is clicked', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       await user.click(screen.getByText('JavaScript Basics'));
 
-      expect(mockOnSelectNote).toHaveBeenCalledWith(mockNotesData.notes[0]);
+      expect(mockOnSelectNote).toHaveBeenCalledWith(mockNotes[0]);
     });
 
     it('should highlight selected note', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} selectedNoteId="note-1" />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} selectedNoteId="note-1" />);
 
       const noteElement = screen.getByText('JavaScript Basics').closest('div.p-5');
-      expect(noteElement).toHaveClass('from-blue-50');
+      expect(noteElement).toHaveClass('bg-primary-500');
+      expect(noteElement).toHaveClass('text-white');
     });
 
     it('should not highlight unselected notes', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} selectedNoteId="note-1" />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} selectedNoteId="note-1" />);
 
       const noteElement = screen.getByText('React Components').closest('div.p-5');
-      expect(noteElement).not.toHaveClass('from-blue-50');
+      expect(noteElement).not.toHaveClass('bg-primary-500');
+      expect(noteElement).toHaveClass('bg-white/90');
     });
   });
 
   describe('Search Functionality', () => {
     it('should filter notes by title', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const searchInput = screen.getByPlaceholderText('Search notes by title, content, or tags...');
       await user.type(searchInput, 'React');
@@ -275,7 +165,7 @@ describe('NotesList', () => {
 
     it('should filter notes by content', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const searchInput = screen.getByPlaceholderText('Search notes by title, content, or tags...');
       await user.type(searchInput, 'fundamentals');
@@ -286,7 +176,7 @@ describe('NotesList', () => {
 
     it('should filter notes by tag', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const searchInput = screen.getByPlaceholderText('Search notes by title, content, or tags...');
       await user.type(searchInput, 'react');
@@ -297,7 +187,7 @@ describe('NotesList', () => {
 
     it('should be case insensitive', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const searchInput = screen.getByPlaceholderText('Search notes by title, content, or tags...');
       await user.type(searchInput, 'JAVASCRIPT');
@@ -307,7 +197,7 @@ describe('NotesList', () => {
 
     it('should show "No notes match" message when search returns no results', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const searchInput = screen.getByPlaceholderText('Search notes by title, content, or tags...');
       await user.type(searchInput, 'nonexistent');
@@ -318,7 +208,7 @@ describe('NotesList', () => {
 
     it('should show all notes when search is cleared', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const searchInput = screen.getByPlaceholderText('Search notes by title, content, or tags...');
       await user.type(searchInput, 'React');
@@ -331,7 +221,7 @@ describe('NotesList', () => {
 
   describe('More Options Menu', () => {
     it('should show menu button for each note', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       expect(menuButtons).toHaveLength(3);
@@ -339,7 +229,7 @@ describe('NotesList', () => {
 
     it('should open menu when button is clicked', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -350,7 +240,7 @@ describe('NotesList', () => {
 
     it('should close menu when button is clicked again', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -363,7 +253,7 @@ describe('NotesList', () => {
   describe('Edit Functionality', () => {
     it('should show edit input when Edit is clicked', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -378,7 +268,7 @@ describe('NotesList', () => {
       const user = userEvent.setup();
       mockUpdateNote.mutateAsync.mockResolvedValue({});
 
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -398,7 +288,7 @@ describe('NotesList', () => {
 
     it('should not save empty title', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -415,7 +305,7 @@ describe('NotesList', () => {
       const user = userEvent.setup();
       mockUpdateNote.mutateAsync.mockResolvedValue({});
 
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -435,7 +325,7 @@ describe('NotesList', () => {
 
     it('should cancel edit on Escape key', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -457,7 +347,7 @@ describe('NotesList', () => {
       const user = userEvent.setup();
       const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -470,7 +360,7 @@ describe('NotesList', () => {
       const user = userEvent.setup();
       mockDeleteNote.mutateAsync.mockResolvedValue({});
 
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -485,7 +375,7 @@ describe('NotesList', () => {
       const user = userEvent.setup();
       vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -501,7 +391,7 @@ describe('NotesList', () => {
         isPending: true,
       } as any);
 
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       // Need to open menu first
       const menuButtons = screen.getAllByTitle('More options');
@@ -512,47 +402,24 @@ describe('NotesList', () => {
     });
   });
 
-  describe('Tag Filtering', () => {
-    it('should pass selectedTags to useNotes hook', () => {
-      const selectedTags = ['javascript', 'react'];
-      render(<NotesList onSelectNote={mockOnSelectNote} selectedTags={selectedTags} />);
-
-      expect(useNotesHook.useNotes).toHaveBeenCalledWith(selectedTags);
-    });
-
-    it('should filter notes by selected tags', () => {
-      const filteredData = {
-        notes: [mockNotesData.notes[0]],
-        total: 1,
-      };
-
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        data: filteredData,
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} selectedTags={['javascript']} />);
-
-      expect(screen.getByText('JavaScript Basics')).toBeInTheDocument();
-      expect(screen.queryByText('React Components')).not.toBeInTheDocument();
-    });
-  });
+  // NOTE: Tag filtering tests removed - NotesPage now handles tag filtering via useNotes hook
+  // The NotesList component only displays the notes it receives as props
 
   describe('Preview Text Extraction', () => {
     it('should extract text from Lexical JSON format', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText(/Learn JavaScript fundamentals/)).toBeInTheDocument();
     });
 
     it('should handle plain text content', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText(/Build reusable UI components/)).toBeInTheDocument();
     });
 
     it('should show "Empty note" for empty content', () => {
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText('Empty note')).toBeInTheDocument();
     });
@@ -561,7 +428,7 @@ describe('NotesList', () => {
   describe('Click Event Propagation', () => {
     it('should not select note when menu button is clicked', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -571,7 +438,7 @@ describe('NotesList', () => {
 
     it('should not select note when edit input is clicked', async () => {
       const user = userEvent.setup();
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={mockNotes} onSelectNote={mockOnSelectNote} />);
 
       const menuButtons = screen.getAllByTitle('More options');
       await user.click(menuButtons[0]);
@@ -586,48 +453,32 @@ describe('NotesList', () => {
 
   describe('Edge Cases', () => {
     it('should handle notes with no tags_rel', () => {
-      const notesWithoutTags = {
-        notes: [
-          {
-            ...mockNotesData.notes[0],
-            tags_rel: undefined as any,
-          },
-        ],
-        total: 1,
-      };
+      const notesWithoutTags: Note[] = [
+        {
+          ...mockNotes[0],
+          tags_rel: undefined as any,
+        },
+      ];
 
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        data: notesWithoutTags,
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={notesWithoutTags} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText('JavaScript Basics')).toBeInTheDocument();
     });
 
     it('should handle complex JSON content', () => {
-      const complexNote = {
-        notes: [
-          {
-            id: 'note-complex',
-            title: 'Complex Note',
-            content:
-              '{"root":{"children":[{"type":"paragraph","children":[{"type":"text","text":"First paragraph"}]},{"type":"paragraph","children":[{"type":"text","text":"Second paragraph"}]}]}}',
-            tags_rel: [],
-            created_at: '2025-01-01T00:00:00Z',
-            updated_at: '2025-01-01T00:00:00Z',
-          },
-        ],
-        total: 1,
-      };
+      const complexNotes: Note[] = [
+        {
+          id: 'note-complex',
+          title: 'Complex Note',
+          content:
+            '{"root":{"children":[{"type":"paragraph","children":[{"type":"text","text":"First paragraph"}]},{"type":"paragraph","children":[{"type":"text","text":"Second paragraph"}]}]}}',
+          tags_rel: [],
+          created_at: '2025-01-01T00:00:00Z',
+          updated_at: '2025-01-01T00:00:00Z',
+        },
+      ];
 
-      vi.spyOn(useNotesHook, 'useNotes').mockReturnValue({
-        ...mockUseNotes,
-        data: complexNote,
-      } as any);
-
-      render(<NotesList onSelectNote={mockOnSelectNote} />);
+      render(<NotesList notes={complexNotes} onSelectNote={mockOnSelectNote} />);
 
       expect(screen.getByText(/First paragraph/)).toBeInTheDocument();
     });
