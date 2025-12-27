@@ -322,7 +322,7 @@ uv run pytest tests/ -v
 
 # Frontend
 cd frontend
-npm test -- --coverage --watchAll=false
+npm test -- --run --coverage
 npm run type-check
 
 # Code quality

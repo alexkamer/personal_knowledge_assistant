@@ -84,7 +84,7 @@ jobs:
 
     - name: Run tests
       working-directory: ./frontend
-      run: npm test -- --coverage --watchAll=false
+      run: npm test -- --run --coverage
 
     - name: Run type check
       working-directory: ./frontend
