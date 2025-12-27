@@ -4,7 +4,7 @@ Research source model for tracking web sources found during research.
 from typing import Optional, List
 import uuid
 
-from sqlalchemy import Integer, String, Text, Float, ForeignKey, ARRAY
+from sqlalchemy import Integer, String, Text, Float, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -44,7 +44,7 @@ class ResearchSource(Base, UUIDMixin, TimestampMixin):
     # Credibility
     credibility_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     credibility_reasons: Mapped[Optional[List[str]]] = mapped_column(
-        ARRAY(String), nullable=True
+        JSON, nullable=True
     )
 
     # Processing status

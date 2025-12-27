@@ -4,8 +4,8 @@ Research briefing model for synthesized research findings.
 from datetime import datetime
 from typing import Optional, List
 
-from sqlalchemy import Integer, String, Text, DateTime, ForeignKey, ARRAY
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Integer, String, Text, DateTime, ForeignKey, JSON
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -33,20 +33,20 @@ class ResearchBriefing(Base, UUIDMixin, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     key_findings: Mapped[Optional[dict]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )  # Structured findings with citations
     contradictions: Mapped[Optional[List[dict]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )  # Contradictions found across sources
     knowledge_gaps: Mapped[Optional[List[str]]] = mapped_column(
-        ARRAY(String), nullable=True
+        JSON, nullable=True
     )  # Identified gaps in research
     suggested_tasks: Mapped[Optional[List[str]]] = mapped_column(
-        ARRAY(String), nullable=True
+        JSON, nullable=True
     )  # Suggested follow-up research tasks
 
     # Related tasks (UUIDs of tasks included in this briefing)
-    task_ids: Mapped[Optional[List[str]]] = mapped_column(ARRAY(String), nullable=True)
+    task_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     sources_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Metadata

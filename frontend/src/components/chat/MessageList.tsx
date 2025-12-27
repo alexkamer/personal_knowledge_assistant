@@ -9,6 +9,8 @@ import { MetadataBadges } from './MetadataBadges';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { FloatingMessageCard } from './FloatingMessageCard';
 import { ChatAttachment } from './ChatAttachment';
+import { StreamingProgress } from './StreamingProgress';
+import { ToolCallCard } from './ToolCallCard';
 import { apiClient } from '@/services/api';
 
 interface MessageListProps {
@@ -17,6 +19,9 @@ interface MessageListProps {
   onRegenerateMessage?: (messageId: string) => void;
   onFeedbackSubmitted?: () => void;
   onQuestionClick?: (question: string) => void;
+  isStreaming?: boolean;
+  streamingContent?: string;
+  streamingStatus?: string;
 }
 
 interface MessageItemProps {
@@ -90,6 +95,25 @@ const MessageItem = React.memo<MessageItemProps>(({
             </>
           ) : (
             <MarkdownRenderer content={message.content} />
+          )}
+
+          {/* Tool calls (only for assistant messages with agent mode) */}
+          {message.role === 'assistant' && message.tool_calls && message.tool_calls.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Agent Reasoning
+                </h4>
+                {message.tool_calls.map((toolCall, index) => (
+                  <ToolCallCard
+                    key={`${message.id}-tool-${index}`}
+                    toolName={toolCall.tool}
+                    parameters={toolCall.parameters}
+                    result={toolCall.result}
+                    error={toolCall.error}
+                    status={toolCall.status}
+                  />
+                ))}
+              </div>
           )}
 
           {/* Action buttons for assistant messages */}
@@ -266,7 +290,7 @@ const MessageItem = React.memo<MessageItemProps>(({
 
 MessageItem.displayName = 'MessageItem';
 
-export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedbackSubmitted, onQuestionClick }: MessageListProps) {
+export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedbackSubmitted, onQuestionClick, isStreaming, streamingContent, streamingStatus }: MessageListProps) {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [copiedMessageId, setCopiedMessageId] = React.useState<string | null>(null);
@@ -392,21 +416,33 @@ export function MessageList({ messages, isLoading, onRegenerateMessage, onFeedba
           message.role === 'assistant' &&
           index === messages.map((m, i) => m.role === 'assistant' ? i : -1).filter(i => i !== -1).pop();
 
+        // Show streaming progress for the latest assistant message if streaming
+        const showStreamingProgress = isStreaming && isLatestAssistantMessage && streamingContent;
+
         return (
-          <FloatingMessageCard
-            key={message.id}
-            message={message}
-            copiedMessageId={copiedMessageId}
-            feedbackLoading={feedbackLoading}
-            expandedSources={expandedSources}
-            onCopyMessage={handleCopyMessage}
-            onSourceClick={handleSourceClick}
-            onFeedback={handleFeedback}
-            onToggleSources={handleToggleSources}
-            onRegenerateMessage={onRegenerateMessage}
-            onQuestionClick={onQuestionClick}
-            isLatestAssistantMessage={isLatestAssistantMessage}
-          />
+          <React.Fragment key={message.id}>
+            <FloatingMessageCard
+              message={message}
+              copiedMessageId={copiedMessageId}
+              feedbackLoading={feedbackLoading}
+              expandedSources={expandedSources}
+              onCopyMessage={handleCopyMessage}
+              onSourceClick={handleSourceClick}
+              onFeedback={handleFeedback}
+              onToggleSources={handleToggleSources}
+              onRegenerateMessage={onRegenerateMessage}
+              onQuestionClick={onQuestionClick}
+              isLatestAssistantMessage={isLatestAssistantMessage}
+            />
+            {showStreamingProgress && (
+              <div className="max-w-3xl mx-auto px-6 pb-4">
+                <StreamingProgress
+                  content={streamingContent}
+                  status={streamingStatus}
+                />
+              </div>
+            )}
+          </React.Fragment>
         );
       })}
 

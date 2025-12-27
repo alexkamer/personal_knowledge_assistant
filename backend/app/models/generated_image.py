@@ -3,8 +3,7 @@ Generated image model for AI-generated images.
 """
 from typing import Optional
 
-from sqlalchemy import Boolean, String, Text, Integer, ARRAY
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Boolean, String, Text, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -31,11 +30,13 @@ class GeneratedImage(Base, UUIDMixin, TimestampMixin):
     image_format: Mapped[str] = mapped_column(String(10), nullable=False, default="png")
 
     # Generation metadata (aspect_ratio, model, image_size, etc.)
-    metadata_: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    # Use JSON instead of JSONB for SQLite compatibility in tests
+    metadata_: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # User organization
     is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
-    tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(String), nullable=True)
+    # Use JSON instead of ARRAY for SQLite compatibility in tests
+    tags: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
 
     # Optional project/collection grouping (for future use)
     project_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)

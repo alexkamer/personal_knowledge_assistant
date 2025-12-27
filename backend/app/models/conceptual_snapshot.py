@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List
 from uuid import UUID, uuid4
 
-from sqlalchemy import Column, String, Text, Float, DateTime, ForeignKey, ARRAY
+from sqlalchemy import Column, String, Text, Float, DateTime, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -28,10 +28,10 @@ class ConceptualSnapshot(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
     topic = Column(String(500), nullable=False, index=True)  # What topic this snapshot is about
     understanding = Column(Text, nullable=False)  # LLM-generated summary of understanding
-    key_concepts = Column(ARRAY(String), nullable=False, default=list)  # Concepts understood
-    misconceptions = Column(ARRAY(String), nullable=False, default=list)  # Incorrect beliefs
+    key_concepts = Column(JSON, nullable=False, default=list)  # Concepts understood
+    misconceptions = Column(JSON, nullable=False, default=list)  # Incorrect beliefs
     confidence = Column(Float, nullable=False)  # 0.0-1.0 confidence score
-    questions_asked = Column(ARRAY(String), nullable=False, default=list)  # Questions they asked
+    questions_asked = Column(JSON, nullable=False, default=list)  # Questions they asked
 
     # Relationships
     conversation_id = Column(String(36), ForeignKey("conversations.id"), nullable=False)

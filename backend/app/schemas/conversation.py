@@ -62,6 +62,7 @@ class MessageResponse(MessageBase):
     feedback: Optional[MessageFeedbackResponse] = None
     suggested_questions: Optional[List[str]] = None
     attachments: Optional[List[AttachmentMetadata]] = None
+    tool_calls: Optional[List[dict]] = None  # Agent mode tool executions
 
     class Config:
         from_attributes = True
@@ -126,6 +127,7 @@ class ChatRequest(BaseModel):
     include_notes: bool = Field(False, description="Include personal notes as sources (default: reputable sources only)")
     socratic_mode: bool = Field(False, description="Enable Socratic Learning Mode (AI teaches through questioning)")
     skip_rag: bool = Field(False, description="Skip RAG retrieval and use general knowledge only")
+    agent_mode: bool = Field(False, description="Enable agentic mode (LLM decides when to retrieve more information)")
 
 
 class ChatResponse(BaseModel):
@@ -137,3 +139,4 @@ class ChatResponse(BaseModel):
     sources: List[dict]
     model_used: str
     suggested_questions: Optional[List[str]] = None
+    tool_calls: Optional[List[dict]] = None

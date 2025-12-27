@@ -6,7 +6,7 @@ A research project is a collection of related research tasks that run on a sched
 from datetime import datetime
 from typing import Optional, List
 
-from sqlalchemy import Integer, String, Text, DateTime, Boolean, ARRAY
+from sqlalchemy import Integer, String, Text, DateTime, Boolean, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -61,8 +61,9 @@ class ResearchProject(Base, UUIDMixin, TimestampMixin):
     default_depth: Mapped[str] = mapped_column(
         String(20), default="thorough", nullable=False
     )
+    # Use JSON instead of ARRAY for SQLite compatibility in tests
     default_source_types: Mapped[Optional[List[str]]] = mapped_column(
-        ARRAY(String), nullable=True
+        JSON, nullable=True
     )
 
     # Progress tracking

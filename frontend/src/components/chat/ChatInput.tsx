@@ -2,7 +2,7 @@
  * Chat input component with glass-morphism design and model switcher.
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, ChevronDown, Globe, MessageSquare, GraduationCap, Paperclip } from 'lucide-react';
+import { Send, ChevronDown, Globe, MessageSquare, GraduationCap, Paperclip, Square, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ChatAttachment } from './ChatAttachment';
 
@@ -20,6 +20,10 @@ interface ChatInputProps {
   onSourceFilterChange?: (filter: SourceFilter) => void;
   socraticMode?: boolean;
   onSocraticModeToggle?: () => void;
+  agentMode?: boolean;
+  onAgentModeToggle?: () => void;
+  isStreaming?: boolean;
+  onStopGeneration?: () => void;
 }
 
 const AVAILABLE_MODELS = [
@@ -48,6 +52,10 @@ export function ChatInput({
   onSourceFilterChange,
   socraticMode = false,
   onSocraticModeToggle,
+  agentMode = false,
+  onAgentModeToggle,
+  isStreaming = false,
+  onStopGeneration,
 }: ChatInputProps) {
   const [message, setMessage] = useState(initialValue);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
@@ -337,6 +345,24 @@ export function ChatInput({
                 <span className="whitespace-nowrap">{socraticMode ? '✓ Socratic' : 'Direct'}</span>
               </button>
             )}
+
+            {/* Agent Mode Toggle */}
+            {onAgentModeToggle && (
+              <button
+                type="button"
+                onClick={onAgentModeToggle}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors",
+                  agentMode
+                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-700"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
+                )}
+                title="Enable Agent Mode: AI decides when to search your knowledge base"
+              >
+                <Bot size={13} />
+                <span className="whitespace-nowrap">{agentMode ? '✓ Agent' : 'Standard'}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -426,14 +452,25 @@ export function ChatInput({
             </p>
           </div>
 
-          <button
-            type="submit"
-            disabled={disabled || !message.trim()}
-            className="flex-shrink-0 p-4 bg-primary-500 hover:bg-primary-600 text-white rounded-xl hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            aria-label="Send message"
-          >
-            <Send size={20} />
-          </button>
+          {isStreaming ? (
+            <button
+              type="button"
+              onClick={onStopGeneration}
+              className="flex-shrink-0 p-4 bg-red-500 hover:bg-red-600 text-white rounded-xl hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+              aria-label="Stop generation"
+            >
+              <Square size={20} fill="currentColor" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={disabled || !message.trim()}
+              className="flex-shrink-0 p-4 bg-primary-500 hover:bg-primary-600 text-white rounded-xl hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              aria-label="Send message"
+            >
+              <Send size={20} />
+            </button>
+          )}
         </div>
       </div>
     </form>

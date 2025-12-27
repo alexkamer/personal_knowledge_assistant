@@ -4,8 +4,8 @@ Research task model for autonomous web research.
 from datetime import datetime
 from typing import Optional, List
 
-from sqlalchemy import Integer, String, Text, DateTime, Float, ARRAY, Boolean, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Integer, String, Text, DateTime, Float, JSON, Boolean, ForeignKey
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -40,7 +40,7 @@ class ResearchTask(Base, UUIDMixin, TimestampMixin):
         String(20), default="thorough", nullable=False
     )  # quick, thorough, deep
     source_types: Mapped[Optional[List[str]]] = mapped_column(
-        ARRAY(String), nullable=True
+        JSON, nullable=True
     )  # academic, news, blogs, reddit, github
 
     # Autopilot metadata
@@ -65,11 +65,11 @@ class ResearchTask(Base, UUIDMixin, TimestampMixin):
     # Results
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     key_findings: Mapped[Optional[dict]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )  # Structured findings
     contradictions_found: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     suggested_followups: Mapped[Optional[List[str]]] = mapped_column(
-        ARRAY(String), nullable=True
+        JSON, nullable=True
     )
 
     # Background job tracking
