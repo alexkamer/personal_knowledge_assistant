@@ -77,7 +77,7 @@ describe('ChatInput', () => {
       const textarea = screen.getByPlaceholderText('Ask a question about your notes and documents...');
       await user.type(textarea, 'Test message{Enter}');
 
-      expect(mockOnSend).toHaveBeenCalledWith('Test message');
+      expect(mockOnSend).toHaveBeenCalledWith('Test message', undefined);
       expect(mockOnSend).toHaveBeenCalledTimes(1);
     });
 
@@ -91,7 +91,7 @@ describe('ChatInput', () => {
       const sendButton = screen.getByLabelText('Send message');
       await user.click(sendButton);
 
-      expect(mockOnSend).toHaveBeenCalledWith('Test message');
+      expect(mockOnSend).toHaveBeenCalledWith('Test message', undefined);
       expect(mockOnSend).toHaveBeenCalledTimes(1);
     });
 
@@ -114,7 +114,7 @@ describe('ChatInput', () => {
       const textarea = screen.getByPlaceholderText('Ask a question about your notes and documents...');
       await user.type(textarea, '  Test message  {Enter}');
 
-      expect(mockOnSend).toHaveBeenCalledWith('Test message');
+      expect(mockOnSend).toHaveBeenCalledWith('Test message', undefined);
     });
 
     it('should not send empty messages', async () => {
@@ -214,7 +214,7 @@ describe('ChatInput', () => {
       const textarea = screen.getByPlaceholderText('Ask a question about your notes and documents...');
       await user.type(textarea, 'Test{Enter}');
 
-      expect(mockOnSend).toHaveBeenCalledWith('Test');
+      expect(mockOnSend).toHaveBeenCalledWith('Test', undefined);
     });
 
     it('should not send message on Shift+Enter', async () => {
@@ -276,7 +276,7 @@ describe('ChatInput', () => {
       const sendButton = screen.getByLabelText('Send message');
       await user.click(sendButton);
 
-      expect(mockOnSend).toHaveBeenCalledWith(longMessage);
+      expect(mockOnSend).toHaveBeenCalledWith(longMessage, undefined);
     });
 
     it('should handle special characters', async () => {
@@ -292,7 +292,7 @@ describe('ChatInput', () => {
       const sendButton = screen.getByLabelText('Send message');
       await user.click(sendButton);
 
-      expect(mockOnSend).toHaveBeenCalledWith(specialMessage);
+      expect(mockOnSend).toHaveBeenCalledWith(specialMessage, undefined);
     });
 
     it('should handle rapid submissions', async () => {
@@ -306,9 +306,89 @@ describe('ChatInput', () => {
       await user.type(textarea, 'Message 3{Enter}');
 
       expect(mockOnSend).toHaveBeenCalledTimes(3);
-      expect(mockOnSend).toHaveBeenNthCalledWith(1, 'Message 1');
-      expect(mockOnSend).toHaveBeenNthCalledWith(2, 'Message 2');
-      expect(mockOnSend).toHaveBeenNthCalledWith(3, 'Message 3');
+      expect(mockOnSend).toHaveBeenNthCalledWith(1, 'Message 1', undefined);
+      expect(mockOnSend).toHaveBeenNthCalledWith(2, 'Message 2', undefined);
+      expect(mockOnSend).toHaveBeenNthCalledWith(3, 'Message 3', undefined);
+    });
+  });
+
+  describe('Agent Mode Toggle', () => {
+    it('should render agent mode toggle when handler provided', () => {
+      const mockToggle = vi.fn();
+      render(<ChatInput onSend={mockOnSend} onAgentModeToggle={mockToggle} agentMode={false} />);
+
+      const toggle = screen.getByText('Standard');
+      expect(toggle).toBeInTheDocument();
+    });
+
+    it('should not render agent mode toggle without handler', () => {
+      render(<ChatInput onSend={mockOnSend} />);
+
+      expect(screen.queryByText('Standard')).not.toBeInTheDocument();
+      expect(screen.queryByText('✓ Agent')).not.toBeInTheDocument();
+    });
+
+    it('should show "Standard" when agent mode is off', () => {
+      const mockToggle = vi.fn();
+      render(<ChatInput onSend={mockOnSend} onAgentModeToggle={mockToggle} agentMode={false} />);
+
+      expect(screen.getByText('Standard')).toBeInTheDocument();
+    });
+
+    it('should show "✓ Agent" when agent mode is on', () => {
+      const mockToggle = vi.fn();
+      render(<ChatInput onSend={mockOnSend} onAgentModeToggle={mockToggle} agentMode={true} />);
+
+      expect(screen.getByText('✓ Agent')).toBeInTheDocument();
+    });
+
+    it('should call toggle handler when clicked', async () => {
+      const user = userEvent.setup();
+      const mockToggle = vi.fn();
+      render(<ChatInput onSend={mockOnSend} onAgentModeToggle={mockToggle} agentMode={false} />);
+
+      const toggle = screen.getByText('Standard');
+      await user.click(toggle);
+
+      expect(mockToggle).toHaveBeenCalledTimes(1);
+    });
+
+    it('should disable toggle when streaming', () => {
+      const mockToggle = vi.fn();
+      render(
+        <ChatInput
+          onSend={mockOnSend}
+          onAgentModeToggle={mockToggle}
+          agentMode={false}
+          isStreaming={true}
+        />
+      );
+
+      const toggle = screen.getByText('Standard');
+      expect(toggle).toBeDisabled();
+    });
+
+    it('should enable toggle when not streaming', () => {
+      const mockToggle = vi.fn();
+      render(
+        <ChatInput
+          onSend={mockOnSend}
+          onAgentModeToggle={mockToggle}
+          agentMode={false}
+          isStreaming={false}
+        />
+      );
+
+      const toggle = screen.getByText('Standard');
+      expect(toggle).not.toBeDisabled();
+    });
+
+    it('should have correct tooltip text', () => {
+      const mockToggle = vi.fn();
+      render(<ChatInput onSend={mockOnSend} onAgentModeToggle={mockToggle} agentMode={false} />);
+
+      const toggle = screen.getByText('Standard');
+      expect(toggle).toHaveAttribute('title', 'Enable Agent Mode: AI decides when to search your knowledge base');
     });
   });
 });
