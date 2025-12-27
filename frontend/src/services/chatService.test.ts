@@ -578,14 +578,23 @@ describe('chatService', () => {
         query: 'Test',
       };
 
-      await chatService.sendMessageStream(
-        request,
-        onChunk,
-        onSources,
-        onConversationId,
-        onDone,
-        onError
-      );
+      // sendMessageStream returns AbortController, not Promise - wrap callbacks in Promise
+      await new Promise<void>((resolve) => {
+        chatService.sendMessageStream(
+          request,
+          onChunk,
+          onSources,
+          onConversationId,
+          (messageId) => {
+            onDone(messageId);
+            resolve();
+          },
+          (error) => {
+            onError(error);
+            resolve();
+          }
+        );
+      });
 
       expect(onConversationId).toHaveBeenCalledWith('conv-1');
       expect(onSources).toHaveBeenCalledWith([]);
@@ -626,14 +635,23 @@ describe('chatService', () => {
         query: 'Test',
       };
 
-      await chatService.sendMessageStream(
-        request,
-        onChunk,
-        onSources,
-        onConversationId,
-        onDone,
-        onError
-      );
+      // Wrap callbacks in Promise
+      await new Promise<void>((resolve) => {
+        chatService.sendMessageStream(
+          request,
+          onChunk,
+          onSources,
+          onConversationId,
+          (messageId) => {
+            onDone(messageId);
+            resolve();
+          },
+          (error) => {
+            onError(error);
+            resolve();
+          }
+        );
+      });
 
       expect(onError).toHaveBeenCalledWith('Something went wrong');
       expect(onDone).not.toHaveBeenCalled();
@@ -655,16 +673,26 @@ describe('chatService', () => {
         query: 'Test',
       };
 
-      await expect(
+      // Wrap callbacks in Promise - HTTP errors call onError
+      await new Promise<void>((resolve) => {
         chatService.sendMessageStream(
           request,
           onChunk,
           onSources,
           onConversationId,
-          onDone,
-          onError
-        )
-      ).rejects.toThrow('HTTP error! status: 500');
+          (messageId) => {
+            onDone(messageId);
+            resolve();
+          },
+          (error) => {
+            onError(error);
+            resolve();
+          }
+        );
+      });
+
+      expect(onError).toHaveBeenCalledWith('HTTP error! status: 500');
+      expect(onDone).not.toHaveBeenCalled();
     });
 
     it('should handle null response body', async () => {
@@ -683,16 +711,26 @@ describe('chatService', () => {
         query: 'Test',
       };
 
-      await expect(
+      // Wrap callbacks in Promise - null body errors call onError
+      await new Promise<void>((resolve) => {
         chatService.sendMessageStream(
           request,
           onChunk,
           onSources,
           onConversationId,
-          onDone,
-          onError
-        )
-      ).rejects.toThrow('Response body is null');
+          (messageId) => {
+            onDone(messageId);
+            resolve();
+          },
+          (error) => {
+            onError(error);
+            resolve();
+          }
+        );
+      });
+
+      expect(onError).toHaveBeenCalledWith('Response body is null');
+      expect(onDone).not.toHaveBeenCalled();
     });
 
     it('should handle agent event', async () => {
@@ -729,16 +767,25 @@ describe('chatService', () => {
         query: 'Test',
       };
 
-      await chatService.sendMessageStream(
-        request,
-        onChunk,
-        onSources,
-        onConversationId,
-        onDone,
-        onError,
-        undefined,
-        onAgent
-      );
+      // Wrap callbacks in Promise
+      await new Promise<void>((resolve) => {
+        chatService.sendMessageStream(
+          request,
+          onChunk,
+          onSources,
+          onConversationId,
+          (messageId) => {
+            onDone(messageId);
+            resolve();
+          },
+          (error) => {
+            onError(error);
+            resolve();
+          },
+          undefined,
+          onAgent
+        );
+      });
 
       expect(onAgent).toHaveBeenCalledWith({
         name: 'researcher',
@@ -781,15 +828,24 @@ describe('chatService', () => {
         query: 'Test',
       };
 
-      await chatService.sendMessageStream(
-        request,
-        onChunk,
-        onSources,
-        onConversationId,
-        onDone,
-        onError,
-        onSuggestedQuestions
-      );
+      // Wrap callbacks in Promise
+      await new Promise<void>((resolve) => {
+        chatService.sendMessageStream(
+          request,
+          onChunk,
+          onSources,
+          onConversationId,
+          (messageId) => {
+            onDone(messageId);
+            resolve();
+          },
+          (error) => {
+            onError(error);
+            resolve();
+          },
+          onSuggestedQuestions
+        );
+      });
 
       expect(onSuggestedQuestions).toHaveBeenCalledWith(['Question 1', 'Question 2']);
     });
