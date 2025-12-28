@@ -12,6 +12,7 @@ import { mockDocument } from '@/test/utils';
 vi.mock('@/hooks/useDocuments', () => ({
   useDocuments: vi.fn(),
   useDeleteDocument: vi.fn(),
+  useCategories: vi.fn(),
 }));
 
 describe('DocumentsList', () => {
@@ -61,10 +62,17 @@ describe('DocumentsList', () => {
     isPending: false,
   };
 
+  const mockCategories = {
+    data: ['category1', 'category2'],
+    isLoading: false,
+    error: null,
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(useDocumentsHook, 'useDocuments').mockReturnValue(mockUseDocuments as any);
     vi.spyOn(useDocumentsHook, 'useDeleteDocument').mockReturnValue(mockDeleteDocument as any);
+    vi.spyOn(useDocumentsHook, 'useCategories').mockReturnValue(mockCategories as any);
     // Mock window.confirm
     vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
@@ -268,17 +276,19 @@ describe('DocumentsList', () => {
       const { container } = render(<DocumentsList selectedDocumentId="doc-2" />);
 
       // Get the document row that contains test2.txt
-      const selectedDoc = screen.getByText('test2.txt').closest('div[class*="p-4"]');
+      const selectedDoc = screen.getByText('test2.txt').closest('div.p-5');
 
-      expect(selectedDoc?.className).toContain('bg-blue-50');
+      expect(selectedDoc).toHaveClass('bg-primary-500');
+      expect(selectedDoc).toHaveClass('text-white');
     });
 
     it('should not highlight unselected documents', () => {
       const { container } = render(<DocumentsList selectedDocumentId="doc-2" />);
 
-      const unselectedDoc = screen.getByText('test1.pdf').closest('div[class*="p-4"]');
+      const unselectedDoc = screen.getByText('test1.pdf').closest('div.p-5');
 
-      expect(unselectedDoc?.className).not.toContain('bg-blue-50');
+      expect(unselectedDoc).not.toHaveClass('bg-primary-500');
+      expect(unselectedDoc).toHaveClass('bg-gray-900/80');
     });
   });
 

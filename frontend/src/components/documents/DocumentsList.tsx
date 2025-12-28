@@ -2,7 +2,7 @@
  * Documents list component showing uploaded documents.
  */
 import React, { useState } from 'react';
-import { Trash2, Calendar, HardDrive, AlertCircle, RefreshCw, Filter, ArrowUpDown, Tag } from 'lucide-react';
+import { Trash2, Calendar, HardDrive, AlertCircle, RefreshCw, Filter, ArrowUpDown, Tag, FileText } from 'lucide-react';
 import { useDocuments, useDeleteDocument, useCategories } from '@/hooks/useDocuments';
 import type { Document } from '@/types/document';
 import { DocumentThumbnail } from './DocumentThumbnail';
