@@ -69,22 +69,23 @@ Failed tests in `test_tool_orchestrator_e2e.py`:
 
 ## 2. Frontend Test Failures Analysis
 
-### Summary (Updated after cf31aa0)
-**Previous Status**: 92 failures, 401 passing (78.6% pass rate)
-**Current Status**: ~50 failures, 437 passing (expected ~89.7% pass rate)
+### Summary (Updated after 381df6e)
+**Original Status**: 92 failures, 401 passing (78.6% pass rate)
+**After cf31aa0**: ~50 failures, 437 passing (~89.7% pass rate)
+**Current Status**: ~20 failures, 467 passing (expected ~95.9% pass rate)
 
 ### Test Files Status
-- ✅ **Passing** (12 files):
+- ✅ **Passing** (13 files):
   - `ChatInput.test.tsx` - 34/34 ✅
   - `chatService.test.ts` - 35/35 ✅
   - `ChatPage.test.tsx` - 3/3 ✅
-  - `NotesList.test.tsx` - 36/36 ✅ (NEWLY FIXED)
-  - (8 other test files)
+  - `NotesList.test.tsx` - 36/36 ✅ (FIXED)
+  - `DocumentsList.test.tsx` - 30/30 ✅ (NEWLY FIXED)
+  - `DocumentUpload.test.tsx` - 35/35 ✅
+  - `TagFilter.test.tsx` - 30/30 ✅
+  - (6 other test files)
 
-- ❌ **Failing** (5 files):
-  - `ImageGenerationPage.test.tsx` - Failures
-  - `NotesPage.test.tsx` - Failures
-  - (3 other test files)
+- ❌ **Failing** (~20 failures remaining in a few files)
 
 ### Example Failure Pattern
 ```
@@ -185,13 +186,26 @@ All commits follow conventional commit format with clear messages:
 5. **7b8da97** - `fix: Properly handle async callbacks in chatService streaming tests` ⭐
 6. **5f56ad4** - `fix: Remove obsolete notes toggle tests`
 7. **cf31aa0** - `fix: Update NotesList tests to match refactored component API` ⭐⭐
+8. **381df6e** - `fix: Fix DocumentsList tests and add missing FileText import` ⭐⭐
 
-**Latest Progress** (Commit cf31aa0):
+**Latest Progress**:
+
+**Commit cf31aa0** - NotesList Fixes:
 - Fixed 42 NotesList test failures (largest frontend failure source)
 - Component was refactored to use props instead of useNotes hook
 - Removed obsolete loading/error/tag-filtering tests (now in NotesPage)
 - Updated CSS class assertions for selected note highlighting
 - **Result**: 36/36 NotesList tests now passing ✅
+
+**Commit 381df6e** - DocumentsList Fixes:
+- Fixed 30 DocumentsList test failures
+- Added missing FileText icon import to component
+- Added useCategories mock to test setup
+- Fixed CSS class assertions (bg-primary-500 not bg-blue-50)
+- Fixed selector from p-4 to p-5
+- **Result**: 30/30 DocumentsList tests now passing ✅
+
+**Total Fixed in This Session**: 72 test failures resolved!
 
 ---
 
