@@ -7,7 +7,8 @@ instead of prompt engineering, providing more reliable tool use.
 import logging
 from typing import Any, Dict, List, Optional
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -25,53 +26,60 @@ class GeminiAgentOrchestrator:
         if not settings.gemini_api_key:
             raise ValueError("Gemini API key not configured")
 
-        genai.configure(api_key=settings.gemini_api_key)
+        # Use Google AI API (not Vertex AI)
+        # Explicitly disable Vertex AI to override environment variables
+        self.client = genai.Client(
+            api_key=settings.gemini_api_key,
+            vertexai=False
+        )
         self.rag_orchestrator = get_rag_orchestrator()
-        logger.info("Gemini agent orchestrator initialized")
+        logger.info("Gemini agent orchestrator initialized (Google AI API mode)")
 
-    def _create_function_declarations(self) -> List[Dict[str, Any]]:
+    def _create_function_declarations(self) -> List[types.FunctionDeclaration]:
         """
         Create Gemini function declarations from our knowledge search tool.
 
         Returns:
             List of function declarations in Gemini format
         """
-        return [{
-            "name": "knowledge_search",
-            "description": (
-                "Search the user's personal knowledge base including notes, documents, and web sources. "
-                "Use this when you need factual information that might be in the user's stored knowledge. "
-                "Returns relevant passages with source citations."
-            ),
-            "parameters": {
-                "type_": "OBJECT",
-                "properties": {
-                    "query": {
-                        "type_": "STRING",
-                        "description": (
-                            "The search query. Be specific and focused. "
-                            "Example: 'machine learning best practices' or 'Python async programming'"
-                        ),
+        return [
+            types.FunctionDeclaration(
+                name="knowledge_search",
+                description=(
+                    "Search the user's personal knowledge base including notes, documents, and web sources. "
+                    "Use this when you need factual information that might be in the user's stored knowledge. "
+                    "Returns relevant passages with source citations."
+                ),
+                parameters_json_schema={
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": (
+                                "The search query. Be specific and focused. "
+                                "Example: 'machine learning best practices' or 'Python async programming'"
+                            ),
+                        },
+                        "include_notes": {
+                            "type": "boolean",
+                            "description": (
+                                "Whether to include personal notes in search results. "
+                                "Set to false for reputable sources only (documents, web). "
+                                "Set to true to include personal thoughts and notes."
+                            ),
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": (
+                                "Maximum number of relevant passages to return (1-20). "
+                                "Default: 10. Use fewer for simple queries, more for complex topics."
+                            ),
+                        },
                     },
-                    "include_notes": {
-                        "type_": "BOOLEAN",
-                        "description": (
-                            "Whether to include personal notes in search results. "
-                            "Set to false for reputable sources only (documents, web). "
-                            "Set to true to include personal thoughts and notes."
-                        ),
-                    },
-                    "max_results": {
-                        "type_": "INTEGER",
-                        "description": (
-                            "Maximum number of relevant passages to return (1-20). "
-                            "Default: 10. Use fewer for simple queries, more for complex topics."
-                        ),
-                    },
+                    "required": ["query"],
                 },
-                "required": ["query"],
-            },
-        }]
+            )
+        ]
 
     async def _execute_knowledge_search(
         self,
@@ -171,42 +179,36 @@ Example of BAD listing:
 
 Always synthesize, never just list."""
 
-        # Create model with function calling
-        generation_config = {
-            "temperature": temperature,
-        }
+        # Create tools from function declarations
+        tool = types.Tool(function_declarations=tools)
 
-        gemini_model = genai.GenerativeModel(
-            model_name=model,
-            generation_config=generation_config,
-            system_instruction=system_prompt,
-            tools=tools,
+        # Start conversation history
+        conversation_history = [
+            types.Content(
+                role='user',
+                parts=[types.Part.from_text(text=query)],
+            )
+        ]
+
+        # Generate initial response with tools
+        response = self.client.models.generate_content(
+            model=model,
+            contents=conversation_history,
+            config=types.GenerateContentConfig(
+                temperature=temperature,
+                system_instruction=system_prompt,
+                tools=[tool],
+            ),
         )
-
-        # Start chat session
-        chat = gemini_model.start_chat()
-
-        # Send initial query
-        response = chat.send_message(query)
 
         # Handle function calls iteratively
         iteration = 0
         while iteration < max_iterations:
             iteration += 1
 
-            # Check if model wants to call functions
-            if not response.candidates[0].content.parts:
-                logger.warning("Empty response from Gemini")
-                break
-
-            function_calls = []
-            text_response = ""
-
-            for part in response.candidates[0].content.parts:
-                if hasattr(part, 'function_call') and part.function_call:
-                    function_calls.append(part.function_call)
-                elif hasattr(part, 'text') and part.text:
-                    text_response += part.text
+            # Check if we have function calls
+            function_calls = response.function_calls if hasattr(response, 'function_calls') else []
+            text_response = response.text if hasattr(response, 'text') and response.text else ""
 
             # If we have a text response and no function calls, we're done
             if text_response and not function_calls:
@@ -226,16 +228,11 @@ Always synthesize, never just list."""
                 logger.debug(f"function_call.args content: {function_call.args}")
 
                 if function_call.name == "knowledge_search":
-                    # Extract arguments - convert to dict first
+                    # Extract arguments - now they're direct dict attributes
                     try:
-                        # function_call.args is a Struct, need to convert to dict
-                        args_dict = {}
-                        for key in function_call.args:
-                            args_dict[key] = function_call.args[key]
-
-                        search_query = args_dict.get("query", "")
-                        include_notes = args_dict.get("include_notes", False)
-                        max_results = args_dict.get("max_results", 10)
+                        search_query = dict(function_call.args).get("query", "")
+                        include_notes = dict(function_call.args).get("include_notes", False)
+                        max_results = dict(function_call.args).get("max_results", 10)
                     except Exception as e:
                         logger.error(f"Error extracting function arguments: {e}")
                         raise
@@ -287,33 +284,46 @@ Always synthesize, never just list."""
                     # Store tool call record
                     all_tool_calls.append(tool_call_record)
 
-                    # Build function response for Gemini
-                    function_responses.append(
-                        genai.protos.Part(
-                            function_response=genai.protos.FunctionResponse(
-                                name="knowledge_search",
-                                response={"result": search_result}
-                            )
-                        )
+                    # Build function response part
+                    function_response_part = types.Part.from_function_response(
+                        name="knowledge_search",
+                        response={"result": search_result},
                     )
+                    function_responses.append(function_response_part)
 
             # Send function results back to model
             if function_responses:
-                response = chat.send_message(function_responses)
+                # Add the model's function call to conversation history
+                conversation_history.append(response.candidates[0].content)
+
+                # Add function responses to conversation history
+                function_response_content = types.Content(
+                    role='tool',
+                    parts=function_responses,
+                )
+                conversation_history.append(function_response_content)
+
+                # Generate next response
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=conversation_history,
+                    config=types.GenerateContentConfig(
+                        temperature=temperature,
+                        system_instruction=system_prompt,
+                        tools=[tool],
+                    ),
+                )
             else:
                 break
 
         # If we exhausted iterations, return best effort response
         logger.warning(f"Max iterations ({max_iterations}) reached")
 
-        # Try to extract any text from the last response
-        text_parts = []
-        for part in response.candidates[0].content.parts:
-            if hasattr(part, 'text') and part.text:
-                text_parts.append(part.text)
+        # Try to extract text from the last response
+        final_text = response.text if hasattr(response, 'text') and response.text else ""
 
-        if text_parts:
-            return "".join(text_parts), all_citations, all_tool_calls
+        if final_text:
+            return final_text, all_citations, all_tool_calls
         else:
             return "I apologize, but I wasn't able to complete the task within the allowed iterations.", all_citations, all_tool_calls
 
@@ -351,7 +361,7 @@ Always synthesize, never just list."""
         # Create tools
         tools = self._create_function_declarations()
 
-        # System prompt for agent behavior (same as non-streaming)
+        # System prompt for agent behavior
         system_prompt = """You are a helpful AI assistant with access to the user's personal knowledge base.
 
 You can use the knowledge_search function to search for information when needed. Use it when:
@@ -381,44 +391,38 @@ Example of BAD listing:
 
 Always synthesize, never just list."""
 
-        # Create model with function calling
-        generation_config = {
-            "temperature": temperature,
-        }
+        # Create tools from function declarations
+        tool = types.Tool(function_declarations=tools)
 
-        gemini_model = genai.GenerativeModel(
-            model_name=model,
-            generation_config=generation_config,
-            system_instruction=system_prompt,
-            tools=tools,
+        # Start conversation history
+        conversation_history = [
+            types.Content(
+                role='user',
+                parts=[types.Part.from_text(text=query)],
+            )
+        ]
+
+        # Generate initial response with tools (non-streaming for function call detection)
+        response = self.client.models.generate_content(
+            model=model,
+            contents=conversation_history,
+            config=types.GenerateContentConfig(
+                temperature=temperature,
+                system_instruction=system_prompt,
+                tools=[tool],
+            ),
         )
-
-        # Start chat session
-        chat = gemini_model.start_chat()
-
-        # Send initial query (non-streaming for function calls)
-        response = chat.send_message(query)
 
         # Handle function calls iteratively
         iteration = 0
         while iteration < max_iterations:
             iteration += 1
 
-            # Check if model wants to call functions
-            if not response.candidates[0].content.parts:
-                logger.warning("Empty response from Gemini")
-                break
+            # Check if we have function calls
+            function_calls = response.function_calls if hasattr(response, 'function_calls') else []
+            text_response = response.text if hasattr(response, 'text') and response.text else ""
 
-            function_calls = []
-            text_response = ""
-
-            for part in response.candidates[0].content.parts:
-                if hasattr(part, 'function_call') and part.function_call:
-                    function_calls.append(part.function_call)
-                elif hasattr(part, 'text') and part.text:
-                    text_response += part.text
-
-            # If we have a text response and no function calls, stream the final answer
+            # If we have a text response and no function calls, we're ready to stream the final answer
             if text_response and not function_calls:
                 logger.info(f"Final answer received after {iteration} iteration(s), streaming response")
 
@@ -457,15 +461,11 @@ Always synthesize, never just list."""
                 }
 
                 if function_call.name == "knowledge_search":
-                    # Extract arguments
+                    # Extract arguments - now they're direct dict attributes
                     try:
-                        args_dict = {}
-                        for key in function_call.args:
-                            args_dict[key] = function_call.args[key]
-
-                        search_query = args_dict.get("query", "")
-                        include_notes = args_dict.get("include_notes", False)
-                        max_results = args_dict.get("max_results", 10)
+                        search_query = dict(function_call.args).get("query", "")
+                        include_notes = dict(function_call.args).get("include_notes", False)
+                        max_results = dict(function_call.args).get("max_results", 10)
                     except Exception as e:
                         logger.error(f"Error extracting function arguments: {e}")
                         raise
@@ -540,23 +540,41 @@ Always synthesize, never just list."""
                     # Store tool call record
                     all_tool_calls.append(tool_call_record)
 
-                    # Build function response for Gemini
-                    function_responses.append(
-                        genai.protos.Part(
-                            function_response=genai.protos.FunctionResponse(
-                                name="knowledge_search",
-                                response={"result": search_result}
-                            )
-                        )
+                    # Build function response part
+                    function_response_part = types.Part.from_function_response(
+                        name="knowledge_search",
+                        response={"result": search_result},
                     )
+                    function_responses.append(function_response_part)
 
             # Send function results back to model
             if function_responses:
+                # Add the model's function call to conversation history
+                conversation_history.append(response.candidates[0].content)
+
+                # Add function responses to conversation history
+                function_response_content = types.Content(
+                    role='tool',
+                    parts=function_responses,
+                )
+                conversation_history.append(function_response_content)
+
+                # Emit status update
                 yield {
                     "type": "status",
                     "status": "Generating answer..."
                 }
-                response = chat.send_message(function_responses)
+
+                # Generate next response (non-streaming for function call detection)
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=conversation_history,
+                    config=types.GenerateContentConfig(
+                        temperature=temperature,
+                        system_instruction=system_prompt,
+                        tools=[tool],
+                    ),
+                )
             else:
                 break
 

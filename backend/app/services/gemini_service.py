@@ -4,7 +4,8 @@ Service for interacting with Google's Gemini API.
 import logging
 from typing import AsyncIterator, Optional
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.core.config import settings
 
@@ -21,9 +22,13 @@ class GeminiService:
             self.client = None
             return
 
-        genai.configure(api_key=settings.gemini_api_key)
-        self.client = genai
-        logger.info("Gemini service initialized")
+        # Use Google AI API (not Vertex AI)
+        # Explicitly disable Vertex AI to override environment variables
+        self.client = genai.Client(
+            api_key=settings.gemini_api_key,
+            vertexai=False
+        )
+        logger.info("Gemini service initialized (Google AI API mode)")
 
     def _build_system_prompt(self) -> str:
         """
@@ -93,21 +98,21 @@ Remember: Users want helpful complete answers with clear source attribution when
             logger.info(f"Generating response with {model}")
 
             # Create generation config
-            generation_config = {
+            config_params = {
                 "temperature": temperature,
+                "system_instruction": system_prompt or self._build_system_prompt(),
             }
             if max_tokens:
-                generation_config["max_output_tokens"] = max_tokens
+                config_params["max_output_tokens"] = max_tokens
 
-            # Create model with system instruction
-            gemini_model = genai.GenerativeModel(
-                model_name=model,
-                generation_config=generation_config,
-                system_instruction=system_prompt or self._build_system_prompt(),
-            )
+            config = types.GenerateContentConfig(**config_params)
 
             # Generate response
-            response = gemini_model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=config,
+            )
 
             return response.text
 
@@ -146,23 +151,21 @@ Remember: Users want helpful complete answers with clear source attribution when
             logger.info(f"Generating streaming response with {model}")
 
             # Create generation config
-            generation_config = {
+            config_params = {
                 "temperature": temperature,
+                "system_instruction": system_prompt or self._build_system_prompt(),
             }
             if max_tokens:
-                generation_config["max_output_tokens"] = max_tokens
+                config_params["max_output_tokens"] = max_tokens
 
-            # Create model with system instruction
-            gemini_model = genai.GenerativeModel(
-                model_name=model,
-                generation_config=generation_config,
-                system_instruction=system_prompt or self._build_system_prompt(),
-            )
+            config = types.GenerateContentConfig(**config_params)
 
             # Generate streaming response
-            response = gemini_model.generate_content(prompt, stream=True)
-
-            for chunk in response:
+            async for chunk in await self.client.aio.models.generate_content_stream(
+                model=model,
+                contents=prompt,
+                config=config,
+            ):
                 if chunk.text:
                     yield chunk.text
 
