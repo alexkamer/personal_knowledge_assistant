@@ -300,11 +300,12 @@ When you use the tool, analyze the results and provide a clear, helpful answer."
         )
 
         # Generate suggested follow-up questions
+        # Use Ollama fast model for follow-up questions (not Gemini)
         suggested_questions = await llm_service.generate_follow_up_questions(
             query=request.message,
             answer=response_text,
             context=context,
-            model=request.model,
+            model=settings.ollama_fast_model,
         )
 
         # Calculate and store token count for assistant message
@@ -742,11 +743,13 @@ async def chat_stream(
             yield f'data: {json.dumps({"type": "done", "message_id": str(assistant_message.id)})}\n\n'
 
             # Generate suggested follow-up questions (in background after done event)
+            # Use Ollama fast model for follow-up questions (not Gemini)
+            from app.core.config import settings
             suggested_questions = await llm_service.generate_follow_up_questions(
                 query=clean_message,
                 answer=complete_response,
                 context=context,
-                model=model_to_use,
+                model=settings.ollama_fast_model,
             )
 
             # Update message with suggested questions
