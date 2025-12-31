@@ -64,3 +64,6 @@ htmlcov/
 coverage.xml
 *.cover
 .pytest_cache/
+
+# Credentials and sensitive files
+bedrock-auth.sh
