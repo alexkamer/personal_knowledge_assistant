@@ -1,9 +1,10 @@
 """
 Source credibility scoring service.
 """
+
+import logging
 from typing import Dict, List
 from urllib.parse import urlparse
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +68,7 @@ class CredibilityService:
         "weebly.com",
     }
 
-    def score_source(
-        self, url: str, title: str = "", snippet: str = ""
-    ) -> Dict[str, any]:
+    def score_source(self, url: str, title: str = "", snippet: str = "") -> Dict[str, any]:
         """
         Score source credibility (0.0 - 1.0).
 
@@ -141,9 +140,7 @@ class CredibilityService:
             # Clamp score between 0 and 1
             score = min(max(score, 0.0), 1.0)
 
-            logger.debug(
-                f"Credibility score for {domain}: {score:.2f} ({', '.join(reasons)})"
-            )
+            logger.debug(f"Credibility score for {domain}: {score:.2f} ({', '.join(reasons)})")
 
             return {"score": score, "reasons": reasons, "source_type": source_type}
 
@@ -185,9 +182,7 @@ class CredibilityService:
 
             filtered.append(source)
 
-        logger.info(
-            f"Filtered {len(sources)} sources to {len(filtered)} (min_score={min_score})"
-        )
+        logger.info(f"Filtered {len(sources)} sources to {len(filtered)} (min_score={min_score})")
 
         return filtered
 

@@ -3,6 +3,7 @@ YouTube video processing service.
 
 Handles transcript extraction, metadata fetching, and video processing.
 """
+
 import logging
 import os
 import re
@@ -67,7 +68,7 @@ class YouTubeService:
                 return video_id
 
         # Pattern 4: Just the video ID
-        if re.match(r'^[a-zA-Z0-9_-]{11}$', url):
+        if re.match(r"^[a-zA-Z0-9_-]{11}$", url):
             return url
 
         return None
@@ -93,7 +94,7 @@ class YouTubeService:
             VideoUnavailable: If the video doesn't exist
         """
         if languages is None:
-            languages = ['en']
+            languages = ["en"]
 
         try:
             # Configure proxy if credentials are available
@@ -101,6 +102,7 @@ class YouTubeService:
             if WEBSHARE_PROXY_USERNAME and WEBSHARE_PROXY_PASSWORD:
                 try:
                     from youtube_transcript_api.proxies import WebshareProxyConfig
+
                     proxy_config = WebshareProxyConfig(
                         proxy_username=WEBSHARE_PROXY_USERNAME,
                         proxy_password=WEBSHARE_PROXY_PASSWORD,
@@ -130,7 +132,7 @@ class YouTubeService:
 
             # Calculate total duration
             if transcript_data:
-                total_duration = transcript_data[-1]['start'] + transcript_data[-1]['duration']
+                total_duration = transcript_data[-1]["start"] + transcript_data[-1]["duration"]
             else:
                 total_duration = 0
 
@@ -170,8 +172,8 @@ class YouTubeService:
         """
         lines = []
         for entry in transcript_data:
-            timestamp = YouTubeService._format_timestamp(entry['start'])
-            text = entry['text'].strip()
+            timestamp = YouTubeService._format_timestamp(entry["start"])
+            text = entry["text"].strip()
             lines.append(f"[{timestamp}] {text}")
 
         return "\n".join(lines)
@@ -209,18 +211,20 @@ class YouTubeService:
         results = []
 
         for i, entry in enumerate(transcript_data):
-            if query_lower in entry['text'].lower():
+            if query_lower in entry["text"].lower():
                 # Include context
                 start_idx = max(0, i - context_entries)
                 end_idx = min(len(transcript_data), i + context_entries + 1)
 
                 context = transcript_data[start_idx:end_idx]
-                results.append({
-                    "match_index": i,
-                    "match_text": entry['text'],
-                    "timestamp": entry['start'],
-                    "context": context,
-                })
+                results.append(
+                    {
+                        "match_index": i,
+                        "match_text": entry["text"],
+                        "timestamp": entry["start"],
+                        "context": context,
+                    }
+                )
 
         return results
 
@@ -241,9 +245,9 @@ class YouTubeService:
         try:
             # Configure yt-dlp to extract info only (no download)
             ydl_opts = {
-                'quiet': True,
-                'no_warnings': True,
-                'extract_flat': False,
+                "quiet": True,
+                "no_warnings": True,
+                "extract_flat": False,
             }
 
             url = f"https://www.youtube.com/watch?v={video_id}"

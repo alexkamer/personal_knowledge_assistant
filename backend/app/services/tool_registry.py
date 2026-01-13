@@ -4,6 +4,7 @@ Tool registry for managing available tools and access control.
 Provides a central registry of all tools available to agents, with schemas
 and access control configuration.
 """
+
 import logging
 from typing import Dict, List, Optional, Type
 
@@ -131,11 +132,7 @@ class ToolRegistry:
             List of tool names
         """
         if access_level:
-            return [
-                name
-                for name, level in self._access_levels.items()
-                if level == access_level
-            ]
+            return [name for name, level in self._access_levels.items() if level == access_level]
         return list(self._tool_classes.keys())
 
     def is_tool_available(self, tool_name: str, agent_access_list: Optional[List[str]]) -> bool:
@@ -179,11 +176,7 @@ class ToolRegistry:
         if not agent_access_list:
             return []
 
-        return [
-            tool_name
-            for tool_name in agent_access_list
-            if tool_name in self._tool_classes
-        ]
+        return [tool_name for tool_name in agent_access_list if tool_name in self._tool_classes]
 
     def get_access_level(self, tool_name: str) -> Optional[str]:
         """

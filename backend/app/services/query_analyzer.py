@@ -1,16 +1,18 @@
 """
 Query analyzer service for understanding query intent and complexity.
 """
+
 import logging
 import re
 from enum import Enum
-from typing import Dict, Any
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
 
 class QueryType(str, Enum):
     """Types of queries the system can handle."""
+
     FACTUAL = "factual"  # Simple fact lookup (who, what, when, where)
     CONCEPTUAL = "conceptual"  # Explanation or understanding (how, why)
     COMPARATIVE = "comparative"  # Comparing multiple things
@@ -20,6 +22,7 @@ class QueryType(str, Enum):
 
 class QueryComplexity(str, Enum):
     """Complexity levels for queries."""
+
     SIMPLE = "simple"  # Single concept, direct answer
     MODERATE = "moderate"  # Multiple concepts, some context needed
     COMPLEX = "complex"  # Multiple concepts, deep reasoning required
@@ -44,7 +47,6 @@ class QueryAnalyzer:
             r"\bsolve\b.*\bequation\b",
             r"\bsquare root of\b",
             r"\bpercentage\b.*\bof\b",
-
             # Geography and demographics
             r"\bcapital of\b",
             r"\bpresident of\b",
@@ -54,20 +56,17 @@ class QueryAnalyzer:
             r"\bsmallest\b.*\b(country|state|continent)\b",
             r"\blocated in\b.*\bcountry\b",
             r"\bwhere is\b.*\b(country|city|state)\b",
-
             # Date and time
             r"\bwhat (day|date|time|year) is (it|today)\b",
             r"\bwhen is\b.*\b(holiday|christmas|new year|easter)\b",
             r"\bhow many days\b.*\bin\b.*\b(month|year|week)\b",
             r"\bwhat time zone\b",
-
             # Basic science facts
             r"\bspeed of light\b",
             r"\bboiling point\b.*\bwater\b",
             r"\bfreezing point\b",
             r"\bhow many\b.*\b(planets|continents|oceans)\b",
             r"\bwhat color is\b.*\b(sky|grass|sun)\b",
-
             # Language and definitions
             r"\bdefine\b.*\b(word|term)\b",
             r"\bwhat does\b.*\bmean\b",
@@ -75,20 +74,16 @@ class QueryAnalyzer:
             r"\bantonym for\b",
             r"\bhow do you spell\b",
             r"\btranslate\b.*\bto\b",
-
             # Units and conversions
             r"\bconvert\b.*\bto\b",
             r"\bhow many\b.*\bin\b.*\b(feet|meters|miles|kilometers|pounds|kilograms|gallons|liters)\b",
-
             # Historical facts (common knowledge)
             r"\bwhen did\b.*\b(world war|ww1|ww2)\b",
             r"\bwho invented\b.*\b(wheel|telephone|internet|computer)\b",
             r"\bwhen was\b.*\b(born|died|discovered|invented)\b",
-
             # Simple greetings/chat
             r"^(hi|hello|hey|thanks|thank you|goodbye|bye)[\s\?!\.]*$",
             r"^(how are you|what'?s up|good morning|good evening)[\s\?!\.]*$",
-
             # Very basic questions
             r"\bwhat is\b.*\b(gravity|oxygen|photosynthesis|dna|rna)\b",
             r"\bhow old is\b.*\b(earth|sun|universe)\b",
@@ -127,10 +122,12 @@ class QueryAnalyzer:
             "needs_retrieval": needs_retrieval,
         }
 
-        logger.info(f"Query analysis: type={query_type}, complexity={complexity}, "
-                   f"needs_retrieval={needs_retrieval}, "
-                   f"suggested_chunks={retrieval_params['top_k']}, "
-                   f"needs_web={analysis['needs_web_search']}")
+        logger.info(
+            f"Query analysis: type={query_type}, complexity={complexity}, "
+            f"needs_retrieval={needs_retrieval}, "
+            f"suggested_chunks={retrieval_params['top_k']}, "
+            f"needs_web={analysis['needs_web_search']}"
+        )
 
         return analysis
 
@@ -189,9 +186,7 @@ class QueryAnalyzer:
         return QueryComplexity.SIMPLE
 
     def _suggest_retrieval_params(
-        self,
-        query_type: QueryType,
-        complexity: QueryComplexity
+        self, query_type: QueryType, complexity: QueryComplexity
     ) -> Dict[str, Any]:
         """
         Suggest optimal retrieval parameters based on query analysis.
@@ -236,8 +231,15 @@ class QueryAnalyzer:
         or things likely not in uploaded documents.
         """
         current_indicators = [
-            "latest", "recent", "current", "today", "now",
-            "2024", "2025", "new", "updated"
+            "latest",
+            "recent",
+            "current",
+            "today",
+            "now",
+            "2024",
+            "2025",
+            "new",
+            "updated",
         ]
 
         # Queries about current events likely need web search

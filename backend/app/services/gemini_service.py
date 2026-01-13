@@ -1,6 +1,7 @@
 """
 Service for interacting with Google's Gemini API.
 """
+
 import logging
 from typing import AsyncIterator, Optional
 
@@ -24,10 +25,7 @@ class GeminiService:
 
         # Use Google AI API (not Vertex AI)
         # Explicitly disable Vertex AI to override environment variables
-        self.client = genai.Client(
-            api_key=settings.gemini_api_key,
-            vertexai=False
-        )
+        self.client = genai.Client(api_key=settings.gemini_api_key, vertexai=False)
         logger.info("Gemini service initialized (Google AI API mode)")
 
     def _build_system_prompt(self) -> str:

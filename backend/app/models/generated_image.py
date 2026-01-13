@@ -1,9 +1,10 @@
 """
 Generated image model for AI-generated images.
 """
+
 from typing import Optional
 
-from sqlalchemy import Boolean, String, Text, Integer, JSON
+from sqlalchemy import JSON, Boolean, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDMixin

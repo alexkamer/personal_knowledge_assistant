@@ -1,24 +1,25 @@
 """
 RAG (Retrieval-Augmented Generation) service for semantic search and context assembly.
 """
+
 import logging
 from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.cache import search_results_cache, create_cache_key
+from app.core.cache import create_cache_key, search_results_cache
 from app.core.config import settings
 from app.core.retry import retry_with_backoff, vector_db_circuit_breaker
 from app.models.chunk import Chunk
-from app.models.note import Note
 from app.models.document import Document
+from app.models.note import Note
 from app.models.youtube_video import YouTubeVideo
 from app.services.embedding_service import get_embedding_service
+from app.services.hybrid_search_service import get_hybrid_search_service
+from app.services.reranking_service import get_reranking_service
 from app.services.vector_service import get_vector_service
 from app.services.web_search_service import get_web_search_service
-from app.services.reranking_service import get_reranking_service
-from app.services.hybrid_search_service import get_hybrid_search_service
 
 logger = logging.getLogger(__name__)
 
@@ -105,17 +106,26 @@ class RAGService:
         filters = {}
 
         # Detect code-related queries
-        code_keywords = ['code', 'function', 'class', 'method', 'implementation', 'snippet', 'example code', 'programming']
+        code_keywords = [
+            "code",
+            "function",
+            "class",
+            "method",
+            "implementation",
+            "snippet",
+            "example code",
+            "programming",
+        ]
         if any(keyword in query_lower for keyword in code_keywords):
-            filters['has_code'] = True
+            filters["has_code"] = True
             logger.info("Detected code-related query, filtering for has_code=True")
 
         # Detect content type preferences
-        if 'list' in query_lower or 'bullet' in query_lower or 'steps' in query_lower:
-            filters['content_type'] = 'list'
+        if "list" in query_lower or "bullet" in query_lower or "steps" in query_lower:
+            filters["content_type"] = "list"
             logger.info("Detected list-related query, filtering for content_type='list'")
-        elif 'table' in query_lower or 'data' in query_lower:
-            filters['content_type'] = 'table'
+        elif "table" in query_lower or "data" in query_lower:
+            filters["content_type"] = "table"
             logger.info("Detected table-related query, filtering for content_type='table'")
 
         return filters
@@ -198,23 +208,21 @@ class RAGService:
 
         # Fetch chunk details from database
         chunk_ids = [chunk_id for chunk_id, _ in fused_results]
-        result = await db.execute(
-            select(Chunk).where(Chunk.id.in_(chunk_ids))
-        )
+        result = await db.execute(select(Chunk).where(Chunk.id.in_(chunk_ids)))
         chunks_by_id = {str(chunk.id): chunk for chunk in result.scalars().all()}
 
         # Batch fetch source titles to avoid N+1 queries
         note_ids = [chunk.note_id for chunk in chunks_by_id.values() if chunk.note_id]
         doc_ids = [chunk.document_id for chunk in chunks_by_id.values() if chunk.document_id]
-        youtube_ids = [chunk.youtube_video_id for chunk in chunks_by_id.values() if chunk.youtube_video_id]
+        youtube_ids = [
+            chunk.youtube_video_id for chunk in chunks_by_id.values() if chunk.youtube_video_id
+        ]
 
         # Single query for all note titles - ensure consistent UUID string formatting
         note_title_map = {}
         if note_ids:
             try:
-                result = await db.execute(
-                    select(Note.id, Note.title).where(Note.id.in_(note_ids))
-                )
+                result = await db.execute(select(Note.id, Note.title).where(Note.id.in_(note_ids)))
                 note_title_map = {str(note_id): title for note_id, title in result}
                 logger.debug(f"Fetched {len(note_title_map)} note titles")
             except Exception as e:
@@ -237,7 +245,9 @@ class RAGService:
         if youtube_ids:
             try:
                 result = await db.execute(
-                    select(YouTubeVideo.id, YouTubeVideo.title).where(YouTubeVideo.id.in_(youtube_ids))
+                    select(YouTubeVideo.id, YouTubeVideo.title).where(
+                        YouTubeVideo.id.in_(youtube_ids)
+                    )
                 )
                 youtube_title_map = {str(yt_id): title for yt_id, title in result}
                 logger.debug(f"Fetched {len(youtube_title_map)} YouTube titles")
@@ -352,17 +362,21 @@ class RAGService:
         logger.info(f"Found {len(chunk_ids)} relevant chunks")
 
         # Batch fetch source titles to avoid N+1 queries
-        note_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "note"]
-        doc_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "document"]
-        youtube_ids = [metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "youtube"]
+        note_ids = [
+            metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "note"
+        ]
+        doc_ids = [
+            metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "document"
+        ]
+        youtube_ids = [
+            metadata["source_id"] for metadata in metadatas if metadata["source_type"] == "youtube"
+        ]
 
         # Single query for all note titles - ensure consistent UUID string formatting
         note_title_map = {}
         if note_ids:
             try:
-                result = await db.execute(
-                    select(Note.id, Note.title).where(Note.id.in_(note_ids))
-                )
+                result = await db.execute(select(Note.id, Note.title).where(Note.id.in_(note_ids)))
                 note_title_map = {str(note_id): title for note_id, title in result}
                 logger.debug(f"Fetched {len(note_title_map)} note titles")
             except Exception as e:
@@ -385,7 +399,9 @@ class RAGService:
         if youtube_ids:
             try:
                 result = await db.execute(
-                    select(YouTubeVideo.id, YouTubeVideo.title).where(YouTubeVideo.id.in_(youtube_ids))
+                    select(YouTubeVideo.id, YouTubeVideo.title).where(
+                        YouTubeVideo.id.in_(youtube_ids)
+                    )
                 )
                 youtube_title_map = {str(yt_id): title for yt_id, title in result}
                 logger.debug(f"Fetched {len(youtube_title_map)} YouTube titles")
@@ -488,17 +504,20 @@ class RAGService:
         # Filter chunks by relevance threshold
         # Lower distance = higher relevance, so we filter by (1 - distance) >= threshold
         relevant_chunks = [
-            chunk for chunk in chunks
-            if (1.0 - chunk.distance) >= min_relevance_threshold
+            chunk for chunk in chunks if (1.0 - chunk.distance) >= min_relevance_threshold
         ]
 
         # If filtering removed all chunks, fall back to top 2 chunks regardless of relevance
         if not relevant_chunks and chunks:
             relevant_chunks = chunks[:2]
-            logger.warning(f"All chunks below relevance threshold {min_relevance_threshold}, using top 2 anyway")
+            logger.warning(
+                f"All chunks below relevance threshold {min_relevance_threshold}, using top 2 anyway"
+            )
         elif len(relevant_chunks) < len(chunks):
             filtered_out = len(chunks) - len(relevant_chunks)
-            logger.info(f"Filtered out {filtered_out} low-relevance chunks (threshold: {min_relevance_threshold})")
+            logger.info(
+                f"Filtered out {filtered_out} low-relevance chunks (threshold: {min_relevance_threshold})"
+            )
 
         context_parts = []
         all_chunk_citations = []
@@ -510,7 +529,9 @@ class RAGService:
             chunk_tokens = len(chunk.content) // 4
 
             if total_tokens + chunk_tokens > max_tokens:
-                logger.info(f"Reached max context tokens ({max_tokens}), stopping at {idx-1} chunks")
+                logger.info(
+                    f"Reached max context tokens ({max_tokens}), stopping at {idx-1} chunks"
+                )
                 break
 
             # Add chunk with citation marker
@@ -560,7 +581,9 @@ class RAGService:
             citations.append(citation)
 
         context = "\n".join(context_parts)
-        logger.info(f"Assembled context with {len(all_chunk_citations)} chunks from {len(citations)} unique sources (~{total_tokens} tokens)")
+        logger.info(
+            f"Assembled context with {len(all_chunk_citations)} chunks from {len(citations)} unique sources (~{total_tokens} tokens)"
+        )
 
         return context, citations
 
@@ -623,8 +646,8 @@ class RAGService:
         # Auto-infer filters from query if enabled and no manual filters provided
         if auto_infer_filters and content_type is None and has_code is None:
             inferred = self._infer_filters_from_query(query)
-            content_type = content_type or inferred.get('content_type')
-            has_code = has_code if has_code is not None else inferred.get('has_code')
+            content_type = content_type or inferred.get("content_type")
+            has_code = has_code if has_code is not None else inferred.get("has_code")
 
         # Get local chunks from knowledge base using hybrid or semantic search
         if self.use_hybrid_search and self.hybrid_search_service:
@@ -652,13 +675,13 @@ class RAGService:
         if settings.rerank_enabled and chunks:
             logger.info(f"Applying re-ranking to {len(chunks)} chunks")
             chunks = self.rerank_chunks(query, chunks)
-            logger.info(f"After re-ranking: {len(chunks)} chunks (distances: {[f'{c.distance:.3f}' for c in chunks]})")
+            logger.info(
+                f"After re-ranking: {len(chunks)} chunks (distances: {[f'{c.distance:.3f}' for c in chunks]})"
+            )
 
         # Assemble context from re-ranked chunks with relevance filtering
         context, citations = self.assemble_context(
-            chunks,
-            max_tokens=max_tokens,
-            min_relevance_threshold=settings.min_relevance_threshold
+            chunks, max_tokens=max_tokens, min_relevance_threshold=settings.min_relevance_threshold
         )
 
         # Determine if we should add web search based on confidence
@@ -670,10 +693,14 @@ class RAGService:
 
             # If best match is good enough (distance < threshold), skip web search
             if best_distance < (1.0 - confidence_threshold):
-                logger.info(f"Best match confidence high ({1.0 - best_distance:.2f}), skipping web search")
+                logger.info(
+                    f"Best match confidence high ({1.0 - best_distance:.2f}), skipping web search"
+                )
                 should_add_web = False
             else:
-                logger.info(f"Best match confidence low ({1.0 - best_distance:.2f}), adding web search")
+                logger.info(
+                    f"Best match confidence low ({1.0 - best_distance:.2f}), adding web search"
+                )
 
         # Add web search results if needed
         if should_add_web:
@@ -690,14 +717,16 @@ class RAGService:
                         web_context_parts.append(
                             f"\n[Web Source {idx}] {result['title']}\n{result['body']}\n"
                         )
-                        web_citations.append({
-                            "index": len(citations) + idx,
-                            "source_type": "web",
-                            "source_id": result['href'],
-                            "source_title": result['title'],
-                            "chunk_index": 0,
-                            "distance": 0.0,  # Web results don't have distance
-                        })
+                        web_citations.append(
+                            {
+                                "index": len(citations) + idx,
+                                "source_type": "web",
+                                "source_id": result["href"],
+                                "source_title": result["title"],
+                                "chunk_index": 0,
+                                "distance": 0.0,  # Web results don't have distance
+                            }
+                        )
 
                     context += "".join(web_context_parts)
                     citations.extend(web_citations)

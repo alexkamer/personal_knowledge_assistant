@@ -1,6 +1,7 @@
 """
 Custom exceptions and error handlers for the application.
 """
+
 from typing import Any, Dict
 
 from fastapi import HTTPException, Request, status
@@ -19,7 +20,9 @@ class KnowledgeAssistantException(Exception):
 class OllamaConnectionError(KnowledgeAssistantException):
     """Raised when Ollama service is unavailable."""
 
-    def __init__(self, message: str = "Unable to connect to Ollama. Please ensure Ollama is running."):
+    def __init__(
+        self, message: str = "Unable to connect to Ollama. Please ensure Ollama is running."
+    ):
         super().__init__(message, status.HTTP_503_SERVICE_UNAVAILABLE)
 
 

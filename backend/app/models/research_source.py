@@ -1,10 +1,11 @@
 """
 Research source model for tracking web sources found during research.
 """
-from typing import Optional, List
-import uuid
 
-from sqlalchemy import Integer, String, Text, Float, ForeignKey, JSON
+import uuid
+from typing import List, Optional
+
+from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -43,9 +44,7 @@ class ResearchSource(Base, UUIDMixin, TimestampMixin):
 
     # Credibility
     credibility_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    credibility_reasons: Mapped[Optional[List[str]]] = mapped_column(
-        JSON, nullable=True
-    )
+    credibility_reasons: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
 
     # Processing status
     status: Mapped[str] = mapped_column(

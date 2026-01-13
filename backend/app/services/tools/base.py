@@ -4,8 +4,10 @@ Base class for all tools used by agents.
 Tools provide external capabilities like web search, calculations, code execution, etc.
 Each tool must implement the execute method and provide a JSON schema for parameters.
 """
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 

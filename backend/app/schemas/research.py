@@ -1,8 +1,10 @@
 """
 Pydantic schemas for research operations.
 """
+
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -11,9 +13,7 @@ class ResearchTaskCreate(BaseModel):
 
     query: str = Field(..., min_length=3, max_length=500, description="Research query")
     max_sources: int = Field(10, ge=1, le=50, description="Maximum sources to process")
-    depth: str = Field(
-        "thorough", description="Research depth: quick, thorough, or deep"
-    )
+    depth: str = Field("thorough", description="Research depth: quick, thorough, or deep")
     source_types: Optional[List[str]] = Field(
         None, description="Filter by source types (academic, news, blog, etc.)"
     )

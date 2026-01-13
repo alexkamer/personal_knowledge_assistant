@@ -7,13 +7,14 @@ This service handles:
 - Fallback to local storage when external drive is unavailable
 - Archive path management and validation
 """
+
+import logging
 import os
 import shutil
 import uuid
-from pathlib import Path
-from typing import Tuple, Optional
 from datetime import datetime
-import logging
+from pathlib import Path
+from typing import Optional, Tuple
 
 import aiofiles
 
@@ -143,15 +144,11 @@ class ArchiveService:
 
         if not archive_available:
             if settings.archive_fallback_to_local:
-                logger.warning(
-                    f"Archive unavailable, saving {filename} to local storage"
-                )
+                logger.warning(f"Archive unavailable, saving {filename} to local storage")
                 # File is already in local upload directory, just return its path
                 return source_path, "local"
             else:
-                raise RuntimeError(
-                    "Archive drive is not available and fallback is disabled"
-                )
+                raise RuntimeError("Archive drive is not available and fallback is disabled")
 
         try:
             archive_docs_dir = ArchiveService.get_archive_documents_dir()

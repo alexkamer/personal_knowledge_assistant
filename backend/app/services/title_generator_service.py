@@ -1,6 +1,7 @@
 """
 Service for generating concise conversation titles using AI.
 """
+
 import logging
 from typing import Optional
 
@@ -63,11 +64,11 @@ Generate a 2-5 word title for this conversation. Be concise and descriptive. No 
             title = response["response"].strip()
 
             # Clean up the title
-            title = title.replace('"', '').replace("'", '').strip()
+            title = title.replace('"', "").replace("'", "").strip()
 
             # Truncate if too long
             if len(title) > 50:
-                title = title[:50].rsplit(' ', 1)[0]
+                title = title[:50].rsplit(" ", 1)[0]
 
             # Fallback if generation fails or is empty
             if not title or len(title) < 3:

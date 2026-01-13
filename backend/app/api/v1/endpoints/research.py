@@ -1,23 +1,24 @@
 """
 Research task management endpoints.
 """
+
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
-from sqlalchemy import select, func, desc
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.models.research_task import ResearchTask
 from app.models.research_source import ResearchSource
+from app.models.research_task import ResearchTask
 from app.schemas.research import (
-    ResearchTaskCreate,
-    ResearchTaskResponse,
-    ResearchTaskList,
-    ResearchTaskListItem,
     ResearchResultsResponse,
     ResearchSourceResponse,
+    ResearchTaskCreate,
+    ResearchTaskList,
+    ResearchTaskListItem,
+    ResearchTaskResponse,
     ResearchTaskStart,
 )
 from app.services.research_orchestrator import get_research_orchestrator
@@ -239,6 +240,7 @@ async def get_research_results(
 
     # Get sources with documents
     from sqlalchemy.orm import selectinload
+
     from app.models.document import Document
 
     sources_result = await db.execute(

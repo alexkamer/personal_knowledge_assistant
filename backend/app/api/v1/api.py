@@ -1,6 +1,7 @@
 """
 API v1 router combining all endpoints.
 """
+
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
@@ -16,8 +17,8 @@ from app.api.v1.endpoints import (
     notes,
     prompt_refinement,
     research,
-    research_projects,
     research_briefings,
+    research_projects,
     tags,
     youtube,
 )
@@ -34,10 +35,14 @@ api_router.include_router(youtube.router, prefix="/youtube", tags=["youtube"])
 api_router.include_router(context.router, prefix="/context", tags=["context"])
 api_router.include_router(contradictions.router, prefix="/contradictions", tags=["contradictions"])
 api_router.include_router(learning_gaps.router, prefix="/learning-gaps", tags=["learning_gaps"])
-api_router.include_router(knowledge_evolution.router, prefix="/knowledge-evolution", tags=["knowledge_evolution"])
+api_router.include_router(
+    knowledge_evolution.router, prefix="/knowledge-evolution", tags=["knowledge_evolution"]
+)
 api_router.include_router(research.router, prefix="/research", tags=["research"])
 api_router.include_router(research_projects.router, prefix="/research", tags=["research_projects"])
-api_router.include_router(research_briefings.router, prefix="/research", tags=["research_briefings"])
+api_router.include_router(
+    research_briefings.router, prefix="/research", tags=["research_briefings"]
+)
 api_router.include_router(image_generation.router, prefix="/images", tags=["images"])
 api_router.include_router(gallery.router, prefix="/gallery", tags=["gallery"])
 api_router.include_router(prompt_refinement.router, prefix="/prompts", tags=["prompts"])

@@ -1,6 +1,7 @@
 """
 Note model for user-created notes.
 """
+
 from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

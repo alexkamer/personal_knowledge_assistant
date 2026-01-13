@@ -3,6 +3,7 @@ Web search tool using existing WebSearchService.
 
 Allows agents to search the web for information using DuckDuckGo.
 """
+
 import logging
 from typing import List
 
@@ -75,11 +76,13 @@ class WebSearchTool(BaseTool):
             # Format results
             formatted_results = []
             for result in search_results:
-                formatted_results.append({
-                    "title": result.title,
-                    "snippet": result.snippet,
-                    "url": result.url,
-                })
+                formatted_results.append(
+                    {
+                        "title": result.title,
+                        "snippet": result.snippet,
+                        "url": result.url,
+                    }
+                )
 
             return ToolResult(
                 success=True,

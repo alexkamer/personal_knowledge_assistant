@@ -1,6 +1,7 @@
 """
 API endpoints for prompt refinement.
 """
+
 import logging
 
 from fastapi import APIRouter, HTTPException

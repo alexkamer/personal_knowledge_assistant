@@ -1,13 +1,15 @@
 """
 RAG Orchestrator - Coordinates the entire RAG pipeline with intelligent decision-making.
 """
+
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import Any, Dict, List, Tuple
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.services.rag_service import RAGService, get_rag_service
 from app.services.query_analyzer import QueryAnalyzer, get_query_analyzer
+from app.services.rag_service import RAGService, get_rag_service
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +82,7 @@ class RAGOrchestrator:
 
         # Step 4: Retrieve and re-rank chunks
         chunks = await self.rag_service.search_relevant_chunks(
-            db=db,
-            query=query,
-            top_k=top_k_initial,
-            exclude_notes=exclude_notes
+            db=db, query=query, top_k=top_k_initial, exclude_notes=exclude_notes
         )
 
         logger.info(f"Retrieved {len(chunks)} initial chunks")
@@ -91,17 +90,13 @@ class RAGOrchestrator:
         # Step 5: Re-rank chunks to get the best ones
         if settings.rerank_enabled and chunks:
             logger.info(f"Re-ranking to top {top_k_final} chunks")
-            chunks = self.rag_service.rerank_chunks(
-                query=query,
-                chunks=chunks,
-                top_k=top_k_final
-            )
+            chunks = self.rag_service.rerank_chunks(query=query, chunks=chunks, top_k=top_k_final)
 
         # Step 6: Assemble context with deduplication and relevance filtering
         context, citations = self.rag_service.assemble_context(
             chunks=chunks,
             max_tokens=settings.max_context_tokens,
-            min_relevance_threshold=settings.min_relevance_threshold
+            min_relevance_threshold=settings.min_relevance_threshold,
         )
 
         # Step 6.5: Prepend attachment contexts if provided
@@ -115,14 +110,16 @@ class RAGOrchestrator:
                     f"\n[{attachment['source']}]\n{attachment['content']}\n"
                 )
                 # Add attachment as a citation with perfect relevance
-                attachment_citations.append({
-                    "index": idx,
-                    "source_type": "attachment",
-                    "source_id": f"attachment-{idx}",
-                    "source_title": attachment["source"],
-                    "chunk_index": 0,
-                    "distance": 1.0,  # Perfect relevance for attachments
-                })
+                attachment_citations.append(
+                    {
+                        "index": idx,
+                        "source_type": "attachment",
+                        "source_id": f"attachment-{idx}",
+                        "source_title": attachment["source"],
+                        "chunk_index": 0,
+                        "distance": 1.0,  # Perfect relevance for attachments
+                    }
+                )
 
             # Prepend attachments to context
             attachment_section = "".join(attachment_context_parts)
@@ -135,17 +132,13 @@ class RAGOrchestrator:
 
         # Step 7: Decide on web search
         should_use_web = self._decide_web_search(
-            chunks=chunks,
-            analysis=analysis,
-            force_web_search=force_web_search
+            chunks=chunks, analysis=analysis, force_web_search=force_web_search
         )
 
         # Step 8: Add web search if needed
         if should_use_web:
             context, citations = await self._add_web_search(
-                query=query,
-                context=context,
-                citations=citations
+                query=query, context=context, citations=citations
             )
 
         # Prepare metadata
@@ -163,10 +156,7 @@ class RAGOrchestrator:
         return context, citations, metadata
 
     def _decide_web_search(
-        self,
-        chunks: List,
-        analysis: Dict[str, Any],
-        force_web_search: bool = None
+        self, chunks: List, analysis: Dict[str, Any], force_web_search: bool = None
     ) -> bool:
         """
         Intelligently decide whether to use web search.
@@ -201,7 +191,9 @@ class RAGOrchestrator:
         # Lower distance = better match (for cross-encoder scores, we inverted them)
         # If score is negative (after inversion), it means original score was > 1.0 (very good)
         if best_distance < -0.5:  # Very high confidence (original score > 1.5)
-            logger.info(f"High confidence match (distance={best_distance:.2f}), skipping web search")
+            logger.info(
+                f"High confidence match (distance={best_distance:.2f}), skipping web search"
+            )
             return False
 
         # Medium confidence - use query analysis suggestion
@@ -214,10 +206,7 @@ class RAGOrchestrator:
         return True
 
     async def _add_web_search(
-        self,
-        query: str,
-        context: str,
-        citations: List[dict]
+        self, query: str, context: str, citations: List[dict]
     ) -> Tuple[str, List[dict]]:
         """
         Add web search results to context.
@@ -245,14 +234,16 @@ class RAGOrchestrator:
                     web_context_parts.append(
                         f"\n[Web Source {idx}] {result['title']}\n{result['body']}\n"
                     )
-                    web_citations.append({
-                        "index": len(citations) + idx,
-                        "source_type": "web",
-                        "source_id": result['href'],
-                        "source_title": result['title'],
-                        "chunk_index": 0,
-                        "distance": 0.0,
-                    })
+                    web_citations.append(
+                        {
+                            "index": len(citations) + idx,
+                            "source_type": "web",
+                            "source_id": result["href"],
+                            "source_title": result["title"],
+                            "chunk_index": 0,
+                            "distance": 0.0,
+                        }
+                    )
 
                 context += "".join(web_context_parts)
                 citations.extend(web_citations)

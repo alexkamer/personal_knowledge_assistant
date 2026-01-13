@@ -12,7 +12,7 @@ interface FormatRendererProps {
 export function FormatRenderer({ content, className = '' }: FormatRendererProps) {
   // Parse and render the content with formatting
   const renderContent = () => {
-    let rendered = content;
+    const rendered = content;
 
     // Check for heading levels first (must be at start of line)
     const headingMatch = rendered.match(/^(#{1,3})\s+(.*)$/);

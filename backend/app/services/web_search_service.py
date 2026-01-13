@@ -1,8 +1,9 @@
 """
 Web search service using DuckDuckGo.
 """
+
 import logging
-from typing import List, Dict
+from typing import Dict, List
 
 from ddgs import DDGS
 
@@ -37,23 +38,27 @@ class WebSearchService:
             ddgs = DDGS()
 
             # Perform text search with settings optimized for quality content
-            search_results = list(ddgs.text(
-                query,
-                max_results=max_results,
-                region="wt-wt",  # Worldwide results
-                safesearch="moderate",
-                timelimit=None,  # No time limit - get best content regardless of age
-            ))
+            search_results = list(
+                ddgs.text(
+                    query,
+                    max_results=max_results,
+                    region="wt-wt",  # Worldwide results
+                    safesearch="moderate",
+                    timelimit=None,  # No time limit - get best content regardless of age
+                )
+            )
 
             logger.info(f"Raw search results count: {len(search_results)}")
             logger.info(f"First result sample: {search_results[0] if search_results else 'None'}")
 
             for result in search_results:
-                results.append({
-                    "title": result.get("title", ""),
-                    "body": result.get("body", ""),
-                    "href": result.get("href", ""),
-                })
+                results.append(
+                    {
+                        "title": result.get("title", ""),
+                        "body": result.get("body", ""),
+                        "href": result.get("href", ""),
+                    }
+                )
 
             logger.info(f"Found {len(results)} web search results")
             return results

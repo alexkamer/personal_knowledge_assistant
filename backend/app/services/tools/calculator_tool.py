@@ -3,6 +3,7 @@ Calculator tool for safe mathematical expression evaluation.
 
 Uses ast.literal_eval for safety and supports basic arithmetic operations.
 """
+
 import ast
 import logging
 import operator
@@ -103,7 +104,7 @@ class CalculatorTool(BaseTool):
         """
         try:
             # Parse expression into AST
-            tree = ast.parse(expression, mode='eval')
+            tree = ast.parse(expression, mode="eval")
             # Evaluate safely
             return self._eval_node(tree)
         except SyntaxError as e:

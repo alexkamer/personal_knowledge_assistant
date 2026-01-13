@@ -1,13 +1,15 @@
 """
 Image utility functions for processing and manipulating images.
 """
+
 import base64
 import io
 import logging
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 try:
     from PIL import Image
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -16,9 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_thumbnail(
-    base64_image: str,
-    size: Tuple[int, int] = (256, 256),
-    format: str = "PNG"
+    base64_image: str, size: Tuple[int, int] = (256, 256), format: str = "PNG"
 ) -> Optional[str]:
     """
     Create a thumbnail from a base64 encoded image.
@@ -129,10 +129,7 @@ def validate_image_format(base64_image: str) -> bool:
 
 
 def optimize_image_size(
-    base64_image: str,
-    max_size_kb: int = 500,
-    format: str = "PNG",
-    quality: int = 85
+    base64_image: str, max_size_kb: int = 500, format: str = "PNG", quality: int = 85
 ) -> str:
     """
     Optimize image size by reducing quality if it exceeds max_size_kb.

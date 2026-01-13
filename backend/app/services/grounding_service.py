@@ -2,6 +2,7 @@
 Service for grounding image generation prompts with real-time data from Google Search.
 Two-step process: Search first, then generate image with verified data.
 """
+
 import logging
 import os
 from datetime import datetime
@@ -10,6 +11,7 @@ from typing import Optional
 try:
     from google import genai
     from google.genai import types
+
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
@@ -34,7 +36,7 @@ class GroundingService:
             self.client = None
             return
 
-        os.environ['GOOGLE_API_KEY'] = settings.gemini_api_key
+        os.environ["GOOGLE_API_KEY"] = settings.gemini_api_key
         self.client = genai.Client()
         logger.info("Grounding service initialized")
 

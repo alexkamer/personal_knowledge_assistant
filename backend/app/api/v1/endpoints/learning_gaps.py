@@ -4,6 +4,7 @@ Learning Gaps Detection API endpoints.
 Provides endpoints for analyzing user questions to detect foundational knowledge gaps
 and generate personalized learning paths.
 """
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException

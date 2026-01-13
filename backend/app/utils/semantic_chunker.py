@@ -1,6 +1,7 @@
 """
 Semantic-aware text chunking that preserves document structure and adapts to content type.
 """
+
 import re
 from dataclasses import dataclass
 from enum import Enum
@@ -11,6 +12,7 @@ import tiktoken
 
 class ContentType(str, Enum):
     """Types of content for adaptive chunking."""
+
     CODE = "code"
     NARRATIVE = "narrative"
     LIST = "list"
@@ -22,6 +24,7 @@ class ContentType(str, Enum):
 @dataclass
 class ChunkMetadata:
     """Metadata for a text chunk."""
+
     content_type: ContentType
     heading_hierarchy: List[str]
     section_title: Optional[str]
@@ -33,6 +36,7 @@ class ChunkMetadata:
 @dataclass
 class SemanticChunk:
     """A chunk with content and rich metadata."""
+
     content: str
     metadata: ChunkMetadata
 
@@ -137,55 +141,65 @@ class SemanticChunker:
                 title = header_match.group(2)
 
                 # Update hierarchy
-                current_hierarchy = current_hierarchy[:level-1] + [title]
+                current_hierarchy = current_hierarchy[: level - 1] + [title]
 
-                blocks.append({
-                    "type": ContentType.HEADING,
-                    "content": line,
-                    "hierarchy": current_hierarchy.copy(),
-                    "level": level,
-                })
+                blocks.append(
+                    {
+                        "type": ContentType.HEADING,
+                        "content": line,
+                        "hierarchy": current_hierarchy.copy(),
+                        "level": level,
+                    }
+                )
                 i += 1
 
             # Check for code blocks
             elif line.strip().startswith("```"):
                 code_block, end_idx = self._extract_code_block(lines, i)
-                blocks.append({
-                    "type": ContentType.CODE,
-                    "content": code_block,
-                    "hierarchy": current_hierarchy.copy(),
-                })
+                blocks.append(
+                    {
+                        "type": ContentType.CODE,
+                        "content": code_block,
+                        "hierarchy": current_hierarchy.copy(),
+                    }
+                )
                 i = end_idx + 1
 
             # Check for tables (markdown tables with |)
             elif "|" in line and i + 1 < len(lines) and "|" in lines[i + 1]:
                 table_block, end_idx = self._extract_table(lines, i)
-                blocks.append({
-                    "type": ContentType.TABLE,
-                    "content": table_block,
-                    "hierarchy": current_hierarchy.copy(),
-                })
+                blocks.append(
+                    {
+                        "type": ContentType.TABLE,
+                        "content": table_block,
+                        "hierarchy": current_hierarchy.copy(),
+                    }
+                )
                 i = end_idx + 1
 
             # Check for lists
             elif re.match(r"^\s*[\-\*\+]\s+", line) or re.match(r"^\s*\d+\.\s+", line):
                 list_block, end_idx = self._extract_list(lines, i)
-                blocks.append({
-                    "type": ContentType.LIST,
-                    "content": list_block,
-                    "hierarchy": current_hierarchy.copy(),
-                })
+                blocks.append(
+                    {
+                        "type": ContentType.LIST,
+                        "content": list_block,
+                        "hierarchy": current_hierarchy.copy(),
+                    }
+                )
                 i = end_idx + 1
 
             # Regular paragraph
             else:
                 para_block, end_idx = self._extract_paragraph(lines, i)
                 if para_block.strip():
-                    blocks.append({
-                        "type": ContentType.NARRATIVE,
-                        "content": para_block,
-                        "hierarchy": current_hierarchy.copy(),
-                    })
+                    blocks.append(
+                        {
+                            "type": ContentType.NARRATIVE,
+                            "content": para_block,
+                            "hierarchy": current_hierarchy.copy(),
+                        }
+                    )
                 i = end_idx + 1
 
         return blocks
@@ -222,7 +236,11 @@ class SemanticChunker:
         while i < len(lines):
             line = lines[i]
             # Check if line is a list item or continuation (indented)
-            if re.match(r"^\s*[\-\*\+]\s+", line) or re.match(r"^\s*\d+\.\s+", line) or (line.startswith(" ") and list_lines):
+            if (
+                re.match(r"^\s*[\-\*\+]\s+", line)
+                or re.match(r"^\s*\d+\.\s+", line)
+                or (line.startswith(" ") and list_lines)
+            ):
                 list_lines.append(line)
                 i += 1
             elif not line.strip():  # Empty line, might continue
@@ -248,11 +266,13 @@ class SemanticChunker:
                 break
 
             # Stop at special blocks
-            if (line.strip().startswith("#") or
-                line.strip().startswith("```") or
-                re.match(r"^\s*[\-\*\+]\s+", line) or
-                re.match(r"^\s*\d+\.\s+", line) or
-                "|" in line):
+            if (
+                line.strip().startswith("#")
+                or line.strip().startswith("```")
+                or re.match(r"^\s*[\-\*\+]\s+", line)
+                or re.match(r"^\s*\d+\.\s+", line)
+                or "|" in line
+            ):
                 break
 
             para_lines.append(line)
@@ -311,8 +331,10 @@ class SemanticChunker:
             current_type = block_type if current_type is None else ContentType.MIXED
 
             # Finalize chunk if we've reached a good size or it's a standalone block
-            if (current_tokens >= target_size * 0.8 or
-                block_type in [ContentType.CODE, ContentType.TABLE]):
+            if current_tokens >= target_size * 0.8 or block_type in [
+                ContentType.CODE,
+                ContentType.TABLE,
+            ]:
                 chunks.append(self._create_chunk(current_blocks))
                 current_blocks = []
                 current_tokens = 0
@@ -346,17 +368,19 @@ class SemanticChunker:
 
             if current_tokens + sentence_tokens > self.max_chunk_size and current_content:
                 chunk_text = " ".join(current_content)
-                chunks.append(SemanticChunk(
-                    content=chunk_text,
-                    metadata=ChunkMetadata(
-                        content_type=block_type,
-                        heading_hierarchy=hierarchy,
-                        section_title=hierarchy[-1] if hierarchy else None,
-                        has_code=False,
-                        token_count=current_tokens,
-                        semantic_density=self._calculate_density(chunk_text),
+                chunks.append(
+                    SemanticChunk(
+                        content=chunk_text,
+                        metadata=ChunkMetadata(
+                            content_type=block_type,
+                            heading_hierarchy=hierarchy,
+                            section_title=hierarchy[-1] if hierarchy else None,
+                            has_code=False,
+                            token_count=current_tokens,
+                            semantic_density=self._calculate_density(chunk_text),
+                        ),
                     )
-                ))
+                )
                 current_content = []
                 current_tokens = 0
 
@@ -365,17 +389,19 @@ class SemanticChunker:
 
         if current_content:
             chunk_text = " ".join(current_content)
-            chunks.append(SemanticChunk(
-                content=chunk_text,
-                metadata=ChunkMetadata(
-                    content_type=block_type,
-                    heading_hierarchy=hierarchy,
-                    section_title=hierarchy[-1] if hierarchy else None,
-                    has_code=False,
-                    token_count=current_tokens,
-                    semantic_density=self._calculate_density(chunk_text),
+            chunks.append(
+                SemanticChunk(
+                    content=chunk_text,
+                    metadata=ChunkMetadata(
+                        content_type=block_type,
+                        heading_hierarchy=hierarchy,
+                        section_title=hierarchy[-1] if hierarchy else None,
+                        has_code=False,
+                        token_count=current_tokens,
+                        semantic_density=self._calculate_density(chunk_text),
+                    ),
                 )
-            ))
+            )
 
         return chunks
 
@@ -402,28 +428,34 @@ class SemanticChunker:
 
             # Check for function/class definitions
             is_definition = (
-                re.match(r"^\s*def\s+", line) or
-                re.match(r"^\s*class\s+", line) or
-                re.match(r"^\s*function\s+", line) or
-                re.match(r"^\s*const\s+\w+\s*=\s*\(", line)
+                re.match(r"^\s*def\s+", line)
+                or re.match(r"^\s*class\s+", line)
+                or re.match(r"^\s*function\s+", line)
+                or re.match(r"^\s*const\s+\w+\s*=\s*\(", line)
             )
 
             # Split if we're at a definition and would exceed size
-            if is_definition and current_tokens + line_tokens > self.max_chunk_size and len(current_lines) > 1:
+            if (
+                is_definition
+                and current_tokens + line_tokens > self.max_chunk_size
+                and len(current_lines) > 1
+            ):
                 # Close current chunk
                 current_lines.append("```")
                 chunk_text = "\n".join(current_lines)
-                chunks.append(SemanticChunk(
-                    content=chunk_text,
-                    metadata=ChunkMetadata(
-                        content_type=ContentType.CODE,
-                        heading_hierarchy=hierarchy,
-                        section_title=hierarchy[-1] if hierarchy else None,
-                        has_code=True,
-                        token_count=current_tokens,
-                        semantic_density=0.9,  # Code is dense
+                chunks.append(
+                    SemanticChunk(
+                        content=chunk_text,
+                        metadata=ChunkMetadata(
+                            content_type=ContentType.CODE,
+                            heading_hierarchy=hierarchy,
+                            section_title=hierarchy[-1] if hierarchy else None,
+                            has_code=True,
+                            token_count=current_tokens,
+                            semantic_density=0.9,  # Code is dense
+                        ),
                     )
-                ))
+                )
                 current_lines = [lang]
                 current_tokens = 0
 
@@ -435,17 +467,19 @@ class SemanticChunker:
             if not current_lines[-1].strip().startswith("```"):
                 current_lines.append("```")
             chunk_text = "\n".join(current_lines)
-            chunks.append(SemanticChunk(
-                content=chunk_text,
-                metadata=ChunkMetadata(
-                    content_type=ContentType.CODE,
-                    heading_hierarchy=hierarchy,
-                    section_title=hierarchy[-1] if hierarchy else None,
-                    has_code=True,
-                    token_count=current_tokens,
-                    semantic_density=0.9,
+            chunks.append(
+                SemanticChunk(
+                    content=chunk_text,
+                    metadata=ChunkMetadata(
+                        content_type=ContentType.CODE,
+                        heading_hierarchy=hierarchy,
+                        section_title=hierarchy[-1] if hierarchy else None,
+                        has_code=True,
+                        token_count=current_tokens,
+                        semantic_density=0.9,
+                    ),
                 )
-            ))
+            )
 
         return chunks
 

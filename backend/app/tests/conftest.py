@@ -1,21 +1,22 @@
 """
 Pytest configuration and fixtures for tests.
 """
+
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from app.models.base import Base
+from app.models.chunk import Chunk
+
 # Import all models so SQLAlchemy knows about them
 from app.models.conversation import Conversation, Message
-from app.models.note import Note
 from app.models.document import Document
-from app.models.chunk import Chunk
-from app.models.tag import Tag
-from app.models.note_tag import NoteTag
 from app.models.message_feedback import MessageFeedback
-
+from app.models.note import Note
+from app.models.note_tag import NoteTag
+from app.models.tag import Tag
 
 # Use in-memory SQLite for tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

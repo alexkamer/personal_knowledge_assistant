@@ -1,6 +1,7 @@
 """
 Pydantic schemas for Note model.
 """
+
 from datetime import datetime
 from typing import Optional
 
@@ -14,7 +15,9 @@ class NoteBase(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=255, description="Note title")
     content: str = Field(..., min_length=1, description="Note content")
-    tags: Optional[str] = Field(None, max_length=500, description="Comma-separated tags (deprecated, use tag_names)")
+    tags: Optional[str] = Field(
+        None, max_length=500, description="Comma-separated tags (deprecated, use tag_names)"
+    )
 
 
 class NoteCreate(BaseModel):
@@ -30,7 +33,9 @@ class NoteUpdate(BaseModel):
 
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     content: Optional[str] = Field(None, min_length=1)
-    tag_names: Optional[list[str]] = Field(None, description="List of tag names (replaces all existing tags)")
+    tag_names: Optional[list[str]] = Field(
+        None, description="List of tag names (replaces all existing tags)"
+    )
 
 
 class NoteResponse(BaseModel):
@@ -80,7 +85,9 @@ class RelatedNoteResponse(BaseModel):
     title: str
     created_at: datetime
     updated_at: datetime
-    similarity_score: float = Field(..., ge=0.0, le=1.0, description="Semantic similarity score (0-1)")
+    similarity_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Semantic similarity score (0-1)"
+    )
 
     class Config:
         from_attributes = True

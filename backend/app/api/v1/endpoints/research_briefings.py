@@ -1,22 +1,23 @@
 """
 Research briefing management endpoints.
 """
-import logging
-from typing import Optional
-from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
-from sqlalchemy import select, func, desc
+import logging
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.models.research_briefing import ResearchBriefing
 from app.schemas.research_briefing import (
+    BriefingMarkdown,
     ResearchBriefingCreate,
-    ResearchBriefingResponse,
     ResearchBriefingList,
     ResearchBriefingListItem,
-    BriefingMarkdown,
+    ResearchBriefingResponse,
 )
 from app.services.briefing_generator_service import get_briefing_generator_service
 
@@ -51,10 +52,7 @@ async def list_briefings(
         briefings = result.scalars().all()
 
         return ResearchBriefingList(
-            briefings=[
-                ResearchBriefingListItem.model_validate(briefing)
-                for briefing in briefings
-            ],
+            briefings=[ResearchBriefingListItem.model_validate(briefing) for briefing in briefings],
             total=total,
             limit=limit,
             offset=offset,
@@ -76,9 +74,7 @@ async def get_briefing(
     """
     Get detailed information about a specific research briefing.
     """
-    result = await db.execute(
-        select(ResearchBriefing).where(ResearchBriefing.id == briefing_id)
-    )
+    result = await db.execute(select(ResearchBriefing).where(ResearchBriefing.id == briefing_id))
     briefing = result.scalar_one_or_none()
 
     if not briefing:
@@ -102,8 +98,10 @@ async def list_project_briefings(
     """
     try:
         # Get total count for project
-        count_query = select(func.count()).select_from(ResearchBriefing).where(
-            ResearchBriefing.project_id == project_id
+        count_query = (
+            select(func.count())
+            .select_from(ResearchBriefing)
+            .where(ResearchBriefing.project_id == project_id)
         )
         total_result = await db.execute(count_query)
         total = total_result.scalar_one()
@@ -120,10 +118,7 @@ async def list_project_briefings(
         briefings = result.scalars().all()
 
         return ResearchBriefingList(
-            briefings=[
-                ResearchBriefingListItem.model_validate(briefing)
-                for briefing in briefings
-            ],
+            briefings=[ResearchBriefingListItem.model_validate(briefing) for briefing in briefings],
             total=total,
             limit=limit,
             offset=offset,
@@ -137,7 +132,11 @@ async def list_project_briefings(
         )
 
 
-@router.post("/projects/{project_id}/briefings", response_model=ResearchBriefingResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/projects/{project_id}/briefings",
+    response_model=ResearchBriefingResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def generate_briefing(
     project_id: str,
     request: ResearchBriefingCreate,

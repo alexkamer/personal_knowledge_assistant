@@ -1,6 +1,7 @@
 """
 Content formatter service - formats scraped content into clean markdown.
 """
+
 import logging
 from typing import Optional
 

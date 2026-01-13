@@ -1,6 +1,7 @@
 """
 Service for generating images using Google's Gemini Imagen API.
 """
+
 import base64
 import logging
 import os
@@ -10,18 +11,21 @@ from uuid import uuid4
 try:
     from google import genai
     from google.genai import types
+
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
     logger_temp = logging.getLogger(__name__)
-    logger_temp.warning("google-genai package not installed. Install with: pip install google-genai")
+    logger_temp.warning(
+        "google-genai package not installed. Install with: pip install google-genai"
+    )
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.generated_image import GeneratedImage
-from app.utils.image_utils import create_thumbnail, get_image_dimensions
 from app.services.grounding_service import get_grounding_service
+from app.utils.image_utils import create_thumbnail, get_image_dimensions
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +47,7 @@ class ImageGenerationService:
 
         # Set GOOGLE_API_KEY environment variable for genai client
         # This ensures it uses generativelanguage.googleapis.com (not Vertex AI)
-        os.environ['GOOGLE_API_KEY'] = settings.gemini_api_key
+        os.environ["GOOGLE_API_KEY"] = settings.gemini_api_key
 
         # Initialize client (will automatically use GOOGLE_API_KEY)
         self.client = genai.Client()
@@ -101,15 +105,36 @@ class ImageGenerationService:
                 grounding_service = get_grounding_service()
                 prompt_lower = prompt.lower()
 
-                if any(word in prompt_lower for word in ['game', 'match', 'score', 'sport', 'nba', 'nfl', 'mlb', 'nhl', 'soccer', 'football', 'basketball']):
+                if any(
+                    word in prompt_lower
+                    for word in [
+                        "game",
+                        "match",
+                        "score",
+                        "sport",
+                        "nba",
+                        "nfl",
+                        "mlb",
+                        "nhl",
+                        "soccer",
+                        "football",
+                        "basketball",
+                    ]
+                ):
                     logger.info("Detected sports prompt - searching for real game data...")
                     full_prompt = await grounding_service.enhance_sports_prompt(prompt)
 
-                elif any(word in prompt_lower for word in ['weather', 'forecast', 'temperature', 'rain', 'snow']):
+                elif any(
+                    word in prompt_lower
+                    for word in ["weather", "forecast", "temperature", "rain", "snow"]
+                ):
                     logger.info("Detected weather prompt - searching for real forecast data...")
                     full_prompt = await grounding_service.enhance_weather_prompt(prompt)
 
-                elif any(word in prompt_lower for word in ['news', 'announcement', 'today', 'yesterday', 'recent', 'latest']):
+                elif any(
+                    word in prompt_lower
+                    for word in ["news", "announcement", "today", "yesterday", "recent", "latest"]
+                ):
                     logger.info("Detected news prompt - searching for real news data...")
                     full_prompt = await grounding_service.enhance_news_prompt(prompt)
 
@@ -123,12 +148,14 @@ class ImageGenerationService:
             # Add reference images if provided
             if reference_images:
                 for ref_img in reference_images:
-                    contents.append({
-                        "inline_data": {
-                            "mime_type": ref_img["mime_type"],
-                            "data": ref_img["image_data"],
+                    contents.append(
+                        {
+                            "inline_data": {
+                                "mime_type": ref_img["mime_type"],
+                                "data": ref_img["image_data"],
+                            }
                         }
-                    })
+                    )
                 logger.info(f"Added {len(reference_images)} reference image(s) to request")
 
             # Generate images using the correct API
@@ -163,7 +190,7 @@ class ImageGenerationService:
                         raw_data = part.inline_data.data
                         if isinstance(raw_data, bytes):
                             # Encode bytes to base64 string
-                            image_data = base64.b64encode(raw_data).decode('utf-8')
+                            image_data = base64.b64encode(raw_data).decode("utf-8")
                         else:
                             # Already a string
                             image_data = raw_data
@@ -215,7 +242,9 @@ class ImageGenerationService:
 
                 # Generate thumbnail (256x256)
                 try:
-                    thumbnail = create_thumbnail(image_base64, size=(256, 256), format=image_format.upper())
+                    thumbnail = create_thumbnail(
+                        image_base64, size=(256, 256), format=image_format.upper()
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to create thumbnail: {e}")
                     thumbnail = None

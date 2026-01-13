@@ -1,20 +1,21 @@
 """
 Gallery endpoints for managing generated images.
 """
+
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
 
 from app.core.database import get_db
 from app.models.generated_image import GeneratedImage
 from app.schemas.generated_image import (
-    GeneratedImageResponse,
-    GalleryListResponse,
-    UpdateImageRequest,
     DeleteImageResponse,
+    GalleryListResponse,
+    GeneratedImageResponse,
+    UpdateImageRequest,
 )
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,7 @@
 """
 LLM service for interfacing with Ollama local models.
 """
+
 import logging
 from typing import AsyncIterator, List, Optional
 
@@ -8,7 +9,7 @@ import ollama
 
 from app.core.config import settings
 from app.core.exceptions import ModelNotFoundError, OllamaConnectionError
-from app.core.retry import retry_with_backoff, ollama_circuit_breaker
+from app.core.retry import ollama_circuit_breaker, retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
@@ -62,10 +63,12 @@ class LLMService:
         # Add conversation history if provided
         if conversation_history:
             for msg in conversation_history[-10:]:  # Last 10 messages for context
-                messages.append({
-                    "role": msg["role"],
-                    "content": msg["content"],
-                })
+                messages.append(
+                    {
+                        "role": msg["role"],
+                        "content": msg["content"],
+                    }
+                )
 
         # Add current query with context
         user_message = self._build_user_message(query, context)
@@ -157,9 +160,7 @@ Output ONLY the questions, one per line, no numbering."""
         try:
             response = await self.client.chat(
                 model=model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
+                messages=[{"role": "user", "content": prompt}],
                 options={
                     "temperature": 0.8,  # Slightly higher for creativity
                     "top_p": 0.9,
@@ -169,9 +170,7 @@ Output ONLY the questions, one per line, no numbering."""
             # Parse the response into individual questions
             questions_text = response["message"]["content"].strip()
             questions = [
-                q.strip()
-                for q in questions_text.split("\n")
-                if q.strip() and len(q.strip()) > 10
+                q.strip() for q in questions_text.split("\n") if q.strip() and len(q.strip()) > 10
             ]
 
             # Limit to 4 questions max

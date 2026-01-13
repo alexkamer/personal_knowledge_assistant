@@ -1,6 +1,7 @@
 """
 API endpoints for notes.
 """
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,12 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.schemas.note import (
-    NoteCreate,
-    NoteUpdate,
-    NoteResponse,
-    NoteListResponse,
     BacklinkResponse,
     BacklinksListResponse,
+    NoteCreate,
+    NoteListResponse,
+    NoteResponse,
+    NoteUpdate,
     RelatedNoteResponse,
     RelatedNotesListResponse,
 )
@@ -58,9 +59,7 @@ async def list_notes(
     if tags:
         tag_names = [tag.strip() for tag in tags.split(",") if tag.strip()]
 
-    notes, total = await NoteService.list_notes(
-        db, skip=skip, limit=limit, tag_names=tag_names
-    )
+    notes, total = await NoteService.list_notes(db, skip=skip, limit=limit, tag_names=tag_names)
     return NoteListResponse(
         notes=[NoteResponse.model_validate(note) for note in notes],
         total=total,
@@ -151,9 +150,7 @@ async def get_related_notes(
     Returns:
         List of related notes with similarity scores
     """
-    related_notes_with_scores = await NoteService.get_related_notes(
-        db, note_id, limit=limit
-    )
+    related_notes_with_scores = await NoteService.get_related_notes(db, note_id, limit=limit)
 
     # Convert to response format
     related_notes = [

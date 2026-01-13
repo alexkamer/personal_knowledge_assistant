@@ -9,8 +9,8 @@ highlighting breakthroughs and corrected misconceptions.
 """
 
 import logging
-from typing import List, Dict, Optional
 from datetime import datetime
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +94,7 @@ class KnowledgeEvolutionService:
         """
         try:
             # Build snapshot analysis prompt
-            snapshot_prompt = self._build_snapshot_prompt(
-                topic, conversation_messages
-            )
+            snapshot_prompt = self._build_snapshot_prompt(topic, conversation_messages)
 
             # Generate snapshot using LLM
             response = await self.llm_service.generate_answer(
@@ -109,9 +107,7 @@ class KnowledgeEvolutionService:
             )
 
             # Parse response into snapshot
-            snapshot = self._parse_snapshot(
-                response, topic, timestamp, conversation_id
-            )
+            snapshot = self._parse_snapshot(response, topic, timestamp, conversation_id)
 
             return snapshot
 
@@ -162,9 +158,7 @@ CONFIDENCE: 0.4
 
 QUESTIONS_ASKED: What is multi-head attention? Why not just use one attention head? How are the heads combined?"""
 
-    def _format_conversation_context(
-        self, conversation_messages: List[Dict[str, str]]
-    ) -> str:
+    def _format_conversation_context(self, conversation_messages: List[Dict[str, str]]) -> str:
         """Format conversation messages for context."""
         formatted = []
         for msg in conversation_messages[-10:]:  # Last 10 messages
@@ -195,9 +189,7 @@ QUESTIONS_ASKED: What is multi-head attention? Why not just use one attention he
 
             misconceptions = []
             if misconceptions_str.lower() != "none detected":
-                misconceptions = [
-                    m.strip() for m in misconceptions_str.split(",") if m.strip()
-                ]
+                misconceptions = [m.strip() for m in misconceptions_str.split(",") if m.strip()]
 
             # Parse confidence
             try:
@@ -317,9 +309,7 @@ SUMMARY: [2-3 sentence summary of the learning journey between these snapshots]"
             )
 
             # Parse evolution response
-            evolution = self._parse_evolution(
-                response, topic, earlier_snapshot, later_snapshot
-            )
+            evolution = self._parse_evolution(response, topic, earlier_snapshot, later_snapshot)
 
             return evolution
 
@@ -351,25 +341,15 @@ SUMMARY: [2-3 sentence summary of the learning journey between these snapshots]"
         try:
             # Extract fields
             concepts_learned_str = self._extract_field(response, "CONCEPTS_LEARNED:")
-            corrected_str = self._extract_field(
-                response, "MISCONCEPTIONS_CORRECTED:"
-            )
-            new_misconceptions_str = self._extract_field(
-                response, "NEW_MISCONCEPTIONS:"
-            )
+            corrected_str = self._extract_field(response, "MISCONCEPTIONS_CORRECTED:")
+            new_misconceptions_str = self._extract_field(response, "NEW_MISCONCEPTIONS:")
             breakthroughs_str = self._extract_field(response, "BREAKTHROUGH_MOMENTS:")
             summary = self._extract_field(response, "SUMMARY:")
 
             # Parse lists
-            concepts_learned = [
-                c.strip() for c in concepts_learned_str.split(",") if c.strip()
-            ]
-            misconceptions_corrected = [
-                m.strip() for m in corrected_str.split(",") if m.strip()
-            ]
-            new_misconceptions = [
-                m.strip() for m in new_misconceptions_str.split(",") if m.strip()
-            ]
+            concepts_learned = [c.strip() for c in concepts_learned_str.split(",") if c.strip()]
+            misconceptions_corrected = [m.strip() for m in corrected_str.split(",") if m.strip()]
+            new_misconceptions = [m.strip() for m in new_misconceptions_str.split(",") if m.strip()]
             breakthrough_moments = [
                 b.strip().lstrip("0123456789.-• ")
                 for b in breakthroughs_str.split("\n")
@@ -377,9 +357,7 @@ SUMMARY: [2-3 sentence summary of the learning journey between these snapshots]"
             ]
 
             # Calculate confidence change
-            confidence_change = (
-                later_snapshot.confidence_level - earlier_snapshot.confidence_level
-            )
+            confidence_change = later_snapshot.confidence_level - earlier_snapshot.confidence_level
 
             return ConceptualEvolution(
                 topic=topic,
@@ -441,9 +419,6 @@ SUMMARY: [2-3 sentence summary of the learning journey between these snapshots]"
             "retained_concepts": retained_concepts,
             "misconceptions_corrected": corrected,
             "new_misconceptions": new_mistakes,
-            "confidence_delta": later_snapshot.confidence_level
-            - earlier_snapshot.confidence_level,
-            "time_elapsed": (
-                later_snapshot.timestamp - earlier_snapshot.timestamp
-            ).days,
+            "confidence_delta": later_snapshot.confidence_level - earlier_snapshot.confidence_level,
+            "time_elapsed": (later_snapshot.timestamp - earlier_snapshot.timestamp).days,
         }

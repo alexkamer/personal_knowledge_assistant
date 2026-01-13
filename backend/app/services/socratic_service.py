@@ -6,7 +6,7 @@ Innovation: Helps users learn deeply through self-discovery rather than passive 
 """
 
 import logging
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -121,9 +121,7 @@ What concepts or ideas come to mind when you think about this question? Even if 
             True if it's time to offer more direct help
         """
         # Count user messages (questions/responses) in current topic
-        user_messages = [
-            msg for msg in conversation_history if msg.get("role") == "user"
-        ]
+        user_messages = [msg for msg in conversation_history if msg.get("role") == "user"]
 
         return len(user_messages) >= threshold
 

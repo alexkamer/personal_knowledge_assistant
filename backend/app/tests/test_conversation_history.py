@@ -10,13 +10,15 @@ Tests cover:
 6. Pagination
 7. Message count accuracy
 """
-import pytest
+
 from datetime import datetime
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation, Message
-from app.services.conversation_service import ConversationService
 from app.schemas.conversation import ConversationCreate, ConversationUpdate
+from app.services.conversation_service import ConversationService
 
 
 class TestConversationCreation:
@@ -29,9 +31,7 @@ class TestConversationCreation:
         conversation_data = ConversationCreate(title="My First Chat")
 
         # Act
-        conversation = await ConversationService.create_conversation(
-            db_session, conversation_data
-        )
+        conversation = await ConversationService.create_conversation(db_session, conversation_data)
 
         # Assert
         assert conversation is not None
@@ -46,14 +46,10 @@ class TestConversationCreation:
         """Test creating a conversation with auto-generated title."""
         # Arrange
         user_message = "What is the capital of France?"
-        conversation_data = ConversationCreate(
-            title=f"Chat about: {user_message[:50]}"
-        )
+        conversation_data = ConversationCreate(title=f"Chat about: {user_message[:50]}")
 
         # Act
-        conversation = await ConversationService.create_conversation(
-            db_session, conversation_data
-        )
+        conversation = await ConversationService.create_conversation(db_session, conversation_data)
 
         # Assert
         assert conversation is not None
@@ -77,9 +73,7 @@ class TestConversationListing:
         assert total == 0
 
     @pytest.mark.asyncio
-    async def test_list_conversations_with_message_counts(
-        self, db_session: AsyncSession
-    ):
+    async def test_list_conversations_with_message_counts(self, db_session: AsyncSession):
         """Test listing conversations includes accurate message counts."""
         # Arrange - Create 3 conversations with different message counts
         conv1_data = ConversationCreate(title="Conversation 1")
@@ -93,26 +87,14 @@ class TestConversationListing:
 
         # Add messages to conversations
         # Conv1: 2 messages (1 user, 1 assistant)
-        await ConversationService.add_message(
-            db_session, str(conv1.id), "user", "Hello"
-        )
-        await ConversationService.add_message(
-            db_session, str(conv1.id), "assistant", "Hi there!"
-        )
+        await ConversationService.add_message(db_session, str(conv1.id), "user", "Hello")
+        await ConversationService.add_message(db_session, str(conv1.id), "assistant", "Hi there!")
 
         # Conv2: 4 messages (2 user, 2 assistant)
-        await ConversationService.add_message(
-            db_session, str(conv2.id), "user", "Question 1"
-        )
-        await ConversationService.add_message(
-            db_session, str(conv2.id), "assistant", "Answer 1"
-        )
-        await ConversationService.add_message(
-            db_session, str(conv2.id), "user", "Question 2"
-        )
-        await ConversationService.add_message(
-            db_session, str(conv2.id), "assistant", "Answer 2"
-        )
+        await ConversationService.add_message(db_session, str(conv2.id), "user", "Question 1")
+        await ConversationService.add_message(db_session, str(conv2.id), "assistant", "Answer 1")
+        await ConversationService.add_message(db_session, str(conv2.id), "user", "Question 2")
+        await ConversationService.add_message(db_session, str(conv2.id), "assistant", "Answer 2")
 
         # Conv3: 0 messages (empty conversation)
 
@@ -126,15 +108,9 @@ class TestConversationListing:
         assert len(conversations) == 3
 
         # Find each conversation in results
-        conv1_result = next(
-            (c for c, count in conversations if c.id == conv1.id), None
-        )
-        conv2_result = next(
-            (c for c, count in conversations if c.id == conv2.id), None
-        )
-        conv3_result = next(
-            (c for c, count in conversations if c.id == conv3.id), None
-        )
+        conv1_result = next((c for c, count in conversations if c.id == conv1.id), None)
+        conv2_result = next((c for c, count in conversations if c.id == conv2.id), None)
+        conv3_result = next((c for c, count in conversations if c.id == conv3.id), None)
 
         # Check message counts
         conv1_count = next(count for c, count in conversations if c.id == conv1.id)
@@ -183,19 +159,13 @@ class TestConversationListing:
             await ConversationService.create_conversation(db_session, conv_data)
 
         # Act - Get first page (2 items)
-        page1, total = await ConversationService.list_conversations(
-            db_session, skip=0, limit=2
-        )
+        page1, total = await ConversationService.list_conversations(db_session, skip=0, limit=2)
 
         # Get second page (2 items)
-        page2, _ = await ConversationService.list_conversations(
-            db_session, skip=2, limit=2
-        )
+        page2, _ = await ConversationService.list_conversations(db_session, skip=2, limit=2)
 
         # Get third page (1 item)
-        page3, _ = await ConversationService.list_conversations(
-            db_session, skip=4, limit=2
-        )
+        page3, _ = await ConversationService.list_conversations(db_session, skip=4, limit=2)
 
         # Assert
         assert total == 5
@@ -212,9 +182,7 @@ class TestConversationRetrieval:
         """Test getting a conversation by ID."""
         # Arrange
         conv_data = ConversationCreate(title="Test Conversation")
-        created_conv = await ConversationService.create_conversation(
-            db_session, conv_data
-        )
+        created_conv = await ConversationService.create_conversation(db_session, conv_data)
 
         # Act
         retrieved_conv = await ConversationService.get_conversation(
@@ -230,9 +198,7 @@ class TestConversationRetrieval:
     async def test_get_nonexistent_conversation(self, db_session: AsyncSession):
         """Test getting a conversation that doesn't exist."""
         # Act
-        retrieved_conv = await ConversationService.get_conversation(
-            db_session, "nonexistent-id"
-        )
+        retrieved_conv = await ConversationService.get_conversation(db_session, "nonexistent-id")
 
         # Assert
         assert retrieved_conv is None
@@ -242,9 +208,7 @@ class TestConversationRetrieval:
         """Test getting all messages for a conversation."""
         # Arrange
         conv_data = ConversationCreate(title="Test Conversation")
-        conversation = await ConversationService.create_conversation(
-            db_session, conv_data
-        )
+        conversation = await ConversationService.create_conversation(db_session, conv_data)
 
         # Add messages
         msg1 = await ConversationService.add_message(
@@ -280,9 +244,7 @@ class TestConversationUpdate:
         """Test updating conversation title."""
         # Arrange
         conv_data = ConversationCreate(title="Original Title")
-        conversation = await ConversationService.create_conversation(
-            db_session, conv_data
-        )
+        conversation = await ConversationService.create_conversation(db_session, conv_data)
 
         update_data = ConversationUpdate(title="Updated Title")
 
@@ -301,9 +263,7 @@ class TestConversationUpdate:
         """Test updating conversation summary."""
         # Arrange
         conv_data = ConversationCreate(title="Test Conversation")
-        conversation = await ConversationService.create_conversation(
-            db_session, conv_data
-        )
+        conversation = await ConversationService.create_conversation(db_session, conv_data)
 
         update_data = ConversationUpdate(summary="A brief summary of the conversation")
 
@@ -340,14 +300,10 @@ class TestConversationDeletion:
         """Test deleting a conversation."""
         # Arrange
         conv_data = ConversationCreate(title="To Be Deleted")
-        conversation = await ConversationService.create_conversation(
-            db_session, conv_data
-        )
+        conversation = await ConversationService.create_conversation(db_session, conv_data)
 
         # Act
-        deleted = await ConversationService.delete_conversation(
-            db_session, str(conversation.id)
-        )
+        deleted = await ConversationService.delete_conversation(db_session, str(conversation.id))
 
         # Assert
         assert deleted is True
@@ -359,28 +315,20 @@ class TestConversationDeletion:
         assert retrieved_conv is None
 
     @pytest.mark.asyncio
-    async def test_delete_conversation_cascades_messages(
-        self, db_session: AsyncSession
-    ):
+    async def test_delete_conversation_cascades_messages(self, db_session: AsyncSession):
         """Test that deleting a conversation also deletes its messages."""
         # Arrange
         conv_data = ConversationCreate(title="Conversation with Messages")
-        conversation = await ConversationService.create_conversation(
-            db_session, conv_data
-        )
+        conversation = await ConversationService.create_conversation(db_session, conv_data)
 
         # Add messages
-        await ConversationService.add_message(
-            db_session, str(conversation.id), "user", "Message 1"
-        )
+        await ConversationService.add_message(db_session, str(conversation.id), "user", "Message 1")
         await ConversationService.add_message(
             db_session, str(conversation.id), "assistant", "Message 2"
         )
 
         # Act
-        deleted = await ConversationService.delete_conversation(
-            db_session, str(conversation.id)
-        )
+        deleted = await ConversationService.delete_conversation(db_session, str(conversation.id))
 
         # Assert
         assert deleted is True
@@ -395,9 +343,7 @@ class TestConversationDeletion:
     async def test_delete_nonexistent_conversation(self, db_session: AsyncSession):
         """Test deleting a conversation that doesn't exist."""
         # Act
-        deleted = await ConversationService.delete_conversation(
-            db_session, "nonexistent-id"
-        )
+        deleted = await ConversationService.delete_conversation(db_session, "nonexistent-id")
 
         # Assert
         assert deleted is False

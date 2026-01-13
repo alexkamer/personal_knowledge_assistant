@@ -9,8 +9,8 @@ by requiring active recall and reflection.
 """
 
 import logging
-from typing import List, Dict, Optional
 from datetime import datetime
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +88,7 @@ class MetabolizationService:
         """
         try:
             # Build question generation prompt
-            question_prompt = self._build_question_prompt(
-                content, content_title, num_questions
-            )
+            question_prompt = self._build_question_prompt(content, content_title, num_questions)
 
             # Generate questions using LLM
             response = await self.llm_service.generate_answer(
@@ -112,9 +110,7 @@ class MetabolizationService:
             # Return fallback questions
             return self._generate_fallback_questions(content_title)
 
-    def _build_question_prompt(
-        self, content: str, content_title: str, num_questions: int
-    ) -> str:
+    def _build_question_prompt(self, content: str, content_title: str, num_questions: int) -> str:
         """Build the system prompt for question generation."""
 
         return f"""You are a learning assessment designer. Generate {num_questions} comprehension questions that test true understanding of the content, not just memorization.
@@ -178,9 +174,7 @@ HINTS: Should discuss: quadratic attention complexity, techniques like sparse at
                 hints = self._extract_field(section, "HINTS:")
 
                 # Parse key concepts
-                key_concepts = [
-                    c.strip() for c in key_concepts_str.split(",") if c.strip()
-                ]
+                key_concepts = [c.strip() for c in key_concepts_str.split(",") if c.strip()]
 
                 # Validate fields
                 if q_type not in ["recall", "comprehension", "application", "synthesis"]:
@@ -242,9 +236,7 @@ HINTS: Should discuss: quadratic attention complexity, techniques like sparse at
             logger.error(f"Error extracting field {field_name}: {e}")
             return ""
 
-    def _generate_fallback_questions(
-        self, content_title: str
-    ) -> List[MetabolizationQuestion]:
+    def _generate_fallback_questions(self, content_title: str) -> List[MetabolizationQuestion]:
         """Generate generic fallback questions when LLM fails."""
 
         return [
@@ -353,10 +345,10 @@ SUGGESTIONS: [2-3 specific suggestions for deeper understanding]"""
             # Extract suggestions
             suggestions_str = self._extract_field(response, "SUGGESTIONS:")
             suggestions = [
-                s.strip().lstrip("0123456789.-• ")
-                for s in suggestions_str.split("\n")
-                if s.strip()
-            ][:3]  # Limit to 3 suggestions
+                s.strip().lstrip("0123456789.-• ") for s in suggestions_str.split("\n") if s.strip()
+            ][
+                :3
+            ]  # Limit to 3 suggestions
 
             return {
                 "score": score,

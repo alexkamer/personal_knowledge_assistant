@@ -1,17 +1,18 @@
 """
 Image generation endpoints for Gemini Imagen API.
 """
+
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.schemas.image_generation import ImageGenerationRequest
-from app.services.image_generation_service import get_image_generation_service
 from app.services.image_context_service import get_image_context_service
+from app.services.image_generation_service import get_image_generation_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -59,8 +60,7 @@ async def generate_images_stream(
                 yield f'data: {json.dumps({"type": "status", "status": "Analyzing prompt context..."})}\n\n'
 
                 is_iterative = await context_service.is_iterative_prompt(
-                    request.prompt,
-                    request.conversation_context.previous_prompt
+                    request.prompt, request.conversation_context.previous_prompt
                 )
 
                 if is_iterative:
@@ -68,7 +68,7 @@ async def generate_images_stream(
                     enhanced_prompt = await context_service.enhance_prompt_with_context(
                         request.prompt,
                         request.conversation_context.previous_prompt,
-                        request.conversation_context.previous_metadata
+                        request.conversation_context.previous_metadata,
                     )
 
                     yield f'data: {json.dumps({"type": "status", "status": "Building on previous image..."})}\n\n'
@@ -85,12 +85,16 @@ async def generate_images_stream(
                     {"image_data": img.image_data, "mime_type": img.mime_type}
                     for img in request.reference_images
                 ]
-            elif is_iterative and request.conversation_context and request.conversation_context.previous_image_data:
+            elif (
+                is_iterative
+                and request.conversation_context
+                and request.conversation_context.previous_image_data
+            ):
                 # Automatically use previous image as reference for iterative prompts
                 reference_images = [
                     {
                         "image_data": request.conversation_context.previous_image_data,
-                        "mime_type": "image/png"  # Assume PNG for generated images
+                        "mime_type": "image/png",  # Assume PNG for generated images
                     }
                 ]
                 logger.info("Using previous image as reference for iterative generation")

@@ -1,6 +1,7 @@
 """
 Pydantic schemas for prompt refinement.
 """
+
 from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -19,7 +20,9 @@ class Question(BaseModel):
 class AnalyzePromptRequest(BaseModel):
     """Request to analyze a prompt and get refinement questions."""
 
-    prompt: str = Field(..., min_length=1, max_length=500, description="The basic prompt to analyze")
+    prompt: str = Field(
+        ..., min_length=1, max_length=500, description="The basic prompt to analyze"
+    )
 
 
 class AnalyzePromptResponse(BaseModel):
@@ -35,7 +38,9 @@ class BuildPromptRequest(BaseModel):
 
     basic_prompt: str = Field(..., min_length=1, max_length=500, description="The original prompt")
     answers: Dict[str, str] = Field(..., description="User's answers to refinement questions")
-    category: Optional[str] = Field(None, description="Optional category (will detect if not provided)")
+    category: Optional[str] = Field(
+        None, description="Optional category (will detect if not provided)"
+    )
 
 
 class BuildPromptResponse(BaseModel):

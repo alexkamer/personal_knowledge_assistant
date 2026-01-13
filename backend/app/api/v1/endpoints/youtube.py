@@ -1,23 +1,24 @@
 """
 YouTube video processing endpoints.
 """
+
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.database import get_db
-from app.services.youtube_service import get_youtube_service
-from app.services.llm_service import LLMService, get_llm_service
-from app.services.agent_service import get_agent_service
-from app.services.youtube_ingestion_service import get_youtube_ingestion_service
 from youtube_transcript_api._errors import (
     NoTranscriptFound,
     TranscriptsDisabled,
     VideoUnavailable,
 )
+
+from app.core.database import get_db
+from app.services.agent_service import get_agent_service
+from app.services.llm_service import LLMService, get_llm_service
+from app.services.youtube_ingestion_service import get_youtube_ingestion_service
+from app.services.youtube_service import get_youtube_service
 
 logger = logging.getLogger(__name__)
 
@@ -286,13 +287,12 @@ async def ingest_video(
         )
 
         # Count chunks for the response
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
+
         from app.models.chunk import Chunk
 
         result = await db.execute(
-            select(func.count(Chunk.id)).where(
-                Chunk.youtube_video_id == youtube_video.id
-            )
+            select(func.count(Chunk.id)).where(Chunk.youtube_video_id == youtube_video.id)
         )
         chunk_count = result.scalar_one()
 
@@ -417,9 +417,7 @@ async def summarize_video(
         )
 
         # Format transcript as text for the LLM
-        transcript_text = youtube_service.format_transcript_as_text(
-            transcript_data["transcript"]
-        )
+        transcript_text = youtube_service.format_transcript_as_text(transcript_data["transcript"])
 
         # Get @summarize agent config
         summarize_agent = agent_service.get_agent("summarize")
@@ -548,8 +546,13 @@ def _parse_summary_response(response: str) -> dict:
                     while i < len(clean_line) and clean_line[i].isdigit():
                         i += 1
                     # Check if it's followed by ". " or ") "
-                    if i < len(clean_line) and clean_line[i] in ".)" and i + 1 < len(clean_line) and clean_line[i + 1] == " ":
-                        clean_line = clean_line[i + 2:].strip()
+                    if (
+                        i < len(clean_line)
+                        and clean_line[i] in ".)"
+                        and i + 1 < len(clean_line)
+                        and clean_line[i + 1] == " "
+                    ):
+                        clean_line = clean_line[i + 2 :].strip()
                 if clean_line:
                     sections["key_points"].append(clean_line)
         elif current_section == "topics":
@@ -565,8 +568,13 @@ def _parse_summary_response(response: str) -> dict:
                     while i < len(clean_line) and clean_line[i].isdigit():
                         i += 1
                     # Check if it's followed by ". " or ") "
-                    if i < len(clean_line) and clean_line[i] in ".)" and i + 1 < len(clean_line) and clean_line[i + 1] == " ":
-                        clean_line = clean_line[i + 2:].strip()
+                    if (
+                        i < len(clean_line)
+                        and clean_line[i] in ".)"
+                        and i + 1 < len(clean_line)
+                        and clean_line[i + 1] == " "
+                    ):
+                        clean_line = clean_line[i + 2 :].strip()
                 if clean_line:
                     sections["topics"].append(clean_line)
 

@@ -1,12 +1,15 @@
 """
 Autocomplete endpoint for AI-powered text completion.
 """
-from fastapi import APIRouter, HTTPException
-from app.schemas.autocomplete import AutocompleteRequest, AutocompleteResponse
-from app.core.config import settings
-import logging
-import ollama
+
 import asyncio
+import logging
+
+import ollama
+from fastapi import APIRouter, HTTPException
+
+from app.core.config import settings
+from app.schemas.autocomplete import AutocompleteRequest, AutocompleteResponse
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +39,7 @@ async def get_autocomplete(request: AutocompleteRequest) -> AutocompleteResponse
         if request.prefix:
             # Look for sentence-ending punctuation followed by space
             stripped = request.prefix.rstrip()
-            if stripped and stripped[-1] in '.!?':
+            if stripped and stripped[-1] in ".!?":
                 should_capitalize = True
 
         # Create a better prompt with context
@@ -71,7 +74,7 @@ async def get_autocomplete(request: AutocompleteRequest) -> AutocompleteResponse
                         "num_predict": 25,  # Slightly more tokens
                     },
                 ),
-                timeout=5.0  # 5 second timeout
+                timeout=5.0,  # 5 second timeout
             )
 
             completion = response.get("response", "").strip()
@@ -83,12 +86,12 @@ async def get_autocomplete(request: AutocompleteRequest) -> AutocompleteResponse
             # Remove common prefixes that LLMs add
             for prefix in ["...", ".. ", ". ", "- "]:
                 if completion.startswith(prefix):
-                    completion = completion[len(prefix):].strip()
+                    completion = completion[len(prefix) :].strip()
                     break
 
             # Don't return completion if it just repeats the prefix
             if completion.lower().startswith(request.prefix.lower()):
-                completion = completion[len(request.prefix):].strip()
+                completion = completion[len(request.prefix) :].strip()
 
             # Capitalize first letter if needed
             if should_capitalize and completion and completion[0].islower():
@@ -98,7 +101,7 @@ async def get_autocomplete(request: AutocompleteRequest) -> AutocompleteResponse
             if len(completion) > 100:
                 # Cut at the last complete word within 100 chars
                 completion = completion[:100]
-                last_space = completion.rfind(' ')
+                last_space = completion.rfind(" ")
                 if last_space > 0:
                     completion = completion[:last_space]
 

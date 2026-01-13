@@ -4,6 +4,7 @@ Service for processing file attachments in chat messages.
 This service extracts text from uploaded files without permanently storing them
 in the document library. Files are processed temporarily for RAG context injection.
 """
+
 import logging
 import tempfile
 from pathlib import Path
@@ -75,7 +76,9 @@ class AttachmentProcessor:
                 if file_ext == ".pdf":
                     content_type = "application/pdf"
                 elif file_ext == ".docx":
-                    content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    content_type = (
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
                 elif file_ext in [".txt", ".md", ".markdown"]:
                     content_type = "text/plain"
                 else:
@@ -91,9 +94,7 @@ class AttachmentProcessor:
 
             if file_size > MAX_FILE_SIZE_BYTES:
                 size_mb = file_size / (1024 * 1024)
-                raise ValueError(
-                    f"File {file.filename} ({size_mb:.1f}MB) exceeds 25MB limit"
-                )
+                raise ValueError(f"File {file.filename} ({size_mb:.1f}MB) exceeds 25MB limit")
 
             # Extract text from file
             try:
@@ -113,9 +114,7 @@ class AttachmentProcessor:
                             f"Truncated {file.filename} to fit within total attachment limit"
                         )
                     else:
-                        logger.warning(
-                            f"Skipping {file.filename} - total attachment limit reached"
-                        )
+                        logger.warning(f"Skipping {file.filename} - total attachment limit reached")
                         continue
 
                 total_extracted_length += extracted_length
@@ -158,9 +157,7 @@ class AttachmentProcessor:
         return attachment_metadata, attachment_contexts
 
     @staticmethod
-    async def _extract_text_from_upload(
-        file: UploadFile, file_content: bytes
-    ) -> str:
+    async def _extract_text_from_upload(file: UploadFile, file_content: bytes) -> str:
         """
         Extract text from an UploadFile by saving to temp file.
 
@@ -173,9 +170,7 @@ class AttachmentProcessor:
         """
         # Create temporary file
         file_extension = Path(file.filename or "file.txt").suffix
-        with tempfile.NamedTemporaryFile(
-            suffix=file_extension, delete=False
-        ) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=file_extension, delete=False) as temp_file:
             temp_file.write(file_content)
             temp_path = temp_file.name
 

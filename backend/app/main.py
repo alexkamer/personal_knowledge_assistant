@@ -1,6 +1,7 @@
 """
 FastAPI main application entry point.
 """
+
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -34,6 +35,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start Research Scheduler
     from app.services.research_scheduler_service import get_research_scheduler
+
     scheduler = get_research_scheduler()
     await scheduler.start()
     logger.info("Research Autopilot scheduler started")
@@ -111,4 +113,5 @@ async def health_check() -> dict[str, str]:
 
 # Include API routers
 from app.api.v1.api import api_router
+
 app.include_router(api_router, prefix=settings.api_v1_prefix)

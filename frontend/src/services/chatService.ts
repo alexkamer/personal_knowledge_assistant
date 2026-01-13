@@ -59,7 +59,7 @@ export const chatService = {
     // Build FormData if files are included, otherwise use JSON
     const hasFiles = request.files && request.files.length > 0;
     let body: FormData | string;
-    let headers: Record<string, string> = {};
+    const headers: Record<string, string> = {};
 
     if (hasFiles) {
       // Use FormData for file uploads
@@ -113,6 +113,7 @@ export const chatService = {
         }
 
         try {
+          // eslint-disable-next-line no-constant-condition
           while (true) {
             const { done, value } = await reader.read();
 

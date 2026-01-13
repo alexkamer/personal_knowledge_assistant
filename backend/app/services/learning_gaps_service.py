@@ -8,7 +8,7 @@ Innovation: Helps users build complete understanding by detecting conceptual pre
 """
 
 import logging
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -160,9 +160,7 @@ IMPORTANCE: important
 RESOURCES: Review linear algebra basics and attention mechanism documentation
 TIME: 20 minutes"""
 
-    def _parse_gap_response(
-        self, response: str, user_question: str
-    ) -> List[LearningGap]:
+    def _parse_gap_response(self, response: str, user_question: str) -> List[LearningGap]:
         """Parse LLM response into LearningGap objects."""
 
         gaps = []
@@ -324,9 +322,7 @@ Respond with a numbered sequence (e.g., "1. Learn X → 2. Then Y → 3. Finally
         for line in lines:
             line = line.strip()
             # Look for numbered steps (e.g., "1.", "2.", etc.)
-            if line and (
-                line[0].isdigit() or line.startswith("-") or line.startswith("•")
-            ):
+            if line and (line[0].isdigit() or line.startswith("-") or line.startswith("•")):
                 # Remove numbering and clean up
                 step = line.lstrip("0123456789.-•→ ").strip()
                 if step:

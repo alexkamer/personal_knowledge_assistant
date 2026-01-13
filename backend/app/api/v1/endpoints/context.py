@@ -4,13 +4,19 @@ Context Intelligence API endpoints.
 Provides semantic discovery of related content across YouTube videos, notes,
 and documents, with optional AI synthesis and suggested questions.
 """
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.schemas.context import ContextRequest, ContextResponse, ContradictionItem, ContradictionSource
+from app.schemas.context import (
+    ContextRequest,
+    ContextResponse,
+    ContradictionItem,
+    ContradictionSource,
+)
 from app.services.context_service import get_context_service
 from app.services.contradiction_service import ContradictionDetectionService
 from app.services.llm_service import get_llm_service
@@ -25,12 +31,8 @@ router = APIRouter(tags=["context"])
 async def get_context(
     source_type: str,
     source_id: str,
-    include_synthesis: bool = Query(
-        default=True, description="Include AI-generated synthesis"
-    ),
-    include_questions: bool = Query(
-        default=True, description="Include suggested questions"
-    ),
+    include_synthesis: bool = Query(default=True, description="Include AI-generated synthesis"),
+    include_questions: bool = Query(default=True, description="Include suggested questions"),
     top_k: int = Query(default=5, ge=1, le=20, description="Number of related items"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -80,9 +82,7 @@ async def get_context(
         )
 
         # Fetch source info for response
-        source_content = await context_service._fetch_source_content(
-            db, source_type, source_id
-        )
+        source_content = await context_service._fetch_source_content(db, source_type, source_id)
 
         if not source_content:
             raise HTTPException(
@@ -122,7 +122,7 @@ async def get_context(
                 db=db,
                 source_type=source_type,
                 source_id=source_id,
-                top_k=3  # Check top 3 similar sources for contradictions
+                top_k=3,  # Check top 3 similar sources for contradictions
             )
 
             # Convert to schema format
@@ -133,18 +133,18 @@ async def get_context(
                             type=c.source1_type,
                             id=c.source1_id,
                             title=c.source1_title,
-                            excerpt=c.source1_excerpt
+                            excerpt=c.source1_excerpt,
                         ),
                         source2=ContradictionSource(
                             type=c.source2_type,
                             id=c.source2_id,
                             title=c.source2_title,
-                            excerpt=c.source2_excerpt
+                            excerpt=c.source2_excerpt,
                         ),
                         contradiction_type=c.contradiction_type,
                         explanation=c.explanation,
                         severity=c.severity,
-                        confidence=c.confidence
+                        confidence=c.confidence,
                     )
                 )
 

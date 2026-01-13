@@ -3,14 +3,16 @@ Research scheduler service for managing scheduled research tasks.
 
 Uses APScheduler to run research projects on a schedule (daily, weekly, monthly, custom cron).
 """
-import logging
-from typing import Optional, List
-from datetime import datetime, time as dt_time
 
+import logging
+from datetime import datetime
+from datetime import time as dt_time
+from typing import List, Optional
+
+from apscheduler.executors.asyncio import AsyncIOExecutor
+from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.executors.asyncio import AsyncIOExecutor
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,23 +32,19 @@ class ResearchSchedulerService:
     def __init__(self):
         """Initialize the scheduler service."""
         # Configure job stores and executors
-        jobstores = {
-            'default': MemoryJobStore()
-        }
-        executors = {
-            'default': AsyncIOExecutor()
-        }
+        jobstores = {"default": MemoryJobStore()}
+        executors = {"default": AsyncIOExecutor()}
         job_defaults = {
-            'coalesce': False,  # Don't combine multiple missed runs
-            'max_instances': 1,  # Only one instance of each job at a time
-            'misfire_grace_time': 3600,  # 1 hour grace period for missed jobs
+            "coalesce": False,  # Don't combine multiple missed runs
+            "max_instances": 1,  # Only one instance of each job at a time
+            "misfire_grace_time": 3600,  # 1 hour grace period for missed jobs
         }
 
         self.scheduler = AsyncIOScheduler(
             jobstores=jobstores,
             executors=executors,
             job_defaults=job_defaults,
-            timezone='UTC',
+            timezone="UTC",
         )
         self._started = False
 
@@ -79,8 +77,7 @@ class ResearchSchedulerService:
             # Get all active projects with non-manual schedules
             result = await db.execute(
                 select(ResearchProject).where(
-                    ResearchProject.status == "active",
-                    ResearchProject.schedule_type != "manual"
+                    ResearchProject.status == "active", ResearchProject.schedule_type != "manual"
                 )
             )
             projects = result.scalars().all()
@@ -92,9 +89,7 @@ class ResearchSchedulerService:
                 except Exception as e:
                     logger.error(f"Failed to load project {project.id}: {e}")
 
-    async def schedule_project(
-        self, db: AsyncSession, project_id: str
-    ) -> str:
+    async def schedule_project(self, db: AsyncSession, project_id: str) -> str:
         """
         Schedule a research project based on its schedule settings.
 
@@ -109,9 +104,7 @@ class ResearchSchedulerService:
             ValueError: If project not found or has manual schedule
         """
         # Get project
-        result = await db.execute(
-            select(ResearchProject).where(ResearchProject.id == project_id)
-        )
+        result = await db.execute(select(ResearchProject).where(ResearchProject.id == project_id))
         project = result.scalar_one_or_none()
 
         if not project:
@@ -166,7 +159,7 @@ class ResearchSchedulerService:
 
         elif schedule_type == "weekly":
             # Weekly on Sunday at 2:00 AM UTC
-            return CronTrigger(day_of_week='sun', hour=2, minute=0)
+            return CronTrigger(day_of_week="sun", hour=2, minute=0)
 
         elif schedule_type == "monthly":
             # Monthly on the 1st at 2:00 AM UTC
@@ -199,6 +192,7 @@ class ResearchSchedulerService:
 
             # Update next_run_at to None
             from app.core.database import AsyncSessionLocal
+
             async with AsyncSessionLocal() as db:
                 result = await db.execute(
                     select(ResearchProject).where(ResearchProject.id == project_id)
@@ -209,9 +203,7 @@ class ResearchSchedulerService:
                     project.next_run_at = None
                     await db.commit()
 
-    async def reschedule_project(
-        self, db: AsyncSession, project_id: str
-    ) -> str:
+    async def reschedule_project(self, db: AsyncSession, project_id: str) -> str:
         """
         Reschedule a project (useful after schedule settings change).
 
@@ -228,9 +220,7 @@ class ResearchSchedulerService:
         # Schedule again with new settings
         return await self.schedule_project(db, project_id)
 
-    async def run_project_now(
-        self, db: AsyncSession, project_id: str
-    ) -> List[str]:
+    async def run_project_now(self, db: AsyncSession, project_id: str) -> List[str]:
         """
         Manually trigger a project run immediately.
 
@@ -260,9 +250,9 @@ class ResearchSchedulerService:
         Returns:
             List of task IDs that were executed
         """
+        from app.api.v1.endpoints.research import run_research_task
         from app.core.database import AsyncSessionLocal
         from app.services.research_project_service import get_research_project_service
-        from app.api.v1.endpoints.research import run_research_task
 
         async with AsyncSessionLocal() as db:
             try:
@@ -302,8 +292,7 @@ class ResearchSchedulerService:
                     queued_tasks_query = (
                         select(ResearchTask)
                         .where(
-                            ResearchTask.project_id == project_id,
-                            ResearchTask.status == "queued"
+                            ResearchTask.project_id == project_id, ResearchTask.status == "queued"
                         )
                         .limit(project.max_tasks_per_run)
                     )
@@ -324,6 +313,7 @@ class ResearchSchedulerService:
                         # Run task in background (non-blocking)
                         # Note: In production, consider using a proper task queue (Celery, RQ)
                         import asyncio
+
                         asyncio.create_task(
                             run_research_task(
                                 task_id=task_id,
@@ -358,11 +348,13 @@ class ResearchSchedulerService:
             # Extract project_id from job id (format: "project_{uuid}")
             if job.id.startswith("project_"):
                 project_id = job.id.replace("project_", "")
-                scheduled.append({
-                    "project_id": project_id,
-                    "next_run_time": job.next_run_time,
-                    "job_name": job.name,
-                })
+                scheduled.append(
+                    {
+                        "project_id": project_id,
+                        "next_run_time": job.next_run_time,
+                        "job_name": job.name,
+                    }
+                )
 
         return scheduled
 

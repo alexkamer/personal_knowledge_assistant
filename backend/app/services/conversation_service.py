@@ -1,6 +1,7 @@
 """
 Service layer for conversation and message CRUD operations.
 """
+
 import json
 import logging
 from typing import Optional
@@ -53,9 +54,7 @@ class ConversationService:
         Returns:
             Conversation if found, None otherwise
         """
-        result = await db.execute(
-            select(Conversation).where(Conversation.id == conversation_id)
-        )
+        result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
         return result.scalar_one_or_none()
 
     @staticmethod
@@ -111,9 +110,7 @@ class ConversationService:
         Returns:
             Updated conversation if found, None otherwise
         """
-        result = await db.execute(
-            select(Conversation).where(Conversation.id == conversation_id)
-        )
+        result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
         conversation = result.scalar_one_or_none()
 
         if not conversation:
@@ -142,9 +139,7 @@ class ConversationService:
         Returns:
             True if deleted, False if not found
         """
-        result = await db.execute(
-            select(Conversation).where(Conversation.id == conversation_id)
-        )
+        result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
         conversation = result.scalar_one_or_none()
 
         if not conversation:

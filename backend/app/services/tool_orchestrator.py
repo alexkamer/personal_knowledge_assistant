@@ -4,6 +4,7 @@ Tool orchestrator for multi-step reasoning with tools.
 Manages the agent reasoning loop: LLM calls, tool execution, and iteration
 until a final answer is reached.
 """
+
 import asyncio
 import logging
 from typing import Any, Callable, Dict, List, Optional
@@ -12,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.agent_service import AgentConfig
 from app.services.llm_service import get_llm_service
-from app.services.tool_call_parser import get_tool_call_parser, ParsedResponse, ToolCall
+from app.services.tool_call_parser import ParsedResponse, ToolCall, get_tool_call_parser
 from app.services.tool_executor import get_tool_executor
 from app.services.tools.document_search_tool import DocumentSearchTool
 
@@ -79,7 +80,9 @@ class ToolOrchestrator:
             logger.info(f"Tool orchestration iteration {iteration + 1}/{max_iterations}")
 
             if on_iteration:
-                on_iteration(iteration + 1, f"Thinking (iteration {iteration + 1}/{max_iterations})...")
+                on_iteration(
+                    iteration + 1, f"Thinking (iteration {iteration + 1}/{max_iterations})..."
+                )
 
             # Build prompt with tool definitions and history
             prompt = self.tool_parser.build_tool_prompt(
@@ -161,11 +164,13 @@ class ToolOrchestrator:
         """
         # Emit tool call event
         if on_tool_call:
-            on_tool_call({
-                "tool": tool_call.tool,
-                "parameters": tool_call.parameters,
-                "thought": tool_call.thought,
-            })
+            on_tool_call(
+                {
+                    "tool": tool_call.tool,
+                    "parameters": tool_call.parameters,
+                    "thought": tool_call.thought,
+                }
+            )
 
         # Special handling for document_search tool (needs DB session)
         if tool_call.tool == "document_search" and db is not None:
@@ -185,12 +190,14 @@ class ToolOrchestrator:
             on_tool_result(tool_call.tool, result.to_dict())
 
         # Add to history
-        tool_history.append({
-            "tool": tool_call.tool,
-            "parameters": tool_call.parameters,
-            "thought": tool_call.thought,
-            "result": result.to_dict(),
-        })
+        tool_history.append(
+            {
+                "tool": tool_call.tool,
+                "parameters": tool_call.parameters,
+                "thought": tool_call.thought,
+                "result": result.to_dict(),
+            }
+        )
 
         logger.info(
             f"Tool {tool_call.tool} executed: success={result.success}, "
@@ -221,7 +228,7 @@ class ToolOrchestrator:
         # Build summary of what we found
         summary_parts = [
             f"Based on my investigation of your question: '{query}'\n",
-            "\nHere's what I found:\n"
+            "\nHere's what I found:\n",
         ]
 
         for i, entry in enumerate(tool_history, 1):

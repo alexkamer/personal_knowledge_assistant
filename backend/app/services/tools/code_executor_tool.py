@@ -3,6 +3,7 @@ Code execution tool with sandboxing for safe Python code execution.
 
 Executes Python code in a subprocess with timeout and output capture.
 """
+
 import asyncio
 import logging
 import subprocess
@@ -118,8 +119,8 @@ class CodeExecutorTool(BaseTool):
 
             # Create temporary file for code
             with tempfile.NamedTemporaryFile(
-                mode='w',
-                suffix='.py',
+                mode="w",
+                suffix=".py",
                 delete=False,
             ) as temp_file:
                 temp_file.write(code)
@@ -128,7 +129,7 @@ class CodeExecutorTool(BaseTool):
             try:
                 # Execute code in subprocess with timeout
                 process = await asyncio.create_subprocess_exec(
-                    'python3',
+                    "python3",
                     temp_file_path,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
@@ -150,8 +151,8 @@ class CodeExecutorTool(BaseTool):
                     )
 
                 # Decode output
-                stdout_str = stdout.decode('utf-8', errors='replace')
-                stderr_str = stderr.decode('utf-8', errors='replace')
+                stdout_str = stdout.decode("utf-8", errors="replace")
+                stderr_str = stderr.decode("utf-8", errors="replace")
 
                 # Truncate if too long
                 if len(stdout_str) > MAX_OUTPUT_SIZE:

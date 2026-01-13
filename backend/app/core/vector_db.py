@@ -1,6 +1,7 @@
 """
 Vector database (ChromaDB) initialization and management.
 """
+
 import logging
 from typing import Optional
 

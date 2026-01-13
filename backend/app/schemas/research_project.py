@@ -1,8 +1,10 @@
 """
 Pydantic schemas for research projects.
 """
+
 from datetime import datetime
 from typing import List, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -11,13 +13,15 @@ class ResearchProjectCreate(BaseModel):
 
     name: str = Field(..., min_length=3, max_length=255, description="Project name")
     description: Optional[str] = Field(None, description="Project description")
-    goal: str = Field(
-        ..., min_length=10, max_length=2000, description="Main research objective"
-    )
+    goal: str = Field(..., min_length=10, max_length=2000, description="Main research objective")
 
     # Scheduling
-    schedule_type: str = Field("manual", description="Schedule type: manual, daily, weekly, monthly, custom")
-    schedule_cron: Optional[str] = Field(None, description="Custom cron expression (required if schedule_type='custom')")
+    schedule_type: str = Field(
+        "manual", description="Schedule type: manual, daily, weekly, monthly, custom"
+    )
+    schedule_cron: Optional[str] = Field(
+        None, description="Custom cron expression (required if schedule_type='custom')"
+    )
 
     # Task generation settings
     auto_generate_tasks: bool = Field(True, description="Auto-generate tasks from goal")
@@ -26,7 +30,9 @@ class ResearchProjectCreate(BaseModel):
     # Research settings
     default_max_sources: int = Field(10, ge=1, le=50, description="Default max sources per task")
     default_depth: str = Field("thorough", description="Default research depth")
-    default_source_types: Optional[List[str]] = Field(None, description="Default source type filters")
+    default_source_types: Optional[List[str]] = Field(
+        None, description="Default source type filters"
+    )
 
     @field_validator("schedule_type")
     @classmethod
@@ -163,9 +169,7 @@ class TaskGenerationRequest(BaseModel):
     """Request to generate tasks from project goal."""
 
     count: int = Field(5, ge=1, le=20, description="Number of tasks to generate")
-    consider_existing: bool = Field(
-        True, description="Consider existing tasks to avoid duplicates"
-    )
+    consider_existing: bool = Field(True, description="Consider existing tasks to avoid duplicates")
 
 
 class TaskGenerationResponse(BaseModel):
@@ -179,7 +183,9 @@ class TaskGenerationResponse(BaseModel):
 class ScheduleUpdateRequest(BaseModel):
     """Request to update project schedule."""
 
-    schedule_type: str = Field(..., description="Schedule type: manual, daily, weekly, monthly, custom")
+    schedule_type: str = Field(
+        ..., description="Schedule type: manual, daily, weekly, monthly, custom"
+    )
     schedule_cron: Optional[str] = Field(None, description="Custom cron expression")
 
     @field_validator("schedule_type")

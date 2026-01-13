@@ -1,6 +1,7 @@
 """
 Pydantic schemas for Conversation and Message models.
 """
+
 from datetime import datetime
 from typing import List, Optional
 
@@ -17,7 +18,9 @@ class MessageBase(BaseModel):
 class MessageCreate(MessageBase):
     """Schema for creating a new message (user query)."""
 
-    conversation_id: Optional[str] = Field(None, description="Conversation ID (creates new if not provided)")
+    conversation_id: Optional[str] = Field(
+        None, description="Conversation ID (creates new if not provided)"
+    )
 
 
 class MessageFeedbackCreate(BaseModel):
@@ -34,7 +37,9 @@ class AttachmentMetadata(BaseModel):
     file_type: str = Field(..., description="MIME type of the file")
     size_bytes: int = Field(..., description="File size in bytes")
     extracted_length: int = Field(..., description="Number of characters extracted from file")
-    processing_status: str = Field(default="processed", description="Processing status (processed, error)")
+    processing_status: str = Field(
+        default="processed", description="Processing status (processed, error)"
+    )
     error_message: Optional[str] = Field(None, description="Error message if processing failed")
 
 
@@ -124,10 +129,16 @@ class ChatRequest(BaseModel):
     model: Optional[str] = Field(None, description="LLM model to use")
     top_k: Optional[int] = Field(None, ge=1, le=20, description="Number of chunks to retrieve")
     include_web_search: bool = Field(False, description="Include web search results")
-    include_notes: bool = Field(False, description="Include personal notes as sources (default: reputable sources only)")
-    socratic_mode: bool = Field(False, description="Enable Socratic Learning Mode (AI teaches through questioning)")
+    include_notes: bool = Field(
+        False, description="Include personal notes as sources (default: reputable sources only)"
+    )
+    socratic_mode: bool = Field(
+        False, description="Enable Socratic Learning Mode (AI teaches through questioning)"
+    )
     skip_rag: bool = Field(False, description="Skip RAG retrieval and use general knowledge only")
-    agent_mode: bool = Field(False, description="Enable agentic mode (LLM decides when to retrieve more information)")
+    agent_mode: bool = Field(
+        False, description="Enable agentic mode (LLM decides when to retrieve more information)"
+    )
 
 
 class ChatResponse(BaseModel):

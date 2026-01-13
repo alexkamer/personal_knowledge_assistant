@@ -1,9 +1,10 @@
 """
 Conversation and Message models for chat history.
 """
+
 from typing import Optional
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, JSON
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -18,7 +19,9 @@ class Conversation(Base, UUIDMixin, TimestampMixin):
 
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    is_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default='0')
+    is_pinned: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )
 
     # Relationships
     messages: Mapped[list["Message"]] = relationship(
@@ -58,12 +61,10 @@ class Message(Base, UUIDMixin, TimestampMixin):
     token_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Additional metadata (e.g., attachments) - use 'metadata_' to avoid SQLAlchemy reserved name
-    metadata_: Mapped[Optional[dict]] = mapped_column('metadata', JSON, nullable=True)
+    metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSON, nullable=True)
 
     # Relationships
-    conversation: Mapped["Conversation"] = relationship(
-        "Conversation", back_populates="messages"
-    )
+    conversation: Mapped["Conversation"] = relationship("Conversation", back_populates="messages")
     feedback: Mapped[Optional["MessageFeedback"]] = relationship(
         "MessageFeedback",
         back_populates="message",
@@ -72,4 +73,6 @@ class Message(Base, UUIDMixin, TimestampMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<Message(id={self.id}, role='{self.role}', conversation_id={self.conversation_id})>"
+        return (
+            f"<Message(id={self.id}, role='{self.role}', conversation_id={self.conversation_id})>"
+        )

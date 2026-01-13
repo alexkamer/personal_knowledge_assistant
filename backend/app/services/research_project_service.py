@@ -1,11 +1,12 @@
 """
 Research project service for managing research projects and task generation.
 """
-import logging
-from typing import List, Optional, Dict
-from datetime import datetime
 
-from sqlalchemy import select, func, desc
+import logging
+from datetime import datetime
+from typing import Dict, List, Optional
+
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,8 +14,8 @@ from app.models.research_project import ResearchProject
 from app.models.research_task import ResearchTask
 from app.schemas.research_project import (
     ResearchProjectCreate,
-    ResearchProjectUpdate,
     ResearchProjectProgress,
+    ResearchProjectUpdate,
     TaskSummary,
 )
 from app.services.llm_service import get_llm_service
@@ -64,9 +65,7 @@ class ResearchProjectService:
 
         return project
 
-    async def get_project(
-        self, db: AsyncSession, project_id: str
-    ) -> Optional[ResearchProject]:
+    async def get_project(self, db: AsyncSession, project_id: str) -> Optional[ResearchProject]:
         """
         Get a research project by ID.
 
@@ -77,9 +76,7 @@ class ResearchProjectService:
         Returns:
             Research project or None if not found
         """
-        result = await db.execute(
-            select(ResearchProject).where(ResearchProject.id == project_id)
-        )
+        result = await db.execute(select(ResearchProject).where(ResearchProject.id == project_id))
         return result.scalar_one_or_none()
 
     async def list_projects(
@@ -116,9 +113,7 @@ class ResearchProjectService:
         total = total_result.scalar_one()
 
         # Get paginated projects
-        query = (
-            query.order_by(desc(ResearchProject.created_at)).offset(offset).limit(limit)
-        )
+        query = query.order_by(desc(ResearchProject.created_at)).offset(offset).limit(limit)
         result = await db.execute(query)
         projects = result.scalars().all()
 
@@ -202,9 +197,11 @@ class ResearchProjectService:
             return None
 
         # Get task counts by status
-        status_counts_query = select(
-            ResearchTask.status, func.count(ResearchTask.id)
-        ).where(ResearchTask.project_id == project_id).group_by(ResearchTask.status)
+        status_counts_query = (
+            select(ResearchTask.status, func.count(ResearchTask.id))
+            .where(ResearchTask.project_id == project_id)
+            .group_by(ResearchTask.status)
+        )
 
         result = await db.execute(status_counts_query)
         status_counts = dict(result.all())
@@ -221,12 +218,12 @@ class ResearchProjectService:
         recent_tasks = result.scalars().all()
 
         # Calculate source stats
-        sources_added_query = select(
-            func.sum(ResearchTask.sources_added)
-        ).where(ResearchTask.project_id == project_id)
-        sources_failed_query = select(
-            func.sum(ResearchTask.sources_failed)
-        ).where(ResearchTask.project_id == project_id)
+        sources_added_query = select(func.sum(ResearchTask.sources_added)).where(
+            ResearchTask.project_id == project_id
+        )
+        sources_failed_query = select(func.sum(ResearchTask.sources_failed)).where(
+            ResearchTask.project_id == project_id
+        )
 
         sources_added_result = await db.execute(sources_added_query)
         sources_failed_result = await db.execute(sources_failed_query)
@@ -260,9 +257,7 @@ class ResearchProjectService:
             ],
         )
 
-    async def update_project_stats(
-        self, db: AsyncSession, project_id: str
-    ) -> None:
+    async def update_project_stats(self, db: AsyncSession, project_id: str) -> None:
         """
         Recalculate and update project statistics from tasks.
 
@@ -279,18 +274,16 @@ class ResearchProjectService:
             ResearchTask.project_id == project_id
         )
         completed_tasks_query = select(func.count(ResearchTask.id)).where(
-            ResearchTask.project_id == project_id,
-            ResearchTask.status == "completed"
+            ResearchTask.project_id == project_id, ResearchTask.status == "completed"
         )
         failed_tasks_query = select(func.count(ResearchTask.id)).where(
-            ResearchTask.project_id == project_id,
-            ResearchTask.status == "failed"
+            ResearchTask.project_id == project_id, ResearchTask.status == "failed"
         )
 
         # Calculate total sources added
-        sources_query = select(
-            func.sum(ResearchTask.sources_added)
-        ).where(ResearchTask.project_id == project_id)
+        sources_query = select(func.sum(ResearchTask.sources_added)).where(
+            ResearchTask.project_id == project_id
+        )
 
         total_tasks_result = await db.execute(total_tasks_query)
         completed_tasks_result = await db.execute(completed_tasks_query)
@@ -361,9 +354,7 @@ class ResearchProjectService:
             # Limit to requested count
             queries = queries[:count]
 
-            logger.info(
-                f"Generated {len(queries)} task queries for project {project_id}"
-            )
+            logger.info(f"Generated {len(queries)} task queries for project {project_id}")
 
             return queries
 
@@ -426,6 +417,7 @@ Now generate {count} research questions for the project:"""
 
             # Remove numbering (e.g., "1. ", "1) ", "1 - ")
             import re
+
             cleaned = re.sub(r"^\d+[\.\)\-]\s*", "", line)
 
             if cleaned:
@@ -437,7 +429,8 @@ Now generate {count} research questions for the project:"""
         """Generate simple fallback queries if LLM fails."""
         # Extract key words from goal
         import re
-        words = re.findall(r'\b\w{4,}\b', goal.lower())
+
+        words = re.findall(r"\b\w{4,}\b", goal.lower())
         unique_words = list(dict.fromkeys(words))[:5]  # Top 5 unique words
 
         queries = []

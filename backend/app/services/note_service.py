@@ -1,26 +1,27 @@
 """
 Service layer for note CRUD operations.
 """
+
+import json
 import logging
 import re
-import json
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.note import Note
 from app.schemas.note import NoteCreate, NoteUpdate
 from app.services.chunk_processing_service import get_chunk_processing_service
-from app.services.vector_service import get_vector_service
 from app.services.tag_service import TagService
+from app.services.vector_service import get_vector_service
 
 logger = logging.getLogger(__name__)
 
 # Regex to extract wiki links from Lexical JSON content
-WIKI_LINK_PATTERN = re.compile(r'\[\[([^\]]+)\]\]')
+WIKI_LINK_PATTERN = re.compile(r"\[\[([^\]]+)\]\]")
 
 
 class NoteService:
@@ -76,9 +77,7 @@ class NoteService:
             Note if found, None otherwise
         """
         result = await db.execute(
-            select(Note)
-            .where(Note.id == note_id)
-            .options(selectinload(Note.tags_rel))
+            select(Note).where(Note.id == note_id).options(selectinload(Note.tags_rel))
         )
         return result.scalar_one_or_none()
 
@@ -111,8 +110,8 @@ class NoteService:
 
             if normalized_names:
                 # Join with tags and filter
-                from app.models.tag import Tag
                 from app.models.note_tag import NoteTag
+                from app.models.tag import Tag
 
                 for tag_name in normalized_names:
                     # Create subquery for this tag
@@ -126,8 +125,8 @@ class NoteService:
         # Get total count with same filters
         count_query = select(func.count(Note.id))
         if tag_names and normalized_names:
-            from app.models.tag import Tag
             from app.models.note_tag import NoteTag
+            from app.models.tag import Tag
 
             for tag_name in normalized_names:
                 tag_subquery = (
@@ -141,12 +140,7 @@ class NoteService:
         total = count_result.scalar_one()
 
         # Get notes
-        result = await db.execute(
-            query
-            .order_by(Note.updated_at.desc())
-            .offset(skip)
-            .limit(limit)
-        )
+        result = await db.execute(query.order_by(Note.updated_at.desc()).offset(skip).limit(limit))
         notes = list(result.scalars().all())
 
         return notes, total
@@ -169,9 +163,7 @@ class NoteService:
             Updated note if found, None otherwise
         """
         result = await db.execute(
-            select(Note)
-            .where(Note.id == note_id)
-            .options(selectinload(Note.tags_rel))
+            select(Note).where(Note.id == note_id).options(selectinload(Note.tags_rel))
         )
         note = result.scalar_one_or_none()
 
@@ -197,7 +189,9 @@ class NoteService:
         await db.refresh(note)
 
         # Eagerly load the tags_rel relationship
-        await db.execute(select(Note).where(Note.id == note.id).options(selectinload(Note.tags_rel)))
+        await db.execute(
+            select(Note).where(Note.id == note.id).options(selectinload(Note.tags_rel))
+        )
         await db.refresh(note, ["tags_rel"])
 
         # Reprocess chunks if content changed
@@ -376,9 +370,10 @@ class NoteService:
         Returns:
             List of tuples (note, similarity_score) sorted by relevance
         """
+        from collections import defaultdict
+
         from app.services.embedding_service import get_embedding_service
         from app.services.vector_service import get_vector_service
-        from collections import defaultdict
 
         # Get the target note
         target_note = await NoteService.get_note(db, note_id)
@@ -424,8 +419,7 @@ class NoteService:
 
         # Calculate average similarity for each note
         note_similarities = [
-            (source_id, sum(scores) / len(scores))
-            for source_id, scores in note_scores.items()
+            (source_id, sum(scores) / len(scores)) for source_id, scores in note_scores.items()
         ]
 
         # Sort by similarity (highest first) and limit
@@ -437,9 +431,7 @@ class NoteService:
             return []
 
         result = await db.execute(
-            select(Note)
-            .where(Note.id.in_(top_note_ids))
-            .options(selectinload(Note.tags_rel))
+            select(Note).where(Note.id.in_(top_note_ids)).options(selectinload(Note.tags_rel))
         )
         notes_dict = {note.id: note for note in result.scalars().all()}
 

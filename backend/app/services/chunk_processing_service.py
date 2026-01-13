@@ -1,6 +1,7 @@
 """
 Chunk processing service that orchestrates text chunking and embedding.
 """
+
 import logging
 from typing import List
 
@@ -11,8 +12,8 @@ from app.core.config import settings
 from app.models.chunk import Chunk
 from app.services.embedding_service import get_embedding_service
 from app.services.vector_service import get_vector_service
-from app.utils.text_chunker import TextChunker
 from app.utils.semantic_chunker import SemanticChunker
+from app.utils.text_chunker import TextChunker
 
 logger = logging.getLogger(__name__)
 
@@ -79,17 +80,25 @@ class ChunkProcessingService:
                 return []
             # Convert to semantic chunks format for consistency
             semantic_chunks = [
-                type('obj', (object,), {
-                    'content': text,
-                    'metadata': type('obj', (object,), {
-                        'content_type': 'narrative',
-                        'heading_hierarchy': [],
-                        'section_title': None,
-                        'has_code': False,
-                        'token_count': self.basic_chunker.count_tokens(text),
-                        'semantic_density': 0.5,
-                    })()
-                })()
+                type(
+                    "obj",
+                    (object,),
+                    {
+                        "content": text,
+                        "metadata": type(
+                            "obj",
+                            (object,),
+                            {
+                                "content_type": "narrative",
+                                "heading_hierarchy": [],
+                                "section_title": None,
+                                "has_code": False,
+                                "token_count": self.basic_chunker.count_tokens(text),
+                                "semantic_density": 0.5,
+                            },
+                        )(),
+                    },
+                )()
                 for text in chunk_texts
             ]
 
@@ -191,17 +200,25 @@ class ChunkProcessingService:
                 return []
             # Convert to semantic chunks format for consistency
             semantic_chunks = [
-                type('obj', (object,), {
-                    'content': text,
-                    'metadata': type('obj', (object,), {
-                        'content_type': 'narrative',
-                        'heading_hierarchy': [],
-                        'section_title': None,
-                        'has_code': False,
-                        'token_count': self.basic_chunker.count_tokens(text),
-                        'semantic_density': 0.5,
-                    })()
-                })()
+                type(
+                    "obj",
+                    (object,),
+                    {
+                        "content": text,
+                        "metadata": type(
+                            "obj",
+                            (object,),
+                            {
+                                "content_type": "narrative",
+                                "heading_hierarchy": [],
+                                "section_title": None,
+                                "has_code": False,
+                                "token_count": self.basic_chunker.count_tokens(text),
+                                "semantic_density": 0.5,
+                            },
+                        )(),
+                    },
+                )()
                 for text in chunk_texts
             ]
 
@@ -284,20 +301,18 @@ class ChunkProcessingService:
         """
         # Find existing chunks in database
         if source_type == "note":
-            result = await db.execute(
-                select(Chunk).where(Chunk.note_id == source_id)
-            )
+            result = await db.execute(select(Chunk).where(Chunk.note_id == source_id))
         else:
-            result = await db.execute(
-                select(Chunk).where(Chunk.document_id == source_id)
-            )
+            result = await db.execute(select(Chunk).where(Chunk.document_id == source_id))
 
         existing_chunks = list(result.scalars().all())
 
         if not existing_chunks:
             return
 
-        logger.info(f"Deleting {len(existing_chunks)} existing chunks for {source_type} {source_id}")
+        logger.info(
+            f"Deleting {len(existing_chunks)} existing chunks for {source_type} {source_id}"
+        )
 
         # Delete from vector database
         await self.vector_service.delete_chunks_by_source(source_id, source_type)

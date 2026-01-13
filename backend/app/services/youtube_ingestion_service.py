@@ -8,11 +8,17 @@ Handles ingesting YouTube videos into the knowledge base by:
 4. Generating embeddings
 5. Storing in both PostgreSQL and ChromaDB
 """
+
 import logging
 from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from youtube_transcript_api._errors import (
+    NoTranscriptFound,
+    TranscriptsDisabled,
+    VideoUnavailable,
+)
 
 from app.models.chunk import Chunk
 from app.models.youtube_video import YouTubeVideo
@@ -20,11 +26,6 @@ from app.services.embedding_service import get_embedding_service
 from app.services.vector_service import get_vector_service
 from app.services.youtube_service import YouTubeService, get_youtube_service
 from app.utils.semantic_chunker import SemanticChunker
-from youtube_transcript_api._errors import (
-    NoTranscriptFound,
-    TranscriptsDisabled,
-    VideoUnavailable,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -83,9 +84,7 @@ class YouTubeIngestionService:
         logger.info(f"Starting ingestion for video {video_id}")
 
         # Check if video already exists
-        result = await db.execute(
-            select(YouTubeVideo).where(YouTubeVideo.video_id == video_id)
-        )
+        result = await db.execute(select(YouTubeVideo).where(YouTubeVideo.video_id == video_id))
         existing_video = result.scalar_one_or_none()
 
         if existing_video:
@@ -121,9 +120,7 @@ class YouTubeIngestionService:
 
         # Fetch transcript
         try:
-            transcript_data = self.youtube_service.get_transcript(
-                video_id, languages=languages
-            )
+            transcript_data = self.youtube_service.get_transcript(video_id, languages=languages)
         except (NoTranscriptFound, TranscriptsDisabled, VideoUnavailable) as e:
             # If video record was just created, delete it
             if not existing_video:
@@ -143,9 +140,7 @@ class YouTubeIngestionService:
             db, str(youtube_video.id), video_id, transcript_entries
         )
 
-        logger.info(
-            f"Successfully ingested video {video_id} with {len(chunks)} chunks"
-        )
+        logger.info(f"Successfully ingested video {video_id} with {len(chunks)} chunks")
         return youtube_video
 
     async def _chunk_and_embed_transcript(
@@ -294,9 +289,7 @@ class YouTubeIngestionService:
             metadatas=metadatas,
         )
 
-        logger.info(
-            f"Successfully created {len(chunks)} chunks for video {video_id}"
-        )
+        logger.info(f"Successfully created {len(chunks)} chunks for video {video_id}")
         return chunks
 
     async def _delete_existing_chunks(
@@ -312,22 +305,16 @@ class YouTubeIngestionService:
             youtube_video_id: UUID of the YouTubeVideo record
         """
         # Find existing chunks in database
-        result = await db.execute(
-            select(Chunk).where(Chunk.youtube_video_id == youtube_video_id)
-        )
+        result = await db.execute(select(Chunk).where(Chunk.youtube_video_id == youtube_video_id))
         existing_chunks = list(result.scalars().all())
 
         if not existing_chunks:
             return
 
-        logger.info(
-            f"Deleting {len(existing_chunks)} existing chunks for video {youtube_video_id}"
-        )
+        logger.info(f"Deleting {len(existing_chunks)} existing chunks for video {youtube_video_id}")
 
         # Delete from vector database
-        await self.vector_service.delete_chunks_by_source(
-            youtube_video_id, "youtube"
-        )
+        await self.vector_service.delete_chunks_by_source(youtube_video_id, "youtube")
 
         # Delete from PostgreSQL
         for chunk in existing_chunks:

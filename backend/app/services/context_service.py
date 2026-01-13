@@ -4,6 +4,7 @@ Context Intelligence Service.
 Finds related content across YouTube videos, notes, and documents,
 generates AI-powered synthesis, and suggests relevant questions.
 """
+
 import logging
 from collections import defaultdict
 from typing import Dict, List, Optional
@@ -60,13 +61,9 @@ class ContextSynthesisService:
         """
         try:
             # Step 1: Fetch source content
-            source_content = await self._fetch_source_content(
-                db, source_type, source_id
-            )
+            source_content = await self._fetch_source_content(db, source_type, source_id)
             if not source_content:
-                logger.warning(
-                    f"Source content not found: {source_type}/{source_id}"
-                )
+                logger.warning(f"Source content not found: {source_type}/{source_id}")
                 return []
 
             source_text = source_content.get("text", "")
@@ -122,25 +119,19 @@ class ContextSynthesisService:
         """
         try:
             if source_type == "note":
-                result = await db.execute(
-                    select(Note).where(Note.id == source_id)
-                )
+                result = await db.execute(select(Note).where(Note.id == source_id))
                 note = result.scalar_one_or_none()
                 if note:
                     return {"title": note.title, "text": note.content}
 
             elif source_type == "document":
-                result = await db.execute(
-                    select(Document).where(Document.id == source_id)
-                )
+                result = await db.execute(select(Document).where(Document.id == source_id))
                 document = result.scalar_one_or_none()
                 if document:
                     return {"title": document.filename, "text": document.content}
 
             elif source_type == "youtube":
-                result = await db.execute(
-                    select(YouTubeVideo).where(YouTubeVideo.id == source_id)
-                )
+                result = await db.execute(select(YouTubeVideo).where(YouTubeVideo.id == source_id))
                 video = result.scalar_one_or_none()
                 if video:
                     # Get all chunks for the video and concatenate
@@ -156,9 +147,7 @@ class ContextSynthesisService:
             return None
 
         except Exception as e:
-            logger.error(
-                f"Error fetching source content {source_type}/{source_id}: {e}"
-            )
+            logger.error(f"Error fetching source content {source_type}/{source_id}: {e}")
             return None
 
     async def _group_and_rank_results(
@@ -182,15 +171,9 @@ class ContextSynthesisService:
         """
         # Extract results
         ids = search_results["ids"][0] if search_results["ids"] else []
-        distances = (
-            search_results["distances"][0] if search_results["distances"] else []
-        )
-        metadatas = (
-            search_results["metadatas"][0] if search_results["metadatas"] else []
-        )
-        documents = (
-            search_results["documents"][0] if search_results["documents"] else []
-        )
+        distances = search_results["distances"][0] if search_results["distances"] else []
+        metadatas = search_results["metadatas"][0] if search_results["metadatas"] else []
+        documents = search_results["documents"][0] if search_results["documents"] else []
 
         if not ids:
             return []
@@ -207,17 +190,12 @@ class ContextSynthesisService:
             }
         )
 
-        for chunk_id, distance, metadata, document in zip(
-            ids, distances, metadatas, documents
-        ):
+        for chunk_id, distance, metadata, document in zip(ids, distances, metadatas, documents):
             source_type = metadata.get("source_type")
             source_id = metadata.get("source_id")
 
             # Skip the current source
-            if (
-                source_type == exclude_source_type
-                and source_id == exclude_source_id
-            ):
+            if source_type == exclude_source_type and source_id == exclude_source_id:
                 continue
 
             key = (source_type, source_id)
@@ -230,9 +208,7 @@ class ContextSynthesisService:
                 grouped[key]["timestamp"] = metadata.get("timestamp")
 
             grouped[key]["chunk_ids"].append(chunk_id)
-            grouped[key]["min_distance"] = min(
-                grouped[key]["min_distance"], distance
-            )
+            grouped[key]["min_distance"] = min(grouped[key]["min_distance"], distance)
 
         # Fetch source titles
         related_items = []
@@ -284,16 +260,12 @@ class ContextSynthesisService:
         """
         try:
             if source_type == "note":
-                result = await db.execute(
-                    select(Note.title).where(Note.id == source_id)
-                )
+                result = await db.execute(select(Note.title).where(Note.id == source_id))
                 title = result.scalar_one_or_none()
                 return title or "Unknown Note"
 
             elif source_type == "document":
-                result = await db.execute(
-                    select(Document.filename).where(Document.id == source_id)
-                )
+                result = await db.execute(select(Document.filename).where(Document.id == source_id))
                 filename = result.scalar_one_or_none()
                 return filename or "Unknown Document"
 
@@ -344,7 +316,7 @@ class ContextSynthesisService:
 
                 preview_text = item.preview[:200] if item.preview else ""
                 related_summaries.append(
-                    f"{idx}. {source_label}: \"{item.source_title}\" "
+                    f'{idx}. {source_label}: "{item.source_title}" '
                     f"(similarity: {item.similarity_score:.2f})\n"
                     f"   Preview: {preview_text}..."
                 )
@@ -463,7 +435,7 @@ Keep it concise and actionable. Do not use bullet points or markdown formatting.
 
                 preview_text = item.preview[:200] if item.preview else ""
                 related_summaries.append(
-                    f"{idx}. {source_label}: \"{item.source_title}\" "
+                    f'{idx}. {source_label}: "{item.source_title}" '
                     f"(similarity: {item.similarity_score:.2f})\n"
                     f"   Preview: {preview_text}..."
                 )

@@ -1,10 +1,11 @@
 """
 Service layer for document CRUD operations.
 """
+
 import logging
 from typing import Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.document import Document

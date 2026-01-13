@@ -1,6 +1,7 @@
 """
 Tests for the semantic chunker.
 """
+
 import pytest
 
 from app.utils.semantic_chunker import ContentType, SemanticChunker
@@ -60,10 +61,7 @@ More content here."""
         assert len(chunks) > 0
 
         # Check that hierarchy is tracked
-        has_hierarchy = any(
-            chunk.metadata.heading_hierarchy
-            for chunk in chunks
-        )
+        has_hierarchy = any(chunk.metadata.heading_hierarchy for chunk in chunks)
         assert has_hierarchy
 
     def test_code_blocks_preserved(self, chunker):
@@ -211,10 +209,7 @@ Content under level 3."""
         chunks = chunker.split_text(text)
 
         # Find chunks with hierarchy
-        chunks_with_hierarchy = [
-            c for c in chunks
-            if c.metadata.heading_hierarchy
-        ]
+        chunks_with_hierarchy = [c for c in chunks if c.metadata.heading_hierarchy]
 
         assert len(chunks_with_hierarchy) > 0
 

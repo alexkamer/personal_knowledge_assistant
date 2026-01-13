@@ -1,6 +1,7 @@
 """
 Pydantic schemas for image generation.
 """
+
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -20,14 +21,18 @@ class ConversationContext(BaseModel):
     """Previous generation context for iterative prompts."""
 
     previous_prompt: str = Field(..., description="Previous prompt used")
-    previous_image_data: Optional[str] = Field(None, description="Base64 of previous image to use as reference")
+    previous_image_data: Optional[str] = Field(
+        None, description="Base64 of previous image to use as reference"
+    )
     previous_metadata: Optional[dict] = Field(None, description="Metadata from previous generation")
 
 
 class ImageGenerationRequest(BaseModel):
     """Request schema for image generation."""
 
-    prompt: str = Field(..., min_length=1, max_length=10000, description="Text description of the image to generate")
+    prompt: str = Field(
+        ..., min_length=1, max_length=10000, description="Text description of the image to generate"
+    )
     negative_prompt: Optional[str] = Field(
         None, max_length=1000, description="What NOT to include in the image"
     )
@@ -40,18 +45,22 @@ class ImageGenerationRequest(BaseModel):
         "gemini-2.5-flash-image", description="Imagen model to use"
     )
     reference_images: Optional[List[ReferenceImage]] = Field(
-        None, description="Reference images for guided generation (max 14 total: 5 human, 6 object, 3 style)"
+        None,
+        description="Reference images for guided generation (max 14 total: 5 human, 6 object, 3 style)",
     )
     conversation_context: Optional[ConversationContext] = Field(
         None, description="Context from previous generation for iterative prompts"
     )
     enable_google_search: bool = Field(
-        False, description="Enable Google Search grounding for real-time information (news, weather, sports, etc.)"
+        False,
+        description="Enable Google Search grounding for real-time information (news, weather, sports, etc.)",
     )
 
     @field_validator("reference_images")
     @classmethod
-    def validate_reference_images(cls, v: Optional[List[ReferenceImage]]) -> Optional[List[ReferenceImage]]:
+    def validate_reference_images(
+        cls, v: Optional[List[ReferenceImage]]
+    ) -> Optional[List[ReferenceImage]]:
         """Validate reference image limits."""
         if v is None:
             return v

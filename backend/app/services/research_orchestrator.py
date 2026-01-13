@@ -1,23 +1,24 @@
 """
 Research orchestrator service - coordinates autonomous web research.
 """
+
 import logging
-from typing import Dict, List, Optional
 from datetime import datetime
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.research_task import ResearchTask
-from app.models.research_source import ResearchSource
 from app.models.document import Document
-from app.services.web_search_service import get_web_search_service
-from app.services.web_scraper_service import get_web_scraper_service
-from app.services.credibility_service import get_credibility_service
+from app.models.research_source import ResearchSource
+from app.models.research_task import ResearchTask
 from app.services.chunk_processing_service import get_chunk_processing_service
-from app.services.llm_service import get_llm_service
 from app.services.content_formatter_service import get_content_formatter_service
+from app.services.credibility_service import get_credibility_service
+from app.services.llm_service import get_llm_service
+from app.services.web_scraper_service import get_web_scraper_service
+from app.services.web_search_service import get_web_search_service
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +82,7 @@ class ResearchOrchestrator:
 
             # Step 1: Web Search
             search_count = max_sources * 2  # Get 2x for filtering
-            search_results = await self.web_search.search(
-                query=query, max_results=search_count
-            )
+            search_results = await self.web_search.search(query=query, max_results=search_count)
 
             await self._update_task_progress(
                 db, task_id, sources_found=len(search_results), progress_percentage=10
@@ -141,7 +140,9 @@ class ResearchOrchestrator:
             skipped_count = 0
 
             for i, source in enumerate(filtered_sources):
-                step_msg = f"Scraping source {i+1}/{len(filtered_sources)}: {source['title'][:50]}..."
+                step_msg = (
+                    f"Scraping source {i+1}/{len(filtered_sources)}: {source['title'][:50]}..."
+                )
                 progress = 20 + int((i / len(filtered_sources)) * 60)  # 20% to 80%
 
                 await self._update_task_status(
@@ -189,7 +190,9 @@ class ResearchOrchestrator:
                         )
                         logger.info(f"Formatted content for {source['url']}")
                     except Exception as e:
-                        logger.warning(f"Failed to format content for {source['url']}: {e}, using raw content")
+                        logger.warning(
+                            f"Failed to format content for {source['url']}: {e}, using raw content"
+                        )
                         formatted_content = content
 
                     # Create document
@@ -204,9 +207,7 @@ class ResearchOrchestrator:
                     )
 
                     # Link research_source to document
-                    await self._link_source_to_document(
-                        db, research_source.id, document.id
-                    )
+                    await self._link_source_to_document(db, research_source.id, document.id)
 
                     # Process for RAG (chunk + embed)
                     try:
@@ -215,9 +216,7 @@ class ResearchOrchestrator:
                         )
                         logger.info(f"Processed chunks for document {document.id}")
                     except Exception as e:
-                        logger.error(
-                            f"Failed to process chunks for {document.id}: {e}"
-                        )
+                        logger.error(f"Failed to process chunks for {document.id}: {e}")
                         # Continue anyway - document is still saved
 
                     documents_created.append(document)
@@ -231,9 +230,7 @@ class ResearchOrchestrator:
                 except Exception as e:
                     logger.error(f"Failed to process source {source['url']}: {e}")
                     failed_count += 1
-                    await self._update_task_progress(
-                        db, task_id, sources_failed=failed_count
-                    )
+                    await self._update_task_progress(db, task_id, sources_failed=failed_count)
                     await self._update_research_source_status(
                         db,
                         research_source.id,
@@ -250,9 +247,7 @@ class ResearchOrchestrator:
             )
 
             # Generate deep analysis using LLM
-            analysis = await self._generate_deep_analysis(
-                query, documents_created
-            )
+            analysis = await self._generate_deep_analysis(query, documents_created)
 
             await self._update_task_status(
                 db,
@@ -304,13 +299,9 @@ class ResearchOrchestrator:
             )
             raise
 
-    async def _update_task_status(
-        self, db: AsyncSession, task_id: str, **kwargs
-    ) -> None:
+    async def _update_task_status(self, db: AsyncSession, task_id: str, **kwargs) -> None:
         """Update research task fields."""
-        result = await db.execute(
-            select(ResearchTask).where(ResearchTask.id == task_id)
-        )
+        result = await db.execute(select(ResearchTask).where(ResearchTask.id == task_id))
         task = result.scalar_one_or_none()
 
         if not task:
@@ -324,9 +315,7 @@ class ResearchOrchestrator:
         await db.commit()
         await db.refresh(task)
 
-    async def _update_task_progress(
-        self, db: AsyncSession, task_id: str, **kwargs
-    ) -> None:
+    async def _update_task_progress(self, db: AsyncSession, task_id: str, **kwargs) -> None:
         """Update research task progress fields."""
         await self._update_task_status(db, task_id, **kwargs)
 
@@ -365,9 +354,7 @@ class ResearchOrchestrator:
         self, db: AsyncSession, source_id: str, status: str, failure_reason: str = None
     ) -> None:
         """Update research source status."""
-        result = await db.execute(
-            select(ResearchSource).where(ResearchSource.id == source_id)
-        )
+        result = await db.execute(select(ResearchSource).where(ResearchSource.id == source_id))
         source = result.scalar_one_or_none()
 
         if source:
@@ -413,18 +400,14 @@ class ResearchOrchestrator:
         self, db: AsyncSession, source_id: str, document_id: str
     ) -> None:
         """Link research source to created document."""
-        result = await db.execute(
-            select(ResearchSource).where(ResearchSource.id == source_id)
-        )
+        result = await db.execute(select(ResearchSource).where(ResearchSource.id == source_id))
         source = result.scalar_one_or_none()
 
         if source:
             source.document_id = document_id
             await db.commit()
 
-    async def _generate_deep_analysis(
-        self, query: str, documents: List[Document]
-    ) -> Dict:
+    async def _generate_deep_analysis(self, query: str, documents: List[Document]) -> Dict:
         """
         Generate deep analysis of research findings using LLM.
 
@@ -443,10 +426,12 @@ class ResearchOrchestrator:
             }
 
         # Combine document content (limit to avoid token overflow)
-        combined_content = "\n\n---\n\n".join([
-            f"SOURCE: {doc.source_url or doc.filename}\n{doc.content[:2000]}"  # Truncate to 2000 chars per doc
-            for doc in documents[:5]  # Max 5 documents for analysis
-        ])
+        combined_content = "\n\n---\n\n".join(
+            [
+                f"SOURCE: {doc.source_url or doc.filename}\n{doc.content[:2000]}"  # Truncate to 2000 chars per doc
+                for doc in documents[:5]  # Max 5 documents for analysis
+            ]
+        )
 
         prompt = f"""Analyze the following research findings for the query: "{query}"
 
@@ -493,6 +478,7 @@ Provide 3-5 items in each category. Be specific and cite which sources support e
 
             # Parse JSON response
             import json
+
             analysis = json.loads(response)
 
             logger.info(f"Generated deep analysis for query: {query}")
@@ -553,7 +539,9 @@ Provide 3-5 items in each category. Be specific and cite which sources support e
             for question in follow_ups[:5]:  # Top 5
                 summary_parts.append(f"- {question}")
 
-        summary_parts.append("\n**Next Steps:** Ask questions about these sources in the Chat page to explore the findings in depth.")
+        summary_parts.append(
+            "\n**Next Steps:** Ask questions about these sources in the Chat page to explore the findings in depth."
+        )
 
         return "\n".join(summary_parts)
 
@@ -579,9 +567,7 @@ Provide 3-5 items in each category. Be specific and cite which sources support e
         if skipped_count > 0:
             summary_parts.append(f"{skipped_count} sources were skipped (insufficient content).")
 
-        summary_parts.append(
-            "\nYou can now ask questions about these sources in the Chat page."
-        )
+        summary_parts.append("\nYou can now ask questions about these sources in the Chat page.")
 
         return " ".join(summary_parts)
 

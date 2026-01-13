@@ -5,6 +5,7 @@ Since Ollama models don't have native function calling, we use prompt engineerin
 to get the LLM to output JSON with tool calls or final answers. This module parses
 those responses.
 """
+
 import json
 import logging
 import re
@@ -28,7 +29,9 @@ class ParsedResponse(BaseModel):
 
     thought: Optional[str] = Field(default=None, description="LLM's reasoning")
     tool_calls: List[ToolCall] = Field(default_factory=list, description="Tool calls to execute")
-    final_answer: Optional[str] = Field(default=None, description="Final answer if reasoning complete")
+    final_answer: Optional[str] = Field(
+        default=None, description="Final answer if reasoning complete"
+    )
     raw_response: str = Field(..., description="Original LLM response")
 
 
@@ -107,15 +110,15 @@ class ToolCallParser:
         start_idx = -1
 
         for i, char in enumerate(text):
-            if char == '{':
+            if char == "{":
                 if brace_count == 0:
                     start_idx = i
                 brace_count += 1
-            elif char == '}':
+            elif char == "}":
                 brace_count -= 1
                 if brace_count == 0 and start_idx != -1:
                     # Found a complete JSON object
-                    potential_json = text[start_idx:i+1]
+                    potential_json = text[start_idx : i + 1]
                     try:
                         data = json.loads(potential_json)
                         # Only accept if it has expected fields

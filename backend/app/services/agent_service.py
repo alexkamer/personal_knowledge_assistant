@@ -7,6 +7,7 @@ Provides different agents optimized for specific query types:
 - @code: Programming assistance with code-specialized model
 - @summarize: Document summarization
 """
+
 import logging
 from dataclasses import dataclass
 from typing import Optional
@@ -54,9 +55,8 @@ Rules:
 - Use bullet points for lists
 - Cite sources briefly if used
 
-You prioritize speed and clarity over depth."""
+You prioritize speed and clarity over depth.""",
     ),
-
     "deep": AgentConfig(
         name="deep",
         display_name="🔬 Deep",
@@ -78,9 +78,8 @@ Rules:
 - Include relevant examples and connections
 - Structure answers with headings when appropriate
 
-You prioritize depth, accuracy, and comprehensive understanding."""
+You prioritize depth, accuracy, and comprehensive understanding.""",
     ),
-
     "code": AgentConfig(
         name="code",
         display_name="💻 Code",
@@ -102,9 +101,8 @@ Rules:
 - Cite relevant documentation when available
 - Be specific about language/framework versions if important
 
-You prioritize correctness, clarity, and practical solutions."""
+You prioritize correctness, clarity, and practical solutions.""",
     ),
-
     "summarize": AgentConfig(
         name="summarize",
         display_name="📝 Summarize",
@@ -125,7 +123,7 @@ Rules:
 - Avoid redundancy
 - Cite source documents when referencing specific info
 
-You prioritize clarity and information density."""
+You prioritize clarity and information density.""",
     ),
 }
 
@@ -202,7 +200,7 @@ Key rules:
 - Cite sources naturally when using specific info (e.g., "Your note on X mentions...")
 - If you don't know something, just say "I don't have information about that"
 
-CRITICAL: Users want answers, not explanations of how you're thinking. Be natural and direct."""
+CRITICAL: Users want answers, not explanations of how you're thinking. Be natural and direct.""",
         )
 
     @staticmethod

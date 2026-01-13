@@ -1,28 +1,29 @@
 """
 Research project management endpoints.
 """
+
 import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.models.research_task import ResearchTask
+from app.schemas.research import ResearchTaskResponse
 from app.schemas.research_project import (
     ResearchProjectCreate,
-    ResearchProjectUpdate,
-    ResearchProjectResponse,
     ResearchProjectList,
     ResearchProjectListItem,
     ResearchProjectProgress,
+    ResearchProjectResponse,
+    ResearchProjectUpdate,
+    RunProjectResponse,
+    ScheduleUpdateRequest,
     TaskGenerationRequest,
     TaskGenerationResponse,
-    ScheduleUpdateRequest,
-    RunProjectResponse,
 )
-from app.schemas.research import ResearchTaskResponse
 from app.services.research_project_service import get_research_project_service
 from app.services.research_scheduler_service import get_research_scheduler
 
@@ -31,7 +32,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/projects", response_model=ResearchProjectResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/projects", response_model=ResearchProjectResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_project(
     project_data: ResearchProjectCreate,
     db: AsyncSession = Depends(get_db),
@@ -112,10 +115,7 @@ async def list_projects(
         )
 
         return ResearchProjectList(
-            projects=[
-                ResearchProjectListItem.model_validate(project)
-                for project in projects
-            ],
+            projects=[ResearchProjectListItem.model_validate(project) for project in projects],
             total=total,
             limit=limit,
             offset=offset,
@@ -394,6 +394,7 @@ async def update_schedule(
 
         # Update project schedule settings
         from app.schemas.research_project import ResearchProjectUpdate
+
         updates = ResearchProjectUpdate(
             schedule_type=schedule.schedule_type,
             schedule_cron=schedule.schedule_cron,
@@ -440,6 +441,7 @@ async def remove_schedule(
 
         # Set to manual
         from app.schemas.research_project import ResearchProjectUpdate
+
         updates = ResearchProjectUpdate(schedule_type="manual")
 
         project = await service.update_project(db, project_id, updates)
@@ -508,6 +510,7 @@ async def pause_project(
 
         # Update status to paused
         from app.schemas.research_project import ResearchProjectUpdate
+
         updates = ResearchProjectUpdate(status="paused")
 
         project = await service.update_project(db, project_id, updates)
@@ -547,6 +550,7 @@ async def resume_project(
 
         # Update status to active
         from app.schemas.research_project import ResearchProjectUpdate
+
         updates = ResearchProjectUpdate(status="active")
 
         project = await service.update_project(db, project_id, updates)

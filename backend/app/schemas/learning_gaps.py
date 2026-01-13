@@ -1,7 +1,9 @@
 """
 Pydantic schemas for Learning Gaps Detection.
 """
-from typing import List, Optional, Dict
+
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -10,15 +12,9 @@ class LearningGapItem(BaseModel):
 
     topic: str = Field(..., description="The missing foundational concept")
     description: str = Field(..., description="What this concept is and why it matters")
-    prerequisite_for: str = Field(
-        ..., description="How it relates to the user's question"
-    )
-    importance: str = Field(
-        ..., description="Importance level: critical/important/helpful"
-    )
-    learning_resources: List[str] = Field(
-        ..., description="Where to learn this concept"
-    )
+    prerequisite_for: str = Field(..., description="How it relates to the user's question")
+    importance: str = Field(..., description="Importance level: critical/important/helpful")
+    learning_resources: List[str] = Field(..., description="Where to learn this concept")
     estimated_time: str = Field(..., description="Estimated learning time")
 
 
@@ -29,12 +25,8 @@ class LearningGapRequest(BaseModel):
     conversation_history: Optional[List[Dict[str, str]]] = Field(
         None, description="Previous conversation messages for context"
     )
-    context: Optional[str] = Field(
-        None, description="RAG context from knowledge base"
-    )
-    model: Optional[str] = Field(
-        None, description="LLM model to use (default: qwen2.5:14b)"
-    )
+    context: Optional[str] = Field(None, description="RAG context from knowledge base")
+    model: Optional[str] = Field(None, description="LLM model to use (default: qwen2.5:14b)")
 
 
 class LearningGapResponse(BaseModel):
@@ -50,9 +42,7 @@ class LearningPathRequest(BaseModel):
 
     user_question: str = Field(..., description="The target topic")
     gaps: List[Dict] = Field(..., description="Detected learning gaps")
-    model: Optional[str] = Field(
-        None, description="LLM model to use (default: qwen2.5:14b)"
-    )
+    model: Optional[str] = Field(None, description="LLM model to use (default: qwen2.5:14b)")
 
 
 class LearningPathResponse(BaseModel):

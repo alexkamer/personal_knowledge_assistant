@@ -4,11 +4,12 @@ Retry logic with exponential backoff for resilient API calls.
 Provides decorators and utilities for retrying failed operations with configurable
 backoff strategies and circuit breaker pattern.
 """
+
 import asyncio
 import logging
 import time
 from functools import wraps
-from typing import Callable, Optional, Type, Tuple
+from typing import Callable, Optional, Tuple, Type
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +89,7 @@ class CircuitBreaker:
         self.last_failure_time = time.time()
 
         if self.failure_count >= self.failure_threshold:
-            logger.error(
-                f"Circuit breaker {self.name}: OPENING (failures: {self.failure_count})"
-            )
+            logger.error(f"Circuit breaker {self.name}: OPENING (failures: {self.failure_count})")
             self.state = "open"
 
     def reset(self):
@@ -120,6 +119,7 @@ def retry_with_backoff(
     Returns:
         Decorated function with retry logic
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
@@ -227,6 +227,7 @@ def retry_with_backoff(
 
         # Return appropriate wrapper based on function type
         import inspect
+
         if inspect.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper
@@ -235,20 +236,12 @@ def retry_with_backoff(
 
 
 # Global circuit breakers for different services
-ollama_circuit_breaker = CircuitBreaker(
-    failure_threshold=5,
-    recovery_timeout=60,
-    name="ollama"
-)
+ollama_circuit_breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=60, name="ollama")
 
 embedding_circuit_breaker = CircuitBreaker(
-    failure_threshold=3,
-    recovery_timeout=30,
-    name="embedding"
+    failure_threshold=3, recovery_timeout=30, name="embedding"
 )
 
 vector_db_circuit_breaker = CircuitBreaker(
-    failure_threshold=5,
-    recovery_timeout=45,
-    name="vector_db"
+    failure_threshold=5, recovery_timeout=45, name="vector_db"
 )

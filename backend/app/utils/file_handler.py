@@ -1,17 +1,17 @@
 """
 File upload and text extraction utilities.
 """
+
 import os
 import uuid
 from pathlib import Path
 from typing import Tuple
 
-from fastapi import UploadFile
 import aiofiles
+from fastapi import UploadFile
 
 from app.core.config import settings
 from app.services.archive_service import ArchiveService
-
 
 # Directory to store uploaded files
 UPLOAD_DIR = Path("./uploads")

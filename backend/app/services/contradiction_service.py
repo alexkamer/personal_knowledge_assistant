@@ -6,13 +6,14 @@ Helps users maintain intellectual honesty and rigorous thinking.
 """
 
 import logging
-from typing import List, Dict, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from typing import Dict, List, Optional
 
-from app.models.note import Note
-from app.models.document import Document
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.chunk import Chunk
+from app.models.document import Document
+from app.models.note import Note
 from app.services.llm_service import LLMService
 from app.services.rag_service import RAGService
 
@@ -35,7 +36,7 @@ class ContradictionItem:
         contradiction_type: str,
         explanation: str,
         severity: str,  # "high", "medium", "low"
-        confidence: float  # 0.0 to 1.0
+        confidence: float,  # 0.0 to 1.0
     ):
         self.source1_type = source1_type
         self.source1_id = source1_id
@@ -56,18 +57,18 @@ class ContradictionItem:
                 "type": self.source1_type,
                 "id": self.source1_id,
                 "title": self.source1_title,
-                "excerpt": self.source1_excerpt
+                "excerpt": self.source1_excerpt,
             },
             "source2": {
                 "type": self.source2_type,
                 "id": self.source2_id,
                 "title": self.source2_title,
-                "excerpt": self.source2_excerpt
+                "excerpt": self.source2_excerpt,
             },
             "contradiction_type": self.contradiction_type,
             "explanation": self.explanation,
             "severity": self.severity,
-            "confidence": self.confidence
+            "confidence": self.confidence,
         }
 
 
@@ -79,11 +80,7 @@ class ContradictionDetectionService:
         self.rag_service = rag_service
 
     async def detect_contradictions_for_source(
-        self,
-        db: AsyncSession,
-        source_type: str,
-        source_id: str,
-        top_k: int = 5
+        self, db: AsyncSession, source_type: str, source_id: str, top_k: int = 5
     ) -> List[ContradictionItem]:
         """
         Detect contradictions for a specific source by finding semantically
@@ -108,7 +105,7 @@ class ContradictionDetectionService:
             similar_chunks = await self.rag_service.search_relevant_chunks(
                 query=source_content["text"][:1000],  # Use first 1000 chars
                 top_k=top_k * 3,  # Get more to have options
-                source_type=None  # Search all types
+                source_type=None,  # Search all types
             )
 
             # Group chunks by source
@@ -121,9 +118,7 @@ class ContradictionDetectionService:
             contradictions = []
             for similar_source in similar_sources:
                 contradiction = await self._analyze_for_contradiction(
-                    db,
-                    source_content,
-                    similar_source
+                    db, source_content, similar_source
                 )
                 if contradiction:
                     contradictions.append(contradiction)
@@ -131,41 +126,36 @@ class ContradictionDetectionService:
             return contradictions
 
         except Exception as e:
-            logger.error(f"Error detecting contradictions for {source_type}/{source_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error detecting contradictions for {source_type}/{source_id}: {e}", exc_info=True
+            )
             return []
 
     async def _get_source_content(
-        self,
-        db: AsyncSession,
-        source_type: str,
-        source_id: str
+        self, db: AsyncSession, source_type: str, source_id: str
     ) -> Optional[Dict[str, str]]:
         """Get the content of a source."""
         try:
             if source_type == "note":
-                result = await db.execute(
-                    select(Note).where(Note.id == source_id)
-                )
+                result = await db.execute(select(Note).where(Note.id == source_id))
                 note = result.scalar_one_or_none()
                 if note:
                     return {
                         "type": "note",
                         "id": str(note.id),
                         "title": note.title or "Untitled",
-                        "text": note.content or ""
+                        "text": note.content or "",
                     }
 
             elif source_type == "document":
-                result = await db.execute(
-                    select(Document).where(Document.id == source_id)
-                )
+                result = await db.execute(select(Document).where(Document.id == source_id))
                 document = result.scalar_one_or_none()
                 if document:
                     return {
                         "type": "document",
                         "id": str(document.id),
                         "title": document.filename,
-                        "text": document.extracted_text or ""
+                        "text": document.extracted_text or "",
                     }
 
             return None
@@ -175,9 +165,7 @@ class ContradictionDetectionService:
             return None
 
     def _group_chunks_by_source(
-        self,
-        chunks: List[Dict],
-        exclude_source_id: str
+        self, chunks: List[Dict], exclude_source_id: str
     ) -> List[Dict[str, str]]:
         """Group chunks by their source and exclude the original source."""
         sources_map = {}
@@ -196,7 +184,7 @@ class ContradictionDetectionService:
                     "type": source_type,
                     "id": source_id,
                     "title": chunk.get("source_title", ""),
-                    "chunks": []
+                    "chunks": [],
                 }
 
             sources_map[key]["chunks"].append(chunk.get("text", ""))
@@ -204,20 +192,19 @@ class ContradictionDetectionService:
         # Convert to list and combine chunks
         sources = []
         for source_data in sources_map.values():
-            sources.append({
-                "type": source_data["type"],
-                "id": source_data["id"],
-                "title": source_data["title"],
-                "text": " ".join(source_data["chunks"][:3])  # Use first 3 chunks
-            })
+            sources.append(
+                {
+                    "type": source_data["type"],
+                    "id": source_data["id"],
+                    "title": source_data["title"],
+                    "text": " ".join(source_data["chunks"][:3]),  # Use first 3 chunks
+                }
+            )
 
         return sources
 
     async def _analyze_for_contradiction(
-        self,
-        db: AsyncSession,
-        source1: Dict[str, str],
-        source2: Dict[str, str]
+        self, db: AsyncSession, source1: Dict[str, str], source2: Dict[str, str]
     ) -> Optional[ContradictionItem]:
         """
         Use LLM to analyze two sources for contradictions.
@@ -259,7 +246,7 @@ Be rigorous. Only flag genuine contradictions, not different perspectives or com
                 conversation_history=[],
                 model="qwen2.5:14b",
                 temperature=0.3,  # Lower temp for more consistent analysis
-                system_prompt="You are a critical thinking expert who identifies logical contradictions. Be precise and only flag genuine contradictions."
+                system_prompt="You are a critical thinking expert who identifies logical contradictions. Be precise and only flag genuine contradictions.",
             )
 
             # Parse the response
@@ -278,7 +265,7 @@ Be rigorous. Only flag genuine contradictions, not different perspectives or com
                     contradiction_type=parsed["type"],
                     explanation=parsed["explanation"],
                     severity=parsed["severity"],
-                    confidence=parsed["confidence"]
+                    confidence=parsed["confidence"],
                 )
 
             return None

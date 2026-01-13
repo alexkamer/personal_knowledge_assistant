@@ -1,8 +1,10 @@
 """
 Message feedback model for rating assistant responses.
 """
+
 from typing import Optional
-from sqlalchemy import ForeignKey, String, Text, Boolean
+
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin

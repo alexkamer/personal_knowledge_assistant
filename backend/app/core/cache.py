@@ -3,13 +3,14 @@ Caching utilities for performance optimization.
 
 Provides in-memory caching with TTL support for search results and other expensive operations.
 """
+
 import hashlib
 import json
 import logging
 import time
+from collections import OrderedDict
 from functools import wraps
 from typing import Any, Callable, Optional
-from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +135,7 @@ def cached_with_ttl(cache: TTLCache):
     Returns:
         Decorated function with caching
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
@@ -171,6 +173,7 @@ def cached_with_ttl(cache: TTLCache):
 
         # Return appropriate wrapper based on function type
         import inspect
+
         if inspect.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper

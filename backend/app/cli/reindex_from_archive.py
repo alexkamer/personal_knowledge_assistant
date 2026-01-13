@@ -21,8 +21,9 @@ Examples:
     # Dry run to see what would be re-indexed
     python -m app.cli.reindex_from_archive --all --dry-run
 """
-import asyncio
+
 import argparse
+import asyncio
 import logging
 from pathlib import Path
 from typing import Optional
@@ -31,11 +32,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
+from app.core.vector_db import vector_db
 from app.models.document import Document
 from app.services.archive_service import ArchiveService
-from app.services.embedding_service import EmbeddingService
 from app.services.chunking_service import ChunkingService
-from app.core.vector_db import vector_db
+from app.services.embedding_service import EmbeddingService
 
 # Setup logging
 logging.basicConfig(
@@ -174,9 +175,7 @@ class ReindexCommand:
         Returns:
             True if successful, False otherwise
         """
-        result = await db.execute(
-            select(Document).where(Document.id == document_id)
-        )
+        result = await db.execute(select(Document).where(Document.id == document_id))
         document = result.scalar_one_or_none()
 
         if not document:

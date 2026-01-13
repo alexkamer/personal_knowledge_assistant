@@ -2,8 +2,10 @@
 Service for detecting iterative image generation prompts and building context.
 Uses local LLM to understand user intent and enhance prompts with conversation history.
 """
+
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -40,9 +42,21 @@ class ImageContextService:
 
         # Quick heuristic checks first (no LLM needed)
         iterative_keywords = [
-            "add", "remove", "change", "make it", "make the",
-            "modify", "adjust", "update", "fix", "improve",
-            "more", "less", "without", "with", "instead of"
+            "add",
+            "remove",
+            "change",
+            "make it",
+            "make the",
+            "modify",
+            "adjust",
+            "update",
+            "fix",
+            "improve",
+            "more",
+            "less",
+            "without",
+            "with",
+            "instead of",
         ]
 
         current_lower = current_prompt.lower()
@@ -63,9 +77,7 @@ class ImageContextService:
 
         return False
 
-    async def _llm_detect_iterative(
-        self, current_prompt: str, previous_prompt: str
-    ) -> bool:
+    async def _llm_detect_iterative(self, current_prompt: str, previous_prompt: str) -> bool:
         """
         Use LLM to detect if prompt is iterative (fallback for ambiguous cases).
 

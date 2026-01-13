@@ -1,8 +1,9 @@
 """
 Web scraping service using httpx and trafilatura.
 """
-from typing import Optional
+
 import logging
+from typing import Optional
 
 import httpx
 import trafilatura
@@ -55,7 +56,7 @@ class WebScraperService:
                 follow_redirects=True,
                 headers={
                     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-                }
+                },
             ) as client:
                 # Make request
                 response = await client.get(url)
@@ -74,7 +75,9 @@ class WebScraperService:
 
                 # If content is too short, try with more aggressive settings
                 if not content or len(content.strip()) < 500:
-                    logger.info(f"First extraction yielded {len(content) if content else 0} chars, trying fallback")
+                    logger.info(
+                        f"First extraction yielded {len(content) if content else 0} chars, trying fallback"
+                    )
 
                     # Try with even more aggressive extraction
                     content = trafilatura.extract(

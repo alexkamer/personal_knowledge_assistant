@@ -4,13 +4,14 @@ Knowledge Search Tool - Allows agents to search the knowledge base.
 This tool wraps the RAG orchestrator, enabling agents to perform
 iterative, multi-step searches through their personal knowledge.
 """
+
 import logging
 from typing import Any, Dict, List
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.tools.base import BaseTool, ToolParameter, ToolResult
 from app.services.rag_orchestrator import get_rag_orchestrator
+from app.services.tools.base import BaseTool, ToolParameter, ToolResult
 
 logger = logging.getLogger(__name__)
 
@@ -87,11 +88,7 @@ class KnowledgeSearchTool(BaseTool):
         self._db_session = db
 
     async def execute(
-        self,
-        query: str,
-        include_notes: bool = False,
-        max_results: int = 10,
-        **kwargs
+        self, query: str, include_notes: bool = False, max_results: int = 10, **kwargs
     ) -> ToolResult:
         """
         Execute knowledge search.
@@ -168,10 +165,7 @@ class KnowledgeSearchTool(BaseTool):
             )
 
     def _format_results(
-        self,
-        context: str,
-        citations: List[Dict[str, Any]],
-        metadata: Dict[str, Any]
+        self, context: str, citations: List[Dict[str, Any]], metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Format search results for LLM consumption.
@@ -191,11 +185,13 @@ class KnowledgeSearchTool(BaseTool):
         for citation in citations:
             source_id = citation.get("source_id")
             if source_id not in seen_sources:
-                sources.append({
-                    "type": citation.get("source_type"),
-                    "title": citation.get("source_title"),
-                    "id": source_id,
-                })
+                sources.append(
+                    {
+                        "type": citation.get("source_type"),
+                        "title": citation.get("source_title"),
+                        "id": source_id,
+                    }
+                )
                 seen_sources.add(source_id)
 
         # Build result

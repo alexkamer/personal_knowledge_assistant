@@ -1,30 +1,31 @@
 """
 Document upload and management endpoints.
 """
+
+import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.core.config import settings
+from app.core.database import get_db
 from app.schemas.document import (
     DocumentContentResponse,
-    DocumentListResponse,
-    DocumentResponse,
+    DocumentCreate,
     DocumentFromURLRequest,
     DocumentFromURLResponse,
+    DocumentListResponse,
+    DocumentResponse,
 )
+from app.services.categorization_service import categorize_document, get_all_categories
 from app.services.document_service import DocumentService
-from app.schemas.document import DocumentCreate
 from app.utils.file_handler import (
     delete_file,
     extract_text_from_file,
     save_upload_file,
 )
 from app.utils.url_extractor import extract_text_from_url
-from app.services.categorization_service import categorize_document, get_all_categories
-import json
 
 router = APIRouter()
 
@@ -122,7 +123,9 @@ async def upload_document(
         )
 
 
-@router.post("/from-url", response_model=DocumentFromURLResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/from-url", response_model=DocumentFromURLResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_document_from_url(
     request: DocumentFromURLRequest,
     db: AsyncSession = Depends(get_db),
@@ -148,9 +151,9 @@ async def create_document_from_url(
         )
 
     # Generate filename from URL or title
-    filename = metadata.get('title', metadata.get('source_url', 'unknown'))
+    filename = metadata.get("title", metadata.get("source_url", "unknown"))
     # Clean filename (remove invalid chars)
-    filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_')).strip()
+    filename = "".join(c for c in filename if c.isalnum() or c in (" ", "-", "_")).strip()
     if not filename:
         filename = "web_document"
     filename = f"{filename[:100]}.html"  # Truncate if too long
@@ -168,7 +171,7 @@ async def create_document_from_url(
         filename=filename,
         file_path=request.url,  # Store URL as file_path for web documents
         file_type="html",
-        file_size=len(content.encode('utf-8')),
+        file_size=len(content.encode("utf-8")),
         content=content,
         metadata_=json.dumps(metadata),
         category=category,

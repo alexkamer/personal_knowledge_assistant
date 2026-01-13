@@ -8,22 +8,22 @@ Provides endpoints for:
 - Viewing learning timeline
 """
 
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
-from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.services.knowledge_evolution_service import KnowledgeEvolutionService
-from app.services.llm_service import get_llm_service
 from app.schemas.knowledge_evolution import (
+    EvolutionAnalysisResponse,
     SnapshotCreationRequest,
     SnapshotResponse,
-    EvolutionAnalysisResponse,
     TimelineResponse,
 )
+from app.services.knowledge_evolution_service import KnowledgeEvolutionService
+from app.services.llm_service import get_llm_service
 
 router = APIRouter()
 

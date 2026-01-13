@@ -3,13 +3,14 @@ Document search tool using existing RAG service.
 
 Allows agents to search through stored documents and notes.
 """
+
 import logging
 from typing import List
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.tools.base import BaseTool, ToolParameter, ToolResult
 from app.services.rag_orchestrator import get_rag_orchestrator
+from app.services.tools.base import BaseTool, ToolParameter, ToolResult
 
 logger = logging.getLogger(__name__)
 
@@ -67,11 +68,7 @@ class DocumentSearchTool(BaseTool):
         ]
 
     async def execute(
-        self,
-        query: str,
-        top_k: int = 5,
-        include_notes: bool = True,
-        **kwargs
+        self, query: str, top_k: int = 5, include_notes: bool = True, **kwargs
     ) -> ToolResult:
         """
         Execute document search.
@@ -121,12 +118,18 @@ class DocumentSearchTool(BaseTool):
             # Format results
             formatted_results = []
             for citation in citations:
-                formatted_results.append({
-                    "content": citation.content[:500] + "..." if len(citation.content) > 500 else citation.content,
-                    "source_type": citation.source_type,
-                    "source_title": citation.source_title,
-                    "chunk_id": citation.chunk_id,
-                })
+                formatted_results.append(
+                    {
+                        "content": (
+                            citation.content[:500] + "..."
+                            if len(citation.content) > 500
+                            else citation.content
+                        ),
+                        "source_type": citation.source_type,
+                        "source_title": citation.source_title,
+                        "chunk_id": citation.chunk_id,
+                    }
+                )
 
             return ToolResult(
                 success=True,

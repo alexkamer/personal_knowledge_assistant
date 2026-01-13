@@ -3,20 +3,21 @@ Briefing generator service for synthesizing research findings.
 
 Generates comprehensive research briefings from multiple sources using LLM.
 """
-import logging
+
 import json
-from typing import List, Optional, Dict
+import logging
 from datetime import datetime
+from typing import Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.research_project import ResearchProject
-from app.models.research_task import ResearchTask
-from app.models.research_source import ResearchSource
-from app.models.research_briefing import ResearchBriefing
 from app.models.document import Document
+from app.models.research_briefing import ResearchBriefing
+from app.models.research_project import ResearchProject
+from app.models.research_source import ResearchSource
+from app.models.research_task import ResearchTask
 from app.services.llm_service import get_llm_service
 
 logger = logging.getLogger(__name__)
@@ -47,9 +48,7 @@ class BriefingGeneratorService:
             Generated research briefing
         """
         # Get project
-        result = await db.execute(
-            select(ResearchProject).where(ResearchProject.id == project_id)
-        )
+        result = await db.execute(select(ResearchProject).where(ResearchProject.id == project_id))
         project = result.scalar_one_or_none()
 
         if not project:
@@ -57,13 +56,10 @@ class BriefingGeneratorService:
 
         # Get tasks
         if task_ids:
-            tasks_query = select(ResearchTask).where(
-                ResearchTask.id.in_(task_ids)
-            )
+            tasks_query = select(ResearchTask).where(ResearchTask.id.in_(task_ids))
         else:
             tasks_query = select(ResearchTask).where(
-                ResearchTask.project_id == project_id,
-                ResearchTask.status == "completed"
+                ResearchTask.project_id == project_id, ResearchTask.status == "completed"
             )
 
         tasks_result = await db.execute(tasks_query)
@@ -109,9 +105,7 @@ class BriefingGeneratorService:
 
         return briefing
 
-    async def _collect_sources(
-        self, db: AsyncSession, task_ids: List[str]
-    ) -> List[Dict]:
+    async def _collect_sources(self, db: AsyncSession, task_ids: List[str]) -> List[Dict]:
         """
         Collect all sources with their content from specified tasks.
 
@@ -126,8 +120,7 @@ class BriefingGeneratorService:
         sources_query = (
             select(ResearchSource)
             .where(
-                ResearchSource.research_task_id.in_(task_ids),
-                ResearchSource.status == "scraped"
+                ResearchSource.research_task_id.in_(task_ids), ResearchSource.status == "scraped"
             )
             .options(selectinload(ResearchSource.document))
         )
@@ -138,15 +131,17 @@ class BriefingGeneratorService:
         sources = []
         for source in research_sources:
             if source.document:
-                sources.append({
-                    "url": source.url,
-                    "title": source.title,
-                    "domain": source.domain,
-                    "source_type": source.source_type,
-                    "credibility_score": source.credibility_score,
-                    "credibility_reasons": source.credibility_reasons,
-                    "content": source.document.content[:5000],  # Limit content for LLM context
-                })
+                sources.append(
+                    {
+                        "url": source.url,
+                        "title": source.title,
+                        "domain": source.domain,
+                        "source_type": source.source_type,
+                        "credibility_score": source.credibility_score,
+                        "credibility_reasons": source.credibility_reasons,
+                        "content": source.document.content[:5000],  # Limit content for LLM context
+                    }
+                )
 
         return sources
 
@@ -204,10 +199,9 @@ class BriefingGeneratorService:
     ) -> str:
         """Build prompt for LLM to synthesize research findings."""
         # Format tasks
-        tasks_text = "\n".join([
-            f"{i+1}. {task.query} (Sources: {task.sources_added})"
-            for i, task in enumerate(tasks)
-        ])
+        tasks_text = "\n".join(
+            [f"{i+1}. {task.query} (Sources: {task.sources_added})" for i, task in enumerate(tasks)]
+        )
 
         # Format sources (with truncation for context limits)
         max_sources = 20  # Limit sources to fit in context
@@ -287,12 +281,12 @@ Generate the briefing:"""
             import re
 
             # Remove markdown code blocks if present
-            json_match = re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL)
+            json_match = re.search(r"```json\s*(\{.*?\})\s*```", response, re.DOTALL)
             if json_match:
                 json_str = json_match.group(1)
             else:
                 # Try to find JSON object
-                json_match = re.search(r'\{.*\}', response, re.DOTALL)
+                json_match = re.search(r"\{.*\}", response, re.DOTALL)
                 if json_match:
                     json_str = json_match.group(0)
                 else:
@@ -341,14 +335,12 @@ You can now ask questions about these sources in the Chat page.
             "contradictions": [],
             "knowledge_gaps": [
                 "Detailed analysis could not be generated",
-                "Manual review of sources recommended"
+                "Manual review of sources recommended",
             ],
             "suggested_tasks": [],
         }
 
-    async def format_briefing_markdown(
-        self, db: AsyncSession, briefing_id: str
-    ) -> str:
+    async def format_briefing_markdown(self, db: AsyncSession, briefing_id: str) -> str:
         """
         Format a briefing as markdown for export.
 
@@ -405,7 +397,7 @@ You can now ask questions about these sources in the Chat page.
                 md += f"*Sources: {', '.join(f'[{s}]' for s in contradiction.get('sources_a', []))}*\n\n"
                 md += f"**Position B**: {contradiction.get('position_b', '')}\n"
                 md += f"*Sources: {', '.join(f'[{s}]' for s in contradiction.get('sources_b', []))}*\n\n"
-                if contradiction.get('analysis'):
+                if contradiction.get("analysis"):
                     md += f"**Analysis**: {contradiction['analysis']}\n\n"
 
         # Knowledge gaps

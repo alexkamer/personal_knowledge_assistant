@@ -1,6 +1,7 @@
 """
 YouTube video model for ingested videos.
 """
+
 from sqlalchemy import BigInteger, Boolean, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,18 +18,14 @@ class YouTubeVideo(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "youtube_videos"
 
     # YouTube identifiers
-    video_id: Mapped[str] = mapped_column(
-        String(20), unique=True, nullable=False, index=True
-    )
+    video_id: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     channel: Mapped[str | None] = mapped_column(String(255), nullable=True)
     channel_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # Video metadata
     duration: Mapped[int | None] = mapped_column(Integer, nullable=True)  # seconds
-    upload_date: Mapped[str | None] = mapped_column(
-        String(8), nullable=True
-    )  # YYYYMMDD
+    upload_date: Mapped[str | None] = mapped_column(String(8), nullable=True)  # YYYYMMDD
     thumbnail: Mapped[str | None] = mapped_column(String(500), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     view_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

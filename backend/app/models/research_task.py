@@ -1,11 +1,11 @@
 """
 Research task model for autonomous web research.
 """
+
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
-from sqlalchemy import Integer, String, Text, DateTime, Float, JSON, Boolean, ForeignKey
-
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -45,9 +45,7 @@ class ResearchTask(Base, UUIDMixin, TimestampMixin):
 
     # Autopilot metadata
     auto_generated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    scheduled_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    scheduled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Progress tracking
     sources_found: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -64,27 +62,17 @@ class ResearchTask(Base, UUIDMixin, TimestampMixin):
 
     # Results
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    key_findings: Mapped[Optional[dict]] = mapped_column(
-        JSON, nullable=True
-    )  # Structured findings
+    key_findings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Structured findings
     contradictions_found: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    suggested_followups: Mapped[Optional[List[str]]] = mapped_column(
-        JSON, nullable=True
-    )
+    suggested_followups: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
 
     # Background job tracking
-    job_id: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True
-    )  # RQ job ID
+    job_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # RQ job ID
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Timestamps
-    started_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    completed_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     project: Mapped[Optional["ResearchProject"]] = relationship(

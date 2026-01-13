@@ -1,6 +1,7 @@
 """
 Service for analyzing and refining image generation prompts.
 """
+
 import json
 import logging
 import os
@@ -10,11 +11,14 @@ from typing import Dict, List, Optional
 try:
     from google import genai
     from google.genai import types
+
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
     logger_temp = logging.getLogger(__name__)
-    logger_temp.warning("google-genai package not installed. Install with: pip install google-genai")
+    logger_temp.warning(
+        "google-genai package not installed. Install with: pip install google-genai"
+    )
 
 from app.core.config import settings
 
@@ -39,7 +43,7 @@ class PromptRefinementService:
             return
 
         # Set GOOGLE_API_KEY environment variable for genai client
-        os.environ['GOOGLE_API_KEY'] = settings.gemini_api_key
+        os.environ["GOOGLE_API_KEY"] = settings.gemini_api_key
 
         # Initialize client
         self.client = genai.Client()
@@ -64,25 +68,49 @@ class PromptRefinementService:
                 "id": "style",
                 "question": "What artistic style?",
                 "type": "single-select",
-                "options": ["Photorealistic", "Digital art", "Oil painting", "Watercolor", "Cartoon/Anime"],
+                "options": [
+                    "Photorealistic",
+                    "Digital art",
+                    "Oil painting",
+                    "Watercolor",
+                    "Cartoon/Anime",
+                ],
             },
             {
                 "id": "setting",
                 "question": "Where is the person?",
                 "type": "single-select",
-                "options": ["Studio portrait", "Outdoor nature", "Urban environment", "Indoor room", "Fantasy world"],
+                "options": [
+                    "Studio portrait",
+                    "Outdoor nature",
+                    "Urban environment",
+                    "Indoor room",
+                    "Fantasy world",
+                ],
             },
             {
                 "id": "mood",
                 "question": "What mood or feeling?",
                 "type": "single-select",
-                "options": ["Happy/Joyful", "Serious/Professional", "Mysterious", "Dramatic", "Peaceful"],
+                "options": [
+                    "Happy/Joyful",
+                    "Serious/Professional",
+                    "Mysterious",
+                    "Dramatic",
+                    "Peaceful",
+                ],
             },
             {
                 "id": "lighting",
                 "question": "What kind of lighting?",
                 "type": "single-select",
-                "options": ["Natural sunlight", "Golden hour", "Dramatic/Moody", "Soft/Studio", "Night/Dark"],
+                "options": [
+                    "Natural sunlight",
+                    "Golden hour",
+                    "Dramatic/Moody",
+                    "Soft/Studio",
+                    "Night/Dark",
+                ],
             },
             {
                 "id": "extras",
@@ -96,25 +124,49 @@ class PromptRefinementService:
                 "id": "style",
                 "question": "What artistic style?",
                 "type": "single-select",
-                "options": ["Photorealistic", "Cute/Cartoon", "Fantasy", "Watercolor", "Digital art"],
+                "options": [
+                    "Photorealistic",
+                    "Cute/Cartoon",
+                    "Fantasy",
+                    "Watercolor",
+                    "Digital art",
+                ],
             },
             {
                 "id": "setting",
                 "question": "Where is the animal?",
                 "type": "single-select",
-                "options": ["Natural habitat", "Studio portrait", "Urban environment", "Home/Indoor", "Fantasy world"],
+                "options": [
+                    "Natural habitat",
+                    "Studio portrait",
+                    "Urban environment",
+                    "Home/Indoor",
+                    "Fantasy world",
+                ],
             },
             {
                 "id": "action",
                 "question": "What is the animal doing?",
                 "type": "single-select",
-                "options": ["Posing/Portrait", "Playing", "Sleeping/Resting", "Hunting/Active", "Interacting"],
+                "options": [
+                    "Posing/Portrait",
+                    "Playing",
+                    "Sleeping/Resting",
+                    "Hunting/Active",
+                    "Interacting",
+                ],
             },
             {
                 "id": "mood",
                 "question": "What mood?",
                 "type": "single-select",
-                "options": ["Cute/Adorable", "Majestic/Regal", "Wild/Fierce", "Peaceful", "Playful/Funny"],
+                "options": [
+                    "Cute/Adorable",
+                    "Majestic/Regal",
+                    "Wild/Fierce",
+                    "Peaceful",
+                    "Playful/Funny",
+                ],
             },
             {
                 "id": "extras",
@@ -128,25 +180,49 @@ class PromptRefinementService:
                 "id": "style",
                 "question": "What artistic style?",
                 "type": "single-select",
-                "options": ["Photorealistic", "Cinematic", "Painterly/Artistic", "Fantasy", "Minimalist"],
+                "options": [
+                    "Photorealistic",
+                    "Cinematic",
+                    "Painterly/Artistic",
+                    "Fantasy",
+                    "Minimalist",
+                ],
             },
             {
                 "id": "time",
                 "question": "Time of day?",
                 "type": "single-select",
-                "options": ["Sunrise/Golden hour", "Midday/Bright", "Sunset/Dusk", "Night/Stars", "Overcast/Moody"],
+                "options": [
+                    "Sunrise/Golden hour",
+                    "Midday/Bright",
+                    "Sunset/Dusk",
+                    "Night/Stars",
+                    "Overcast/Moody",
+                ],
             },
             {
                 "id": "season",
                 "question": "What season?",
                 "type": "single-select",
-                "options": ["Spring/Blooms", "Summer/Lush", "Autumn/Colors", "Winter/Snow", "Any/Timeless"],
+                "options": [
+                    "Spring/Blooms",
+                    "Summer/Lush",
+                    "Autumn/Colors",
+                    "Winter/Snow",
+                    "Any/Timeless",
+                ],
             },
             {
                 "id": "mood",
                 "question": "What atmosphere?",
                 "type": "single-select",
-                "options": ["Serene/Peaceful", "Dramatic/Epic", "Mysterious/Moody", "Vibrant/Energetic", "Desolate/Lonely"],
+                "options": [
+                    "Serene/Peaceful",
+                    "Dramatic/Epic",
+                    "Mysterious/Moody",
+                    "Vibrant/Energetic",
+                    "Desolate/Lonely",
+                ],
             },
             {
                 "id": "extras",
@@ -160,25 +236,49 @@ class PromptRefinementService:
                 "id": "style",
                 "question": "What artistic style?",
                 "type": "single-select",
-                "options": ["Photorealistic", "Product photography", "Technical/Blueprint", "Artistic", "Minimalist"],
+                "options": [
+                    "Photorealistic",
+                    "Product photography",
+                    "Technical/Blueprint",
+                    "Artistic",
+                    "Minimalist",
+                ],
             },
             {
                 "id": "setting",
                 "question": "What setting/background?",
                 "type": "single-select",
-                "options": ["White studio background", "Natural environment", "Lifestyle/In-use", "Abstract background", "Detailed scene"],
+                "options": [
+                    "White studio background",
+                    "Natural environment",
+                    "Lifestyle/In-use",
+                    "Abstract background",
+                    "Detailed scene",
+                ],
             },
             {
                 "id": "lighting",
                 "question": "What kind of lighting?",
                 "type": "single-select",
-                "options": ["Soft/Studio", "Dramatic/Shadows", "Natural sunlight", "Neon/Colorful", "Rim lighting"],
+                "options": [
+                    "Soft/Studio",
+                    "Dramatic/Shadows",
+                    "Natural sunlight",
+                    "Neon/Colorful",
+                    "Rim lighting",
+                ],
             },
             {
                 "id": "angle",
                 "question": "What angle/perspective?",
                 "type": "single-select",
-                "options": ["Straight-on", "45-degree angle", "Top-down", "Close-up detail", "Wide/Environmental"],
+                "options": [
+                    "Straight-on",
+                    "45-degree angle",
+                    "Top-down",
+                    "Close-up detail",
+                    "Wide/Environmental",
+                ],
             },
             {
                 "id": "extras",
@@ -192,25 +292,49 @@ class PromptRefinementService:
                 "id": "style",
                 "question": "What photographic style?",
                 "type": "single-select",
-                "options": ["Professional food photography", "Rustic/Homestyle", "Modern/Minimalist", "Editorial/Magazine", "Casual/Lifestyle"],
+                "options": [
+                    "Professional food photography",
+                    "Rustic/Homestyle",
+                    "Modern/Minimalist",
+                    "Editorial/Magazine",
+                    "Casual/Lifestyle",
+                ],
             },
             {
                 "id": "setting",
                 "question": "What setting?",
                 "type": "single-select",
-                "options": ["Clean table/Surface", "Restaurant setting", "Outdoor/Picnic", "Kitchen/Cooking", "Abstract/Artistic"],
+                "options": [
+                    "Clean table/Surface",
+                    "Restaurant setting",
+                    "Outdoor/Picnic",
+                    "Kitchen/Cooking",
+                    "Abstract/Artistic",
+                ],
             },
             {
                 "id": "lighting",
                 "question": "What lighting?",
                 "type": "single-select",
-                "options": ["Natural window light", "Overhead/Flat", "Dramatic/Moody", "Bright/Airy", "Warm/Cozy"],
+                "options": [
+                    "Natural window light",
+                    "Overhead/Flat",
+                    "Dramatic/Moody",
+                    "Bright/Airy",
+                    "Warm/Cozy",
+                ],
             },
             {
                 "id": "angle",
                 "question": "What angle?",
                 "type": "single-select",
-                "options": ["Top-down (flat lay)", "45-degree angle", "Eye-level/Straight", "Close-up detail", "Wide/Scene"],
+                "options": [
+                    "Top-down (flat lay)",
+                    "45-degree angle",
+                    "Eye-level/Straight",
+                    "Close-up detail",
+                    "Wide/Scene",
+                ],
             },
             {
                 "id": "extras",
@@ -224,25 +348,50 @@ class PromptRefinementService:
                 "id": "style",
                 "question": "What abstract style?",
                 "type": "single-select",
-                "options": ["Geometric patterns", "Fluid/Organic", "Fractal/Mathematical", "Color gradients", "Minimalist"],
+                "options": [
+                    "Geometric patterns",
+                    "Fluid/Organic",
+                    "Fractal/Mathematical",
+                    "Color gradients",
+                    "Minimalist",
+                ],
             },
             {
                 "id": "colors",
                 "question": "What color palette?",
                 "type": "single-select",
-                "options": ["Vibrant/Bold", "Pastel/Soft", "Monochrome", "Warm tones", "Cool tones", "Rainbow/Multi"],
+                "options": [
+                    "Vibrant/Bold",
+                    "Pastel/Soft",
+                    "Monochrome",
+                    "Warm tones",
+                    "Cool tones",
+                    "Rainbow/Multi",
+                ],
             },
             {
                 "id": "mood",
                 "question": "What feeling?",
                 "type": "single-select",
-                "options": ["Calm/Meditative", "Energetic/Dynamic", "Mysterious/Dark", "Cheerful/Bright", "Ethereal/Dreamy"],
+                "options": [
+                    "Calm/Meditative",
+                    "Energetic/Dynamic",
+                    "Mysterious/Dark",
+                    "Cheerful/Bright",
+                    "Ethereal/Dreamy",
+                ],
             },
             {
                 "id": "complexity",
                 "question": "How complex?",
                 "type": "single-select",
-                "options": ["Simple/Minimal", "Moderately detailed", "Highly intricate", "Chaotic/Busy", "Balanced"],
+                "options": [
+                    "Simple/Minimal",
+                    "Moderately detailed",
+                    "Highly intricate",
+                    "Chaotic/Busy",
+                    "Balanced",
+                ],
             },
             {
                 "id": "extras",
@@ -256,13 +405,26 @@ class PromptRefinementService:
                 "id": "style",
                 "question": "What artistic style?",
                 "type": "single-select",
-                "options": ["Photorealistic", "Digital art", "Painterly", "Cartoon", "Fantasy", "Minimalist"],
+                "options": [
+                    "Photorealistic",
+                    "Digital art",
+                    "Painterly",
+                    "Cartoon",
+                    "Fantasy",
+                    "Minimalist",
+                ],
             },
             {
                 "id": "mood",
                 "question": "What mood or atmosphere?",
                 "type": "single-select",
-                "options": ["Vibrant/Energetic", "Calm/Peaceful", "Dark/Mysterious", "Bright/Cheerful", "Dramatic"],
+                "options": [
+                    "Vibrant/Energetic",
+                    "Calm/Peaceful",
+                    "Dark/Mysterious",
+                    "Bright/Cheerful",
+                    "Dramatic",
+                ],
             },
             {
                 "id": "detail",
@@ -444,11 +606,14 @@ Generate 4-6 questions with DESCRIPTIVE options that build toward a rich, narrat
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse Gemini response as JSON: {e}")
-            logger.error(f"Response content: {content[:200] if 'content' in locals() else 'N/A'}...")
+            logger.error(
+                f"Response content: {content[:200] if 'content' in locals() else 'N/A'}..."
+            )
             return None
         except Exception as e:
             logger.error(f"Error generating dynamic questions with Gemini: {e}")
             import traceback
+
             logger.error(traceback.format_exc())
             return None
 
@@ -473,7 +638,9 @@ Generate 4-6 questions with DESCRIPTIVE options that build toward a rich, narrat
                     logger.info(f"Using {len(dynamic_questions)} LLM-generated questions")
                     return {"category": category, "prompt": prompt, "questions": dynamic_questions}
             except Exception as e:
-                logger.warning(f"Failed to generate dynamic questions, falling back to templates: {e}")
+                logger.warning(
+                    f"Failed to generate dynamic questions, falling back to templates: {e}"
+                )
 
         # Fall back to template questions
         logger.info("Using template questions")
@@ -543,7 +710,9 @@ Generate 4-6 questions with DESCRIPTIVE options that build toward a rich, narrat
         # Generate negative prompt based on category
         negative_prompt = self._generate_negative_prompt(category)
 
-        logger.info(f"Built narrative prompt from '{basic_prompt[:30]}...' -> '{enhanced_prompt[:80]}...'")
+        logger.info(
+            f"Built narrative prompt from '{basic_prompt[:30]}...' -> '{enhanced_prompt[:80]}...'"
+        )
 
         return {"enhanced_prompt": enhanced_prompt, "negative_prompt": negative_prompt}
 

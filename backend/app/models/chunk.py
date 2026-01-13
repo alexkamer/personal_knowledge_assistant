@@ -1,10 +1,11 @@
 """
 Chunk model for text chunks from notes and documents.
 """
+
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import Float, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -58,9 +59,7 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
 
     # Relationships
     note: Mapped[Optional["Note"]] = relationship("Note", back_populates="chunks")
-    document: Mapped[Optional["Document"]] = relationship(
-        "Document", back_populates="chunks"
-    )
+    document: Mapped[Optional["Document"]] = relationship("Document", back_populates="chunks")
     youtube_video: Mapped[Optional["YouTubeVideo"]] = relationship(
         "YouTubeVideo", back_populates="chunks"
     )

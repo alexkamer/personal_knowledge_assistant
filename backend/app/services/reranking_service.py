@@ -1,6 +1,7 @@
 """
 Re-ranking service using cross-encoder models for improved relevance.
 """
+
 import logging
 from typing import List, Tuple
 
@@ -56,7 +57,9 @@ class RerankingService:
 
         # Return top k results
         top_results = ranked_results[:top_k]
-        logger.info(f"Top {len(top_results)} scores: {[f'{score:.3f}' for _, score in top_results]}")
+        logger.info(
+            f"Top {len(top_results)} scores: {[f'{score:.3f}' for _, score in top_results]}"
+        )
 
         return top_results
 

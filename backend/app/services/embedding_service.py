@@ -1,15 +1,16 @@
 """
 Embedding service using sentence-transformers for text vectorization.
 """
+
 import hashlib
 import logging
 from typing import List
 
 from sentence_transformers import SentenceTransformer
 
-from app.core.cache import cached_with_ttl, embedding_cache, create_cache_key
+from app.core.cache import cached_with_ttl, create_cache_key, embedding_cache
 from app.core.config import settings
-from app.core.retry import retry_with_backoff, embedding_circuit_breaker
+from app.core.retry import embedding_circuit_breaker, retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,9 @@ class EmbeddingService:
         try:
             logger.info(f"Loading embedding model: {self.model_name}")
             self.model = SentenceTransformer(self.model_name)
-            logger.info(f"Embedding model loaded successfully. Dimension: {self.model.get_sentence_embedding_dimension()}")
+            logger.info(
+                f"Embedding model loaded successfully. Dimension: {self.model.get_sentence_embedding_dimension()}"
+            )
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
             raise
@@ -47,7 +50,7 @@ class EmbeddingService:
     @staticmethod
     def _hash_text(text: str) -> str:
         """Create a hash of text for cache key."""
-        return hashlib.sha256(text.encode('utf-8')).hexdigest()
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     @retry_with_backoff(
         max_retries=3,

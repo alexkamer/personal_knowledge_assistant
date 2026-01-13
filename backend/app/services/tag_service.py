@@ -1,12 +1,14 @@
 """
 Service layer for tag operations.
 """
+
 import logging
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.tag import Tag
 from app.models.note_tag import NoteTag
+from app.models.tag import Tag
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +17,7 @@ class TagService:
     """Service for managing tags."""
 
     @staticmethod
-    async def get_or_create_tags(
-        db: AsyncSession, tag_names: list[str]
-    ) -> list[Tag]:
+    async def get_or_create_tags(db: AsyncSession, tag_names: list[str]) -> list[Tag]:
         """
         Get existing tags or create new ones for given tag names.
 
@@ -38,9 +38,7 @@ class TagService:
             return []
 
         # Find existing tags
-        result = await db.execute(
-            select(Tag).where(Tag.name.in_(normalized_names))
-        )
+        result = await db.execute(select(Tag).where(Tag.name.in_(normalized_names)))
         existing_tags = list(result.scalars().all())
         existing_tag_names = {tag.name for tag in existing_tags}
 
@@ -83,9 +81,7 @@ class TagService:
         return [(row[0], row[1]) for row in result.all()]
 
     @staticmethod
-    async def get_popular_tags(
-        db: AsyncSession, limit: int = 10
-    ) -> list[tuple[Tag, int]]:
+    async def get_popular_tags(db: AsyncSession, limit: int = 10) -> list[tuple[Tag, int]]:
         """
         Get most used tags.
 

@@ -181,7 +181,7 @@ export function ImageGenerationPage() {
         } : undefined;
 
         // Fetch and convert logo images to base64 if provided
-        let logoReferenceImages: any[] = [];
+        const logoReferenceImages: any[] = [];
         if (logoUrls && logoUrls.length > 0) {
           dispatchStreaming({ type: 'UPDATE_STATUS', payload: 'Fetching team logos...' });
 

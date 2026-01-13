@@ -1,6 +1,7 @@
 """
 Tag model for organizing notes.
 """
+
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,9 +18,7 @@ class Tag(Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "tags"
 
-    name: Mapped[str] = mapped_column(
-        String(50), unique=True, nullable=False, index=True
-    )
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
 
     # Many-to-many relationship with notes
     notes: Mapped[list["Note"]] = relationship(

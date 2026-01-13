@@ -1,10 +1,11 @@
 """
 Document model for uploaded files.
 """
-from typing import Optional
-from datetime import date
 
-from sqlalchemy import Integer, String, Text, Float, ForeignKey, Date
+from datetime import date
+from typing import Optional
+
+from sqlalchemy import Date, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin

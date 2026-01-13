@@ -1,6 +1,7 @@
 """
 Chat endpoints for RAG-powered question answering.
 """
+
 import json
 import logging
 import re
@@ -10,8 +11,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.core.config import settings
+from app.core.database import get_db
 from app.schemas.conversation import (
     ChatRequest,
     ChatResponse,
@@ -20,19 +21,19 @@ from app.schemas.conversation import (
     ConversationResponse,
     ConversationUpdate,
     ConversationWithMessages,
-    MessageResponse,
     MessageFeedbackCreate,
     MessageFeedbackResponse,
+    MessageResponse,
 )
-from app.services.conversation_service import ConversationService
-from app.services.llm_service import get_llm_service
-from app.services.gemini_service import get_gemini_service
-from app.services.rag_service import get_rag_service
-from app.services.rag_orchestrator import get_rag_orchestrator
 from app.services.agent_service import get_agent_service
+from app.services.attachment_processor import get_attachment_processor
+from app.services.conversation_service import ConversationService
+from app.services.gemini_service import get_gemini_service
+from app.services.llm_service import get_llm_service
+from app.services.rag_orchestrator import get_rag_orchestrator
+from app.services.rag_service import get_rag_service
 from app.services.socratic_service import SocraticService
 from app.services.title_generator_service import get_title_generator_service
-from app.services.attachment_processor import get_attachment_processor
 from app.utils.token_counter import get_token_counter
 
 logger = logging.getLogger(__name__)
@@ -61,16 +62,16 @@ def _is_conversational_query(query: str) -> bool:
     if len(query_lower.split()) <= 3:
         # Check for conversational patterns
         conversational_patterns = [
-            r'\bthat\b',
-            r'\bit\b',
-            r'\bthis\b',
-            r'\bthese\b',
-            r'\bthose\b',
-            r'^(and|but|so|also|then|now|plus|minus|add|subtract|multiply|divide)',
-            r'\b(more|tell me more|continue|go on|what about|how about)\b',
-            r'^(what|where|when|who|why|how).*\b(it|that|this|they|them)\b',
-            r'\bmy\s+(name|age|job|profession)\b',
-            r'(what|who).*\b(am i|is my|are my)\b',
+            r"\bthat\b",
+            r"\bit\b",
+            r"\bthis\b",
+            r"\bthese\b",
+            r"\bthose\b",
+            r"^(and|but|so|also|then|now|plus|minus|add|subtract|multiply|divide)",
+            r"\b(more|tell me more|continue|go on|what about|how about)\b",
+            r"^(what|where|when|who|why|how).*\b(it|that|this|they|them)\b",
+            r"\bmy\s+(name|age|job|profession)\b",
+            r"(what|who).*\b(am i|is my|are my)\b",
         ]
 
         for pattern in conversational_patterns:
@@ -93,9 +94,7 @@ async def chat(
     try:
         # Get or create conversation
         if request.conversation_id:
-            conversation = await ConversationService.get_conversation(
-                db, request.conversation_id
-            )
+            conversation = await ConversationService.get_conversation(db, request.conversation_id)
             if not conversation:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -105,9 +104,7 @@ async def chat(
             # Create new conversation with placeholder title
             title = request.conversation_title or request.message[:50]
             conversation_data = ConversationCreate(title=title)
-            conversation = await ConversationService.create_conversation(
-                db, conversation_data
-            )
+            conversation = await ConversationService.create_conversation(db, conversation_data)
 
         # Add user message
         user_message = await ConversationService.add_message(
@@ -124,16 +121,18 @@ async def chat(
         await db.refresh(user_message)
 
         # Get conversation history first (needed for all modes)
-        messages = await ConversationService.get_conversation_messages(
-            db, str(conversation.id)
-        )
+        messages = await ConversationService.get_conversation_messages(db, str(conversation.id))
         conversation_history = [
             {"role": msg.role, "content": msg.content}
             for msg in messages[:-1]  # Exclude the message we just added
         ]
 
         # Determine model to use
-        model_to_use = request.model or settings.gemini_default_model if settings.gemini_api_key else "qwen2.5:14b"
+        model_to_use = (
+            request.model or settings.gemini_default_model
+            if settings.gemini_api_key
+            else "qwen2.5:14b"
+        )
 
         # Initialize LLM service (needed for follow-up questions in both modes)
         llm_service = get_llm_service()
@@ -151,27 +150,32 @@ async def chat(
                 gemini_orchestrator = get_gemini_agent_orchestrator()
 
                 try:
-                    response_text, citations, tool_calls = await gemini_orchestrator.process_with_tools(
-                        query=request.message,
-                        db=db,
-                        model=model_to_use,
-                        temperature=0.7,
-                        max_iterations=5,
+                    response_text, citations, tool_calls = (
+                        await gemini_orchestrator.process_with_tools(
+                            query=request.message,
+                            db=db,
+                            model=model_to_use,
+                            temperature=0.7,
+                            max_iterations=5,
+                        )
                     )
 
                     # Context is not returned from agent mode (LLM generates the response)
                     context = ""
 
                 except Exception as e:
-                    logger.error(f"Gemini agent mode failed, falling back to standard RAG: {e}", exc_info=True)
+                    logger.error(
+                        f"Gemini agent mode failed, falling back to standard RAG: {e}",
+                        exc_info=True,
+                    )
                     # Fallback to standard RAG if agent mode fails
                     request.agent_mode = False
 
             else:
                 # Ollama models use prompt-based tool calling
                 logger.info("Agent mode enabled - using tool orchestrator")
-                from app.services.tool_orchestrator import get_tool_orchestrator
                 from app.services.agent_service import AgentConfig
+                from app.services.tool_orchestrator import get_tool_orchestrator
                 from app.services.tools.knowledge_search_tool import KnowledgeSearchTool
 
                 tool_orchestrator = get_tool_orchestrator()
@@ -203,7 +207,9 @@ When you use the tool, analyze the results and provide a clear, helpful answer."
                 )
 
                 # Setup knowledge search tool with DB session
-                knowledge_tool = tool_orchestrator.tool_executor.registry.get_tool("knowledge_search")
+                knowledge_tool = tool_orchestrator.tool_executor.registry.get_tool(
+                    "knowledge_search"
+                )
                 if isinstance(knowledge_tool, KnowledgeSearchTool):
                     knowledge_tool.set_db_session(db)
 
@@ -255,13 +261,15 @@ When you use the tool, analyze the results and provide a clear, helpful answer."
 
                 # Add context if available
                 if context:
-                    prompt_parts.append(f"## Relevant Context from Your Knowledge Base\n\n{context}")
+                    prompt_parts.append(
+                        f"## Relevant Context from Your Knowledge Base\n\n{context}"
+                    )
 
                 # Add conversation history
                 if conversation_history:
                     prompt_parts.append("\n## Conversation History\n")
                     for msg in conversation_history:
-                        role_label = "You" if msg['role'] == 'user' else "Assistant"
+                        role_label = "You" if msg["role"] == "user" else "Assistant"
                         prompt_parts.append(f"{role_label}: {msg['content']}")
 
                 # Add current question
@@ -387,10 +395,16 @@ async def chat_stream(
                     yield f'data: {json.dumps({"type": "status", "status": f"Processing {len(files)} attachment(s)..."})}\n\n'
 
                     attachment_processor = get_attachment_processor()
-                    attachment_metadata, attachment_contexts = await attachment_processor.process_attachments(files)
+                    attachment_metadata, attachment_contexts = (
+                        await attachment_processor.process_attachments(files)
+                    )
 
                     # Calculate total extracted length
-                    total_extracted = sum(m.extracted_length for m in attachment_metadata if m.processing_status == "processed")
+                    total_extracted = sum(
+                        m.extracted_length
+                        for m in attachment_metadata
+                        if m.processing_status == "processed"
+                    )
 
                     if total_extracted > 0:
                         yield f'data: {json.dumps({"type": "status", "status": f"Extracted {total_extracted:,} characters from attachments"})}\n\n'
@@ -418,9 +432,7 @@ async def chat_stream(
 
             # Get or create conversation
             if conversation_id:
-                conversation = await ConversationService.get_conversation(
-                    db, conversation_id
-                )
+                conversation = await ConversationService.get_conversation(db, conversation_id)
                 if not conversation:
                     yield f'data: {json.dumps({"error": "Conversation not found"})}\n\n'
                     return
@@ -429,9 +441,7 @@ async def chat_stream(
                 # We'll generate a proper title after getting the AI response
                 title = conversation_title or clean_message[:50]
                 conversation_data = ConversationCreate(title=title)
-                conversation = await ConversationService.create_conversation(
-                    db, conversation_data
-                )
+                conversation = await ConversationService.create_conversation(db, conversation_data)
 
             # Send conversation ID immediately
             yield f'data: {json.dumps({"type": "conversation_id", "conversation_id": str(conversation.id)})}\n\n'
@@ -509,18 +519,18 @@ async def chat_stream(
             sources_data = {
                 "type": "sources",
                 "sources": citations,
-                "metadata": rag_metadata  # Include query type, complexity, etc.
+                "metadata": rag_metadata,  # Include query type, complexity, etc.
             }
-            yield f'data: {json.dumps(sources_data)}\n\n'
+            yield f"data: {json.dumps(sources_data)}\n\n"
 
             # Get conversation history (limit based on agent config)
-            messages = await ConversationService.get_conversation_messages(
-                db, str(conversation.id)
-            )
+            messages = await ConversationService.get_conversation_messages(db, str(conversation.id))
             conversation_history = [
                 {"role": msg.role, "content": msg.content}
                 for msg in messages[:-1]  # Exclude the message we just added
-            ][-agent_config.max_conversation_history:]  # Limit based on agent
+            ][
+                -agent_config.max_conversation_history :
+            ]  # Limit based on agent
 
             # Check if agent uses tools OR agent mode is enabled
             complete_response = ""
@@ -564,7 +574,10 @@ async def chat_stream(
                         tool_call = event["tool_call"]
                         # Update the stored tool call with result
                         for i, tc in enumerate(all_tool_calls):
-                            if tc["tool"] == tool_call["tool"] and tc["parameters"] == tool_call["parameters"]:
+                            if (
+                                tc["tool"] == tool_call["tool"]
+                                and tc["parameters"] == tool_call["parameters"]
+                            ):
                                 all_tool_calls[i] = tool_call
                                 break
                         yield f'data: {json.dumps({"type": "tool_result", "tool_result": tool_call})}\n\n'
@@ -574,7 +587,10 @@ async def chat_stream(
                         tool_call = event["tool_call"]
                         # Update the stored tool call with error
                         for i, tc in enumerate(all_tool_calls):
-                            if tc["tool"] == tool_call["tool"] and tc["parameters"] == tool_call["parameters"]:
+                            if (
+                                tc["tool"] == tool_call["tool"]
+                                and tc["parameters"] == tool_call["parameters"]
+                            ):
                                 all_tool_calls[i] = tool_call
                                 break
                         yield f'data: {json.dumps({"type": "tool_error", "tool_error": tool_call})}\n\n'
@@ -589,7 +605,9 @@ async def chat_stream(
                         # Capture citations and tool calls for database storage
                         all_citations = event.get("citations", [])
                         # tool_calls already tracked above
-                        logger.info(f"Agent mode complete: {len(all_citations)} citations, {len(all_tool_calls)} tool calls")
+                        logger.info(
+                            f"Agent mode complete: {len(all_citations)} citations, {len(all_tool_calls)} tool calls"
+                        )
 
                 # Override citations and rag_metadata with agent results
                 citations = all_citations
@@ -667,17 +685,21 @@ async def chat_stream(
                     if attachment_contexts:
                         prompt_parts.append("## Attached Documents\n")
                         for attachment in attachment_contexts:
-                            prompt_parts.append(f"\n[{attachment['source']}]\n{attachment['content']}\n")
+                            prompt_parts.append(
+                                f"\n[{attachment['source']}]\n{attachment['content']}\n"
+                            )
 
                     # Add context if available
                     if context:
-                        prompt_parts.append(f"## Relevant Context from Your Knowledge Base\n\n{context}")
+                        prompt_parts.append(
+                            f"## Relevant Context from Your Knowledge Base\n\n{context}"
+                        )
 
                     # Add conversation history
                     if conversation_history:
                         prompt_parts.append("\n## Conversation History\n")
                         for msg in conversation_history:
-                            role_label = "You" if msg['role'] == 'user' else "Assistant"
+                            role_label = "You" if msg["role"] == "user" else "Assistant"
                             prompt_parts.append(f"{role_label}: {msg['content']}")
 
                     # Add current question
@@ -703,7 +725,9 @@ async def chat_stream(
                     if attachment_contexts:
                         attachment_section = "## Attached Documents\n\n"
                         for attachment in attachment_contexts:
-                            attachment_section += f"[{attachment['source']}]\n{attachment['content']}\n\n"
+                            attachment_section += (
+                                f"[{attachment['source']}]\n{attachment['content']}\n\n"
+                            )
                         full_context = attachment_section + ("\n" + context if context else "")
 
                     stream = await llm_service.generate_answer(
@@ -745,6 +769,7 @@ async def chat_stream(
             # Generate suggested follow-up questions (in background after done event)
             # Use Ollama fast model for follow-up questions (not Gemini)
             from app.core.config import settings
+
             suggested_questions = await llm_service.generate_follow_up_questions(
                 query=clean_message,
                 answer=complete_response,
@@ -836,6 +861,7 @@ async def get_conversation(
     # Eagerly load feedback for each message
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
+
     from app.models.conversation import Message
 
     # Reload messages with feedback eagerly loaded
@@ -929,9 +955,10 @@ async def get_chunk(
     Get chunk content and metadata by chunk ID.
     """
     from sqlalchemy import select
+
     from app.models.chunk import Chunk
-    from app.models.note import Note
     from app.models.document import Document
+    from app.models.note import Note
     from app.models.youtube_video import YouTubeVideo
 
     # Get the chunk
@@ -974,7 +1001,9 @@ async def get_chunk(
                 "created_at": document.created_at.isoformat(),
             }
     elif chunk.youtube_video_id:
-        result = await db.execute(select(YouTubeVideo).where(YouTubeVideo.id == chunk.youtube_video_id))
+        result = await db.execute(
+            select(YouTubeVideo).where(YouTubeVideo.id == chunk.youtube_video_id)
+        )
         video = result.scalar_one_or_none()
         if video:
             source_title = video.title
@@ -1009,6 +1038,7 @@ async def submit_message_feedback(
     Submit feedback (thumbs up/down) for a message.
     """
     from sqlalchemy import select
+
     from app.models.conversation import Message
     from app.models.message_feedback import MessageFeedback
 
@@ -1095,12 +1125,14 @@ async def get_conversation_token_usage(
     for msg in messages:
         # Use stored token count if available, otherwise calculate
         tokens = msg.token_count if msg.token_count else token_counter.count_tokens(msg.content)
-        message_tokens.append({
-            "message_id": str(msg.id),
-            "role": msg.role,
-            "tokens": tokens,
-            "created_at": msg.created_at.isoformat(),
-        })
+        message_tokens.append(
+            {
+                "message_id": str(msg.id),
+                "role": msg.role,
+                "tokens": tokens,
+                "created_at": msg.created_at.isoformat(),
+            }
+        )
         total_tokens += tokens
 
     # Get usage statistics

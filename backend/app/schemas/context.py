@@ -1,6 +1,7 @@
 """
 Context Intelligence schemas for related content discovery and synthesis.
 """
+
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -9,23 +10,15 @@ from pydantic import BaseModel, Field
 class RelatedContentItem(BaseModel):
     """A single piece of related content."""
 
-    source_type: str = Field(
-        ..., description="Type of source: 'note', 'document', or 'youtube'"
-    )
+    source_type: str = Field(..., description="Type of source: 'note', 'document', or 'youtube'")
     source_id: str = Field(..., description="ID of the source")
     source_title: str = Field(..., description="Title of the source")
-    similarity_score: float = Field(
-        ..., description="Similarity score (0-1)", ge=0.0, le=1.0
-    )
-    preview: Optional[str] = Field(
-        None, description="Preview snippet of matching content"
-    )
+    similarity_score: float = Field(..., description="Similarity score (0-1)", ge=0.0, le=1.0)
+    preview: Optional[str] = Field(None, description="Preview snippet of matching content")
     timestamp: Optional[float] = Field(
         None, description="Timestamp for YouTube videos (in seconds)"
     )
-    chunk_count: int = Field(
-        default=1, description="Number of matching chunks from this source"
-    )
+    chunk_count: int = Field(default=1, description="Number of matching chunks from this source")
 
 
 class ContextSynthesis(BaseModel):
@@ -41,13 +34,12 @@ class SuggestedQuestion(BaseModel):
     """A suggested question for further exploration."""
 
     question: str = Field(..., description="The suggested question")
-    rationale: Optional[str] = Field(
-        None, description="Why this question is relevant"
-    )
+    rationale: Optional[str] = Field(None, description="Why this question is relevant")
 
 
 class ContradictionSource(BaseModel):
     """Source information for a contradiction."""
+
     type: str = Field(..., description="Type of source ('note' or 'document')")
     id: str = Field(..., description="UUID of the source")
     title: str = Field(..., description="Title of the source")
@@ -56,6 +48,7 @@ class ContradictionSource(BaseModel):
 
 class ContradictionItem(BaseModel):
     """A detected contradiction between two sources."""
+
     source1: ContradictionSource = Field(..., description="First source in contradiction")
     source2: ContradictionSource = Field(..., description="Second source in contradiction")
     contradiction_type: str = Field(..., description="Type of contradiction")
@@ -85,12 +78,8 @@ class ContextResponse(BaseModel):
 class ContextRequest(BaseModel):
     """Request parameters for context intelligence."""
 
-    include_synthesis: bool = Field(
-        default=True, description="Whether to include AI synthesis"
-    )
+    include_synthesis: bool = Field(default=True, description="Whether to include AI synthesis")
     include_questions: bool = Field(
         default=True, description="Whether to include suggested questions"
     )
-    top_k: int = Field(
-        default=5, description="Number of related items to return", ge=1, le=20
-    )
+    top_k: int = Field(default=5, description="Number of related items to return", ge=1, le=20)

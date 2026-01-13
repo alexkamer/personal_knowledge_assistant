@@ -4,6 +4,7 @@ Gemini Agent Orchestrator - Uses Gemini's native function calling for agentic RA
 This orchestrator leverages Gemini's built-in function calling capabilities
 instead of prompt engineering, providing more reliable tool use.
 """
+
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -12,8 +13,8 @@ from google.genai import types
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.services.tools.knowledge_search_tool import KnowledgeSearchTool
 from app.services.rag_orchestrator import get_rag_orchestrator
+from app.services.tools.knowledge_search_tool import KnowledgeSearchTool
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +29,7 @@ class GeminiAgentOrchestrator:
 
         # Use Google AI API (not Vertex AI)
         # Explicitly disable Vertex AI to override environment variables
-        self.client = genai.Client(
-            api_key=settings.gemini_api_key,
-            vertexai=False
-        )
+        self.client = genai.Client(api_key=settings.gemini_api_key, vertexai=False)
         self.rag_orchestrator = get_rag_orchestrator()
         logger.info("Gemini agent orchestrator initialized (Google AI API mode)")
 
@@ -185,7 +183,7 @@ Always synthesize, never just list."""
         # Start conversation history
         conversation_history = [
             types.Content(
-                role='user',
+                role="user",
                 parts=[types.Part.from_text(text=query)],
             )
         ]
@@ -207,8 +205,8 @@ Always synthesize, never just list."""
             iteration += 1
 
             # Check if we have function calls
-            function_calls = response.function_calls if hasattr(response, 'function_calls') else []
-            text_response = response.text if hasattr(response, 'text') and response.text else ""
+            function_calls = response.function_calls if hasattr(response, "function_calls") else []
+            text_response = response.text if hasattr(response, "text") and response.text else ""
 
             # If we have a text response and no function calls, we're done
             if text_response and not function_calls:
@@ -298,7 +296,7 @@ Always synthesize, never just list."""
 
                 # Add function responses to conversation history
                 function_response_content = types.Content(
-                    role='tool',
+                    role="tool",
                     parts=function_responses,
                 )
                 conversation_history.append(function_response_content)
@@ -320,12 +318,16 @@ Always synthesize, never just list."""
         logger.warning(f"Max iterations ({max_iterations}) reached")
 
         # Try to extract text from the last response
-        final_text = response.text if hasattr(response, 'text') and response.text else ""
+        final_text = response.text if hasattr(response, "text") and response.text else ""
 
         if final_text:
             return final_text, all_citations, all_tool_calls
         else:
-            return "I apologize, but I wasn't able to complete the task within the allowed iterations.", all_citations, all_tool_calls
+            return (
+                "I apologize, but I wasn't able to complete the task within the allowed iterations.",
+                all_citations,
+                all_tool_calls,
+            )
 
     async def process_with_tools_stream(
         self,
@@ -397,7 +399,7 @@ Always synthesize, never just list."""
         # Start conversation history
         conversation_history = [
             types.Content(
-                role='user',
+                role="user",
                 parts=[types.Part.from_text(text=query)],
             )
         ]
@@ -419,29 +421,24 @@ Always synthesize, never just list."""
             iteration += 1
 
             # Check if we have function calls
-            function_calls = response.function_calls if hasattr(response, 'function_calls') else []
-            text_response = response.text if hasattr(response, 'text') and response.text else ""
+            function_calls = response.function_calls if hasattr(response, "function_calls") else []
+            text_response = response.text if hasattr(response, "text") and response.text else ""
 
             # If we have a text response and no function calls, we're ready to stream the final answer
             if text_response and not function_calls:
-                logger.info(f"Final answer received after {iteration} iteration(s), streaming response")
+                logger.info(
+                    f"Final answer received after {iteration} iteration(s), streaming response"
+                )
 
                 # Stream the response word by word for better UX
                 words = text_response.split()
                 for i, word in enumerate(words):
                     # Add space before word (except first word)
                     chunk = f" {word}" if i > 0 else word
-                    yield {
-                        "type": "content",
-                        "content": chunk
-                    }
+                    yield {"type": "content", "content": chunk}
 
                 # Send completion with metadata
-                yield {
-                    "type": "done",
-                    "citations": all_citations,
-                    "tool_calls": all_tool_calls
-                }
+                yield {"type": "done", "citations": all_citations, "tool_calls": all_tool_calls}
                 return
 
             # If no function calls and no text, something went wrong
@@ -455,10 +452,7 @@ Always synthesize, never just list."""
                 logger.info(f"Iteration {iteration}: Executing {function_call.name}")
 
                 # Emit status update
-                yield {
-                    "type": "status",
-                    "status": f"Searching knowledge base..."
-                }
+                yield {"type": "status", "status": f"Searching knowledge base..."}
 
                 if function_call.name == "knowledge_search":
                     # Extract arguments - now they're direct dict attributes
@@ -482,10 +476,7 @@ Always synthesize, never just list."""
                     }
 
                     # Emit tool call event
-                    yield {
-                        "type": "tool_call",
-                        "tool_call": tool_call_record
-                    }
+                    yield {"type": "tool_call", "tool_call": tool_call_record}
 
                     # Execute search
                     try:
@@ -501,17 +492,14 @@ Always synthesize, never just list."""
                         tool_call_record["result"] = search_result
 
                         # Emit tool call completion
-                        yield {
-                            "type": "tool_call_complete",
-                            "tool_call": tool_call_record
-                        }
+                        yield {"type": "tool_call_complete", "tool_call": tool_call_record}
 
                         # Extract and store citations from search results
                         if search_result.get("found") and "sources" in search_result:
                             num_sources = len(search_result["sources"])
                             yield {
                                 "type": "status",
-                                "status": f"Found {num_sources} relevant source{'s' if num_sources != 1 else ''}..."
+                                "status": f"Found {num_sources} relevant source{'s' if num_sources != 1 else ''}...",
                             }
 
                             for source in search_result["sources"]:
@@ -532,10 +520,7 @@ Always synthesize, never just list."""
                         }
 
                         # Emit error
-                        yield {
-                            "type": "tool_call_error",
-                            "tool_call": tool_call_record
-                        }
+                        yield {"type": "tool_call_error", "tool_call": tool_call_record}
 
                     # Store tool call record
                     all_tool_calls.append(tool_call_record)
@@ -554,16 +539,13 @@ Always synthesize, never just list."""
 
                 # Add function responses to conversation history
                 function_response_content = types.Content(
-                    role='tool',
+                    role="tool",
                     parts=function_responses,
                 )
                 conversation_history.append(function_response_content)
 
                 # Emit status update
-                yield {
-                    "type": "status",
-                    "status": "Generating answer..."
-                }
+                yield {"type": "status", "status": "Generating answer..."}
 
                 # Generate next response (non-streaming for function call detection)
                 response = self.client.models.generate_content(
@@ -582,13 +564,9 @@ Always synthesize, never just list."""
         logger.warning(f"Max iterations ({max_iterations}) reached")
         yield {
             "type": "content",
-            "content": "I apologize, but I wasn't able to complete the task within the allowed iterations."
+            "content": "I apologize, but I wasn't able to complete the task within the allowed iterations.",
         }
-        yield {
-            "type": "done",
-            "citations": all_citations,
-            "tool_calls": all_tool_calls
-        }
+        yield {"type": "done", "citations": all_citations, "tool_calls": all_tool_calls}
 
 
 # Singleton instance

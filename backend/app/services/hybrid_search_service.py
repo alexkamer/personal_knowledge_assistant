@@ -1,9 +1,10 @@
 """
 Hybrid search service combining semantic (vector) and keyword (BM25) search.
 """
+
 import logging
-from typing import List, Dict, Optional
 from collections import defaultdict
+from typing import Dict, List, Optional
 
 from rank_bm25 import BM25Okapi
 from sqlalchemy import select
@@ -85,11 +86,7 @@ class HybridSearchService:
         chunk_ids = list(self._chunk_map.keys())
 
         # Combine chunk_ids with scores and sort
-        results = sorted(
-            zip(chunk_ids, scores),
-            key=lambda x: x[1],
-            reverse=True
-        )[:top_k]
+        results = sorted(zip(chunk_ids, scores), key=lambda x: x[1], reverse=True)[:top_k]
 
         logger.info(f"BM25 search found {len(results)} results for query: {query[:50]}")
         return results
@@ -130,13 +127,11 @@ class HybridSearchService:
             fused_scores[chunk_id] += bm25_weight / (k + rank)
 
         # Sort by fused score (descending)
-        sorted_results = sorted(
-            fused_scores.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
+        sorted_results = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)
 
-        logger.info(f"Fused {len(semantic_results)} semantic + {len(bm25_results)} BM25 results into {len(sorted_results)} unique results")
+        logger.info(
+            f"Fused {len(semantic_results)} semantic + {len(bm25_results)} BM25 results into {len(sorted_results)} unique results"
+        )
         return sorted_results
 
 

@@ -2,22 +2,24 @@
 API endpoints for contradiction detection.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
+from app.schemas.contradictions import ContradictionResponse
 from app.services.contradiction_service import ContradictionDetectionService
 from app.services.llm_service import get_llm_service
 from app.services.rag_service import get_rag_service
-from app.schemas.contradictions import ContradictionResponse
-from pydantic import BaseModel
 
 router = APIRouter()
 
 
 class ContradictionSource(BaseModel):
     """Source information for a contradiction."""
+
     type: str
     id: str
     title: str
@@ -26,6 +28,7 @@ class ContradictionSource(BaseModel):
 
 class ContradictionItem(BaseModel):
     """A detected contradiction."""
+
     source1: ContradictionSource
     source2: ContradictionSource
     contradiction_type: str
@@ -36,6 +39,7 @@ class ContradictionItem(BaseModel):
 
 class ContradictionsListResponse(BaseModel):
     """Response containing list of contradictions."""
+
     source_type: str
     source_id: str
     source_title: str
@@ -46,7 +50,7 @@ class ContradictionsListResponse(BaseModel):
     "/{source_type}/{source_id}",
     response_model=ContradictionsListResponse,
     summary="Detect contradictions for a source",
-    description="Analyzes a note or document for logical contradictions with other content in the knowledge base."
+    description="Analyzes a note or document for logical contradictions with other content in the knowledge base.",
 )
 async def detect_contradictions(
     source_type: str,
@@ -72,10 +76,7 @@ async def detect_contradictions(
     """
     # Validate source type
     if source_type not in ["note", "document"]:
-        raise HTTPException(
-            status_code=400,
-            detail="source_type must be 'note' or 'document'"
-        )
+        raise HTTPException(status_code=400, detail="source_type must be 'note' or 'document'")
 
     # Get services
     llm_service = get_llm_service()
@@ -84,10 +85,7 @@ async def detect_contradictions(
 
     # Detect contradictions
     contradictions = await contradiction_service.detect_contradictions_for_source(
-        db=db,
-        source_type=source_type,
-        source_id=source_id,
-        top_k=top_k
+        db=db, source_type=source_type, source_id=source_id, top_k=top_k
     )
 
     # Get source title
@@ -101,18 +99,18 @@ async def detect_contradictions(
                 type=c.source1_type,
                 id=c.source1_id,
                 title=c.source1_title,
-                excerpt=c.source1_excerpt
+                excerpt=c.source1_excerpt,
             ),
             source2=ContradictionSource(
                 type=c.source2_type,
                 id=c.source2_id,
                 title=c.source2_title,
-                excerpt=c.source2_excerpt
+                excerpt=c.source2_excerpt,
             ),
             contradiction_type=c.contradiction_type,
             explanation=c.explanation,
             severity=c.severity,
-            confidence=c.confidence
+            confidence=c.confidence,
         )
         for c in contradictions
     ]
@@ -121,5 +119,5 @@ async def detect_contradictions(
         source_type=source_type,
         source_id=source_id,
         source_title=source_title,
-        contradictions=contradiction_items
+        contradictions=contradiction_items,
     )

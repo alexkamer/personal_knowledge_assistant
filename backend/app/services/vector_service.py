@@ -1,6 +1,7 @@
 """
 Vector database service for storing and retrieving embeddings.
 """
+
 import logging
 from typing import List, Optional
 from uuid import UUID
@@ -116,12 +117,9 @@ class VectorService:
                 filter_conditions.append({"source_type": source_type})
             elif exclude_notes:
                 # Exclude notes: allow both document and youtube
-                filter_conditions.append({
-                    "$or": [
-                        {"source_type": "document"},
-                        {"source_type": "youtube"}
-                    ]
-                })
+                filter_conditions.append(
+                    {"$or": [{"source_type": "document"}, {"source_type": "youtube"}]}
+                )
 
             if content_type:
                 filter_conditions.append({"content_type": content_type})
@@ -146,7 +144,9 @@ class VectorService:
                 where=where_filter,
             )
 
-            logger.debug(f"Found {len(results['ids'][0])} similar chunks (filters: source_type={source_type}, content_type={content_type}, has_code={has_code}, section_title={section_title})")
+            logger.debug(
+                f"Found {len(results['ids'][0])} similar chunks (filters: source_type={source_type}, content_type={content_type}, has_code={has_code}, section_title={section_title})"
+            )
             return results
         except Exception as e:
             logger.error(f"Failed to search similar chunks: {e}")

@@ -1,6 +1,7 @@
 """
 Pydantic schemas for Document model.
 """
+
 from datetime import datetime
 from typing import Optional
 

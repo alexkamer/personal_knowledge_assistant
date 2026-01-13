@@ -1,6 +1,7 @@
 """
 Junction table for many-to-many relationship between notes and tags.
 """
+
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String
