@@ -1,0 +1,9 @@
+{
+  "name": "personal_knowledge_assistant",
+  "ignore": [
+    "node_modules",
+    ".git",
+    "dist",
+    "build"
+  ]
+}
