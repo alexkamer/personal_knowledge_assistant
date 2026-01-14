@@ -10,13 +10,21 @@ class TestChatAPI:
     """Test suite for the main chat endpoint."""
 
     @pytest.mark.asyncio
+    @patch('app.api.v1.endpoints.chat.get_title_generator_service')
+    @patch('app.api.v1.endpoints.chat.get_gemini_service')
     @patch('app.api.v1.endpoints.chat.get_llm_service')
     @patch('app.api.v1.endpoints.chat.get_rag_service')
     @patch('app.api.v1.endpoints.chat.get_token_counter')
+    @patch('app.api.v1.endpoints.chat.settings')
     async def test_chat_creates_new_conversation(
-        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+        self, mock_settings, mock_token_counter, mock_rag_service, mock_llm_service,
+        mock_gemini_service, mock_title_service, client: AsyncClient
     ):
         """Test sending a message creates a new conversation."""
+        # Configure settings to use Ollama (not Gemini)
+        mock_settings.gemini_api_key = None
+        mock_settings.ollama_fast_model = "llama3.2:3b"
+
         # Mock services
         mock_llm = Mock()
         mock_llm.generate_answer = AsyncMock(return_value="Test answer")
@@ -49,13 +57,21 @@ class TestChatAPI:
         assert data["model_used"] == "qwen2.5:14b"
 
     @pytest.mark.asyncio
+    @patch('app.api.v1.endpoints.chat.get_title_generator_service')
+    @patch('app.api.v1.endpoints.chat.get_gemini_service')
     @patch('app.api.v1.endpoints.chat.get_llm_service')
     @patch('app.api.v1.endpoints.chat.get_rag_service')
     @patch('app.api.v1.endpoints.chat.get_token_counter')
+    @patch('app.api.v1.endpoints.chat.settings')
     async def test_chat_uses_existing_conversation(
-        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+        self, mock_settings, mock_token_counter, mock_rag_service, mock_llm_service,
+        mock_gemini_service, mock_title_service, client: AsyncClient
     ):
         """Test sending a message to an existing conversation."""
+        # Configure settings to use Ollama (not Gemini)
+        mock_settings.gemini_api_key = None
+        mock_settings.ollama_fast_model = "llama3.2:3b"
+
         # Mock services
         mock_llm = Mock()
         mock_llm.generate_answer = AsyncMock(return_value="Follow-up answer")
@@ -97,13 +113,21 @@ class TestConversationsAPI:
     """Test suite for conversation endpoints."""
 
     @pytest.mark.asyncio
+    @patch('app.api.v1.endpoints.chat.get_title_generator_service')
+    @patch('app.api.v1.endpoints.chat.get_gemini_service')
     @patch('app.api.v1.endpoints.chat.get_llm_service')
     @patch('app.api.v1.endpoints.chat.get_rag_service')
     @patch('app.api.v1.endpoints.chat.get_token_counter')
+    @patch('app.api.v1.endpoints.chat.settings')
     async def test_list_conversations(
-        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+        self, mock_settings, mock_token_counter, mock_rag_service, mock_llm_service,
+        mock_gemini_service, mock_title_service, client: AsyncClient
     ):
         """Test listing conversations."""
+        # Configure settings to use Ollama (not Gemini)
+        mock_settings.gemini_api_key = None
+        mock_settings.ollama_fast_model = "llama3.2:3b"
+
         # Mock services for chat endpoint
         mock_llm = Mock()
         mock_llm.generate_answer = AsyncMock(return_value="Answer")
@@ -135,13 +159,21 @@ class TestConversationsAPI:
         assert len(data["conversations"]) >= 1
 
     @pytest.mark.asyncio
+    @patch('app.api.v1.endpoints.chat.get_title_generator_service')
+    @patch('app.api.v1.endpoints.chat.get_gemini_service')
     @patch('app.api.v1.endpoints.chat.get_llm_service')
     @patch('app.api.v1.endpoints.chat.get_rag_service')
     @patch('app.api.v1.endpoints.chat.get_token_counter')
+    @patch('app.api.v1.endpoints.chat.settings')
     async def test_get_conversation_by_id(
-        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+        self, mock_settings, mock_token_counter, mock_rag_service, mock_llm_service,
+        mock_gemini_service, mock_title_service, client: AsyncClient
     ):
         """Test getting a conversation by ID."""
+        # Configure settings to use Ollama (not Gemini)
+        mock_settings.gemini_api_key = None
+        mock_settings.ollama_fast_model = "llama3.2:3b"
+
         # Mock services
         mock_llm = Mock()
         mock_llm.generate_answer = AsyncMock(return_value="Answer")
@@ -182,13 +214,21 @@ class TestConversationsAPI:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
+    @patch('app.api.v1.endpoints.chat.get_title_generator_service')
+    @patch('app.api.v1.endpoints.chat.get_gemini_service')
     @patch('app.api.v1.endpoints.chat.get_llm_service')
     @patch('app.api.v1.endpoints.chat.get_rag_service')
     @patch('app.api.v1.endpoints.chat.get_token_counter')
+    @patch('app.api.v1.endpoints.chat.settings')
     async def test_update_conversation(
-        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+        self, mock_settings, mock_token_counter, mock_rag_service, mock_llm_service,
+        mock_gemini_service, mock_title_service, client: AsyncClient
     ):
         """Test updating a conversation."""
+        # Configure settings to use Ollama (not Gemini)
+        mock_settings.gemini_api_key = None
+        mock_settings.ollama_fast_model = "llama3.2:3b"
+
         # Mock services
         mock_llm = Mock()
         mock_llm.generate_answer = AsyncMock(return_value="Answer")
@@ -226,13 +266,21 @@ class TestConversationsAPI:
         assert data["summary"] == "Updated summary"
 
     @pytest.mark.asyncio
+    @patch('app.api.v1.endpoints.chat.get_title_generator_service')
+    @patch('app.api.v1.endpoints.chat.get_gemini_service')
     @patch('app.api.v1.endpoints.chat.get_llm_service')
     @patch('app.api.v1.endpoints.chat.get_rag_service')
     @patch('app.api.v1.endpoints.chat.get_token_counter')
+    @patch('app.api.v1.endpoints.chat.settings')
     async def test_delete_conversation(
-        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+        self, mock_settings, mock_token_counter, mock_rag_service, mock_llm_service,
+        mock_gemini_service, mock_title_service, client: AsyncClient
     ):
         """Test deleting a conversation."""
+        # Configure settings to use Ollama (not Gemini)
+        mock_settings.gemini_api_key = None
+        mock_settings.ollama_fast_model = "llama3.2:3b"
+
         # Mock services
         mock_llm = Mock()
         mock_llm.generate_answer = AsyncMock(return_value="Answer")
@@ -269,13 +317,21 @@ class TestMessageFeedbackAPI:
     """Test suite for message feedback endpoints."""
 
     @pytest.mark.asyncio
+    @patch('app.api.v1.endpoints.chat.get_title_generator_service')
+    @patch('app.api.v1.endpoints.chat.get_gemini_service')
     @patch('app.api.v1.endpoints.chat.get_llm_service')
     @patch('app.api.v1.endpoints.chat.get_rag_service')
     @patch('app.api.v1.endpoints.chat.get_token_counter')
+    @patch('app.api.v1.endpoints.chat.settings')
     async def test_submit_feedback(
-        self, mock_token_counter, mock_rag_service, mock_llm_service, client: AsyncClient
+        self, mock_settings, mock_token_counter, mock_rag_service, mock_llm_service,
+        mock_gemini_service, mock_title_service, client: AsyncClient
     ):
         """Test submitting feedback for a message."""
+        # Configure settings to use Ollama (not Gemini)
+        mock_settings.gemini_api_key = None
+        mock_settings.ollama_fast_model = "llama3.2:3b"
+
         # Mock services
         mock_llm = Mock()
         mock_llm.generate_answer = AsyncMock(return_value="Test response")
