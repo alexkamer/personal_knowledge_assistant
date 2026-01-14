@@ -62,9 +62,11 @@ def get_or_create_collection(
     return collection
 
 
-async def close_chroma() -> None:
+def close_chroma() -> None:
     """
     Close ChromaDB connections and persist data.
+
+    Note: This is a synchronous function since ChromaDB operations are synchronous.
     """
     global _chroma_client
 
