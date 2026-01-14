@@ -86,7 +86,7 @@ class TestCreateProject:
         mock_db = AsyncMock()
         project_data = ResearchProjectCreate(
             name="Custom Schedule Project",
-            goal="Test goal",
+            goal="Test goal for research",  # At least 10 characters required
             schedule_type="custom",
             schedule_cron="0 3 * * *",  # 3 AM daily
             auto_generate_tasks=True,

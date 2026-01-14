@@ -128,7 +128,7 @@ class TestAgentService:
 
         assert config.name == "code"
         assert config.display_name == "💻 Code"
-        assert config.model == "qwen2.5-coder:14b"
+        assert config.model == "qwen2.5:14b"  # Using general model since coder variant not available
         assert config.temperature == 0.2
         assert config.rag_top_k == 10
         assert "code" in config.system_prompt.lower()
@@ -152,7 +152,7 @@ class TestAgentService:
         assert config.display_name == "💬 Default"
         assert config.model == "qwen2.5:14b"
         assert config.temperature == 0.7
-        assert config.rag_top_k == 10
+        assert config.rag_top_k == 4  # Reduced from 10 for better quality over quantity
 
     def test_get_agent_invalid_returns_default(self):
         """Test that invalid agent name returns default."""
@@ -291,5 +291,5 @@ class TestAgentService:
 
         # Default should be balanced
         assert config.temperature == 0.7  # Higher for creativity
-        assert config.rag_top_k == 10  # Moderate context
+        assert config.rag_top_k == 4  # Reduced for better quality over quantity
         assert config.max_conversation_history == 10  # Moderate history

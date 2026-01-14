@@ -9,7 +9,7 @@ from app.services.tool_executor import get_tool_executor
 
 @pytest.mark.asyncio
 async def test_tool_registry_has_all_tools():
-    """Test that all 4 core tools are registered."""
+    """Test that all 5 core tools are registered."""
     registry = get_tool_registry()
     tools = registry.list_tools()
 
@@ -17,7 +17,8 @@ async def test_tool_registry_has_all_tools():
     assert "calculator" in tools
     assert "code_executor" in tools
     assert "document_search" in tools
-    assert len(tools) == 4
+    assert "knowledge_search" in tools
+    assert len(tools) == 5
 
 
 @pytest.mark.asyncio
@@ -155,12 +156,13 @@ async def test_get_tools_info():
 
     tools_info = executor.get_available_tools_info(agent_access_list=None)
 
-    assert len(tools_info) == 4
+    assert len(tools_info) == 5
     tool_names = [t["name"] for t in tools_info]
     assert "calculator" in tool_names
     assert "code_executor" in tool_names
     assert "web_search" in tool_names
     assert "document_search" in tool_names
+    assert "knowledge_search" in tool_names
 
     # Check that each tool has proper schema
     for tool_info in tools_info:
