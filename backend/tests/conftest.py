@@ -22,6 +22,20 @@ from app.models.chunk import Chunk
 from app.models.tag import Tag
 from app.models.note_tag import NoteTag
 from app.models.message_feedback import MessageFeedback
+from app.core.retry import ollama_circuit_breaker, embedding_circuit_breaker, vector_db_circuit_breaker
+
+
+@pytest.fixture(autouse=True)
+def reset_circuit_breakers():
+    """Reset all circuit breakers before each test."""
+    ollama_circuit_breaker.reset()
+    embedding_circuit_breaker.reset()
+    vector_db_circuit_breaker.reset()
+    yield
+    # Reset again after test to prevent state leakage
+    ollama_circuit_breaker.reset()
+    embedding_circuit_breaker.reset()
+    vector_db_circuit_breaker.reset()
 
 
 # Test database URL (file-based SQLite for consistency across connections)

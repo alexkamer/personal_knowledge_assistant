@@ -15,18 +15,15 @@ async def test_orchestrator_with_calculator_single_step():
     agent_config = agent_service.get_agent("deep")
 
     # Mock LLM to return a calculator tool call, then final answer
-    with patch('app.services.tool_orchestrator.get_llm_service') as mock_llm_service:
-        mock_llm = Mock()
-        mock_llm_service.return_value = mock_llm
-
+    with patch('app.services.llm_service.LLMService._generate_response') as mock_generate:
         # First call: LLM decides to use calculator
         # Second call: LLM provides final answer
-        mock_llm._generate_response = AsyncMock(side_effect=[
+        mock_generate.side_effect = [
             # Iteration 1: Use calculator
             '{"thought": "I need to calculate this", "tool_calls": [{"tool": "calculator", "parameters": {"expression": "2 + 2"}}]}',
             # Iteration 2: Final answer
             '{"thought": "I have the result", "final_answer": "The answer is 4."}',
-        ])
+        ]
 
         orchestrator = get_tool_orchestrator()
         result = await orchestrator.process_with_tools(
@@ -37,7 +34,7 @@ async def test_orchestrator_with_calculator_single_step():
 
         # Verify we got a final answer
         assert "4" in result or "four" in result.lower()
-        assert mock_llm._generate_response.call_count == 2
+        assert mock_generate.call_count == 2
 
 
 @pytest.mark.asyncio
