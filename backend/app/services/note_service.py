@@ -309,6 +309,8 @@ class NoteService:
         """
         Find all notes that link to the specified note.
 
+        Uses database-level filtering with LIKE queries for performance.
+
         Args:
             db: Database session
             note_id: Target note ID
@@ -321,36 +323,29 @@ class NoteService:
         if not target_note:
             return []
 
-        target_title_lower = target_note.title.strip().lower()
-        logger.info(f"Finding backlinks for note {note_id}, target title: '{target_title_lower}'")
+        target_title = target_note.title.strip()
+        logger.info(f"Finding backlinks for note {note_id}, target title: '{target_title}'")
 
-        # Get all notes
+        # Use database LIKE query to find notes containing wiki links to this note
+        # Wiki link formats: [[Title]] or [[title]] (case-insensitive)
+        # Use ILIKE for case-insensitive matching
+        from sqlalchemy import or_
+
         result = await db.execute(
             select(Note)
-            .where(Note.id != note_id)  # Exclude the target note itself
+            .where(
+                Note.id != note_id,  # Exclude the target note itself
+                or_(
+                    # Match [[Title]] or [[Title|Display Text]]
+                    Note.content.ilike(f"%[[{target_title}]]%"),
+                    Note.content.ilike(f"%[[{target_title}|%"),
+                ),
+            )
             .order_by(Note.updated_at.desc())
         )
-        all_notes = list(result.scalars().all())
-        logger.info(f"Checking {len(all_notes)} notes for backlinks")
+        backlink_notes = list(result.scalars().all())
 
-        # Filter notes that contain links to the target note
-        backlink_notes = []
-        for note in all_notes:
-            wiki_links = NoteService.extract_wiki_links_from_content(note.content)
-            logger.info(f"Note {note.id} ({note.title[:50]}...) has wiki links: {wiki_links}")
-            # Check if any wiki link matches the target note title
-            # Use our matching logic: exact, starts with, or contains
-            for link_title in wiki_links:
-                if (
-                    link_title == target_title_lower
-                    or target_title_lower.startswith(link_title)
-                    or link_title in target_title_lower
-                ):
-                    logger.info(f"  -> MATCH! '{link_title}' matches '{target_title_lower}'")
-                    backlink_notes.append(note)
-                    break
-
-        logger.info(f"Found {len(backlink_notes)} backlinks")
+        logger.info(f"Found {len(backlink_notes)} backlinks using database query")
         return backlink_notes
 
     @staticmethod
