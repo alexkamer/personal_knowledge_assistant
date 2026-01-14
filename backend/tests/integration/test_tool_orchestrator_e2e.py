@@ -52,18 +52,15 @@ async def test_orchestrator_with_multiple_tool_calls():
     def on_tool_result(tool_name, result_data):
         tool_results_captured.append((tool_name, result_data))
 
-    with patch('app.services.tool_orchestrator.get_llm_service') as mock_llm_service:
-        mock_llm = Mock()
-        mock_llm_service.return_value = mock_llm
-
-        mock_llm._generate_response = AsyncMock(side_effect=[
+    with patch('app.services.llm_service.LLMService._generate_response') as mock_generate:
+        mock_generate.side_effect = [
             # Iteration 1: Calculate first
             '{"thought": "First calculate", "tool_calls": [{"tool": "calculator", "parameters": {"expression": "10 * 5"}}]}',
             # Iteration 2: Calculate again
             '{"thought": "Now add 3", "tool_calls": [{"tool": "calculator", "parameters": {"expression": "50 + 3"}}]}',
             # Iteration 3: Final answer
             '{"final_answer": "The result is 53."}',
-        ])
+        ]
 
         orchestrator = get_tool_orchestrator()
         result = await orchestrator.process_with_tools(
@@ -94,14 +91,9 @@ async def test_orchestrator_max_iterations_reached():
     agent_service = get_agent_service()
     agent_config = agent_service.get_agent("deep")
 
-    with patch('app.services.tool_orchestrator.get_llm_service') as mock_llm_service:
-        mock_llm = Mock()
-        mock_llm_service.return_value = mock_llm
-
+    with patch('app.services.llm_service.LLMService._generate_response') as mock_generate:
         # LLM keeps calling tools without providing final answer
-        mock_llm._generate_response = AsyncMock(return_value=(
-            '{"thought": "I need more info", "tool_calls": [{"tool": "calculator", "parameters": {"expression": "1 + 1"}}]}'
-        ))
+        mock_generate.return_value = '{"thought": "I need more info", "tool_calls": [{"tool": "calculator", "parameters": {"expression": "1 + 1"}}]}'
 
         orchestrator = get_tool_orchestrator()
         result = await orchestrator.process_with_tools(
@@ -121,16 +113,13 @@ async def test_orchestrator_handles_tool_failure():
     agent_service = get_agent_service()
     agent_config = agent_service.get_agent("deep")
 
-    with patch('app.services.tool_orchestrator.get_llm_service') as mock_llm_service:
-        mock_llm = Mock()
-        mock_llm_service.return_value = mock_llm
-
-        mock_llm._generate_response = AsyncMock(side_effect=[
+    with patch('app.services.llm_service.LLMService._generate_response') as mock_generate:
+        mock_generate.side_effect = [
             # Try to divide by zero
             '{"tool_calls": [{"tool": "calculator", "parameters": {"expression": "1 / 0"}}]}',
             # LLM provides final answer after seeing error
             '{"final_answer": "Cannot divide by zero."}',
-        ])
+        ]
 
         orchestrator = get_tool_orchestrator()
         result = await orchestrator.process_with_tools(
@@ -141,7 +130,7 @@ async def test_orchestrator_handles_tool_failure():
 
         # Should handle the error and provide answer
         assert len(result) > 0
-        assert mock_llm._generate_response.call_count == 2
+        assert mock_generate.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -150,16 +139,13 @@ async def test_orchestrator_with_code_executor():
     agent_service = get_agent_service()
     agent_config = agent_service.get_agent("code")  # Code agent has code_executor
 
-    with patch('app.services.tool_orchestrator.get_llm_service') as mock_llm_service:
-        mock_llm = Mock()
-        mock_llm_service.return_value = mock_llm
-
-        mock_llm._generate_response = AsyncMock(side_effect=[
+    with patch('app.services.llm_service.LLMService._generate_response') as mock_generate:
+        mock_generate.side_effect = [
             # Execute Python code
             '{"tool_calls": [{"tool": "code_executor", "parameters": {"code": "print(\'Hello, World!\')"}}]}',
             # Final answer
             '{"final_answer": "The code prints Hello, World!"}',
-        ])
+        ]
 
         orchestrator = get_tool_orchestrator()
         result = await orchestrator.process_with_tools(
@@ -182,15 +168,12 @@ async def test_orchestrator_respects_tool_access_control():
     assert "code_executor" in agent_config.tool_access_list
     assert "calculator" not in agent_config.tool_access_list
 
-    with patch('app.services.tool_orchestrator.get_llm_service') as mock_llm_service:
-        mock_llm = Mock()
-        mock_llm_service.return_value = mock_llm
-
+    with patch('app.services.llm_service.LLMService._generate_response') as mock_generate:
         # LLM tries to use calculator (not allowed for code agent)
-        mock_llm._generate_response = AsyncMock(side_effect=[
+        mock_generate.side_effect = [
             '{"tool_calls": [{"tool": "calculator", "parameters": {"expression": "2 + 2"}}]}',
             '{"final_answer": "Tool not available."}',
-        ])
+        ]
 
         tool_results_captured = []
 
@@ -217,14 +200,9 @@ async def test_orchestrator_parses_plain_text_response():
     agent_service = get_agent_service()
     agent_config = agent_service.get_agent("deep")
 
-    with patch('app.services.tool_orchestrator.get_llm_service') as mock_llm_service:
-        mock_llm = Mock()
-        mock_llm_service.return_value = mock_llm
-
+    with patch('app.services.llm_service.LLMService._generate_response') as mock_generate:
         # LLM returns plain text instead of JSON
-        mock_llm._generate_response = AsyncMock(return_value=(
-            "I cannot help with that."
-        ))
+        mock_generate.return_value = "I cannot help with that."
 
         orchestrator = get_tool_orchestrator()
         result = await orchestrator.process_with_tools(
@@ -248,14 +226,11 @@ async def test_orchestrator_iteration_callbacks():
     def on_iteration(iteration, status):
         iterations_captured.append((iteration, status))
 
-    with patch('app.services.tool_orchestrator.get_llm_service') as mock_llm_service:
-        mock_llm = Mock()
-        mock_llm_service.return_value = mock_llm
-
-        mock_llm._generate_response = AsyncMock(side_effect=[
+    with patch('app.services.llm_service.LLMService._generate_response') as mock_generate:
+        mock_generate.side_effect = [
             '{"tool_calls": [{"tool": "calculator", "parameters": {"expression": "1 + 1"}}]}',
             '{"final_answer": "The answer is 2."}',
-        ])
+        ]
 
         orchestrator = get_tool_orchestrator()
         await orchestrator.process_with_tools(
