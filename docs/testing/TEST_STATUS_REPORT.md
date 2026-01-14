@@ -4,63 +4,61 @@
 
 ## Summary
 
-- **Backend:** 491 passed / 20 failed (96.1% pass rate) - ✅ 11 tool orchestrator tests fixed
+- **Backend:** 506 passed / 5 failed (99.0% pass rate) - ✅ 26 tests fixed!
 - **Frontend:** 465 passed / 19 failed (96.1% pass rate)
-- **Total:** 956 passed / 39 failed (96.1% pass rate)
+- **Total:** 971 passed / 24 failed (97.6% pass rate)
 
 ## Test Failure Analysis
 
-### Backend Test Failures (20 remaining, 11 fixed)
+### Backend Test Failures (5 remaining, 26 fixed)
 
-#### Category 1: LLM Service Circuit Breaker (5 failures)
-**Root Cause:** Circuit breaker is open because Ollama is not running during test execution.
+#### Category 1: LLM Service Circuit Breaker (5 tests) ✅ **FIXED (2026-01-13)**
 
-**Affected Tests:**
-- `test_llm_service.py::test_generate_answer_connection_error`
-- `test_llm_service.py::test_generate_follow_up_questions`
-- `test_llm_service.py::test_generate_follow_up_questions_empty_on_error`
-- `test_llm_service.py::test_generate_follow_up_questions_filters_short_lines`
-- `test_llm_service.py::test_generate_follow_up_questions_max_four`
+**Status:** ✅ All 5 tests now passing
 
-**Fix:** Mock the circuit breaker in tests or ensure Ollama is available during test runs.
+**Root Cause:** Circuit breaker was persisting across tests (same issue as tool orchestrator).
 
-**Priority:** Low (tests are for error handling, not core functionality)
+**Fixed Tests:**
+- ✅ `test_llm_service.py::test_generate_answer_connection_error`
+- ✅ `test_llm_service.py::test_generate_follow_up_questions`
+- ✅ `test_llm_service.py::test_generate_follow_up_questions_empty_on_error`
+- ✅ `test_llm_service.py::test_generate_follow_up_questions_filters_short_lines`
+- ✅ `test_llm_service.py::test_generate_follow_up_questions_max_four`
 
----
+**Fix Applied:** Circuit breaker reset fixture in `conftest.py` (autouse=True) fixed these automatically.
 
-#### Category 2: Agent Configuration Changes (3 failures)
-**Root Cause:** Agent default configuration was changed but tests expect old values.
-
-**Affected Tests:**
-- `test_agent_service.py::test_get_agent_code` - Expects `qwen2.5-coder:14b`, gets `qwen2.5:14b`
-- `test_agent_service.py::test_get_agent_none_returns_default` - Expects `rag_top_k=10`, gets `4`
-- `test_agent_service.py::test_default_agent_has_balanced_params` - Expects `rag_top_k=10`, gets `4`
-
-**Fix:** Update test expectations to match new agent configuration:
-```python
-# In app/services/agent_service.py
-default_agent = AgentConfig(
-    model="qwen2.5:14b",  # Changed from qwen2.5-coder:14b
-    rag_top_k=4,          # Changed from 10
-)
-```
-
-**Priority:** High (easy fix, update 3 test assertions)
+**Priority:** ✅ **RESOLVED** - No additional changes needed
 
 ---
 
-#### Category 3: Query Analyzer Parameter Changes (4 failures)
-**Root Cause:** Query analyzer default `top_k` values changed from 10 to lower values.
+#### Category 2: Agent Configuration Changes (3 tests) ✅ **FIXED (2026-01-13)**
 
-**Affected Tests:**
-- `test_query_analyzer.py::test_analyze_comparative_query` - Expects 5, gets 4
-- `test_query_analyzer.py::test_analyze_procedural_query` - Expects 4, gets 3
-- `test_query_analyzer.py::test_retrieval_params_structure` - Expects 10, gets 6
-- `test_query_analyzer.py::test_retrieval_params_comparative` - Expects 5, gets 3
+**Status:** ✅ All 3 tests now passing
 
-**Fix:** Update test expectations to match new query analyzer defaults.
+**Fixed Tests:**
+- ✅ `test_agent_service.py::test_get_agent_code` - Updated model expectation to `qwen2.5:14b`
+- ✅ `test_agent_service.py::test_get_agent_none_returns_default` - Updated `rag_top_k` to `4`
+- ✅ `test_agent_service.py::test_default_agent_has_balanced_params` - Updated `rag_top_k` to `4`
 
-**Priority:** Medium (reflects intentional parameter tuning)
+**Fix Applied:** Updated test assertions to match current agent configuration.
+
+**Priority:** ✅ **RESOLVED**
+
+---
+
+#### Category 3: Query Analyzer Parameter Changes (4 tests) ✅ **FIXED (2026-01-13)**
+
+**Status:** ✅ All 4 tests now passing
+
+**Fixed Tests:**
+- ✅ `test_query_analyzer.py::test_analyze_comparative_query` - Updated to expect `top_k=4` (3 base + 1 complexity)
+- ✅ `test_query_analyzer.py::test_analyze_procedural_query` - Updated to expect `top_k=3`
+- ✅ `test_query_analyzer.py::test_retrieval_params_structure` - Updated to expect `initial_k=6`
+- ✅ `test_query_analyzer.py::test_retrieval_params_comparative` - Updated to expect `top_k=3`
+
+**Fix Applied:** Updated test assertions to match quality-over-quantity parameter reductions.
+
+**Priority:** ✅ **RESOLVED**
 
 ---
 
@@ -115,19 +113,17 @@ default_agent = AgentConfig(
 
 ---
 
-#### Category 5: Tool Registry Tests (2 failures)
-**Root Cause:** Expects 4 tools, but 5 are registered (knowledge_search was added).
+#### Category 5: Tool Registry Tests (2 tests) ✅ **FIXED (2026-01-13)**
 
-**Affected Tests:**
-- `test_tools_integration.py::test_tool_registry_has_all_tools` - Expects 4, got 5
-- `test_tools_integration.py::test_get_tools_info` - Expects 4, got 5
+**Status:** ✅ Both tests now passing
 
-**Fix:** Update test to expect 5 tools:
-```python
-assert len(tools) == 5  # web_search, calculator, code_executor, document_search, knowledge_search
-```
+**Fixed Tests:**
+- ✅ `test_tools_integration.py::test_tool_registry_has_all_tools` - Updated to expect 5 tools
+- ✅ `test_tools_integration.py::test_get_tools_info` - Updated to expect 5 tools
 
-**Priority:** Low (just needs test update)
+**Fix Applied:** Updated test assertions to include `knowledge_search` tool (5 total).
+
+**Priority:** ✅ **RESOLVED**
 
 ---
 
@@ -162,18 +158,16 @@ assert len(tools) == 5  # web_search, calculator, code_executor, document_search
 
 ---
 
-#### Category 8: Validation Error (1 failure)
-**Root Cause:** Pydantic validation requires goal to be at least 10 characters.
+#### Category 8: Validation Error (1 test) ✅ **FIXED (2026-01-13)**
 
-**Affected Tests:**
-- `test_research_project_service_backup.py::test_create_project_with_custom_schedule`
+**Status:** ✅ Test now passing
 
-**Fix:** Update test data:
-```python
-goal="Test goal for research"  # At least 10 chars
-```
+**Fixed Test:**
+- ✅ `test_research_project_service_backup.py::test_create_project_with_custom_schedule`
 
-**Priority:** Low (trivial fix)
+**Fix Applied:** Updated goal string from "Test goal" (9 chars) to "Test goal for research" (22 chars).
+
+**Priority:** ✅ **RESOLVED**
 
 ---
 
