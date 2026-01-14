@@ -22,6 +22,7 @@ class HybridSearchService:
         """Initialize hybrid search service."""
         self._bm25_index: Optional[BM25Okapi] = None
         self._chunk_map: Dict[str, Chunk] = {}  # chunk_id -> Chunk object
+        self._index_valid: bool = False  # Track if index needs rebuilding
 
     async def build_bm25_index(self, db: AsyncSession, source_type: Optional[str] = None) -> None:
         """
@@ -59,7 +60,17 @@ class HybridSearchService:
 
         # Build BM25 index
         self._bm25_index = BM25Okapi(tokenized_corpus)
+        self._index_valid = True
         logger.info(f"Built BM25 index with {len(chunks)} chunks")
+
+    def invalidate_index(self) -> None:
+        """
+        Invalidate the BM25 index, forcing a rebuild on next search.
+
+        Call this method whenever chunks are added, updated, or deleted.
+        """
+        self._index_valid = False
+        logger.info("BM25 index invalidated, will rebuild on next search")
 
     def bm25_search(self, query: str, top_k: int = 10) -> List[tuple[str, float]]:
         """
@@ -74,6 +85,13 @@ class HybridSearchService:
         """
         if not self._bm25_index or not self._chunk_map:
             logger.warning("BM25 index not initialized, returning empty results")
+            return []
+
+        if not self._index_valid:
+            logger.warning(
+                "BM25 index is stale (chunks added/deleted since last build). "
+                "Index will be automatically rebuilt on next hybrid search."
+            )
             return []
 
         # Tokenize query

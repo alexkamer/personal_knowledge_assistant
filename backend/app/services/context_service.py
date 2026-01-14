@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.chunk import Chunk
 from app.models.document import Document
@@ -131,17 +132,17 @@ class ContextSynthesisService:
                     return {"title": document.filename, "text": document.content}
 
             elif source_type == "youtube":
-                result = await db.execute(select(YouTubeVideo).where(YouTubeVideo.id == source_id))
+                # Eager load chunks to avoid N+1 query
+                result = await db.execute(
+                    select(YouTubeVideo)
+                    .where(YouTubeVideo.id == source_id)
+                    .options(selectinload(YouTubeVideo.chunks))
+                )
                 video = result.scalar_one_or_none()
                 if video:
-                    # Get all chunks for the video and concatenate
-                    chunk_result = await db.execute(
-                        select(Chunk.content)
-                        .where(Chunk.youtube_video_id == source_id)
-                        .order_by(Chunk.chunk_index)
-                    )
-                    chunks = chunk_result.scalars().all()
-                    text = " ".join(chunks) if chunks else ""
+                    # Sort chunks by index and concatenate
+                    sorted_chunks = sorted(video.chunks, key=lambda c: c.chunk_index)
+                    text = " ".join(chunk.content for chunk in sorted_chunks) if sorted_chunks else ""
                     return {"title": video.title, "text": text}
 
             return None

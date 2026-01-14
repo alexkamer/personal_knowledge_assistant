@@ -36,7 +36,7 @@ def upgrade() -> None:
         type_=sa.JSON(),
         existing_type=sa.ARRAY(sa.String()),
         existing_nullable=True,
-        postgresql_using='tags::json'
+        postgresql_using='array_to_json(tags)'
     )
 
 

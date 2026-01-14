@@ -41,18 +41,21 @@ async def upload_document(
     Supports: TXT, MD, PDF, DOCX file types.
     Maximum file size: 50MB (configurable via settings).
     """
-    if not file.filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must have a filename",
-        )
+    # Import validation function
+    from app.utils.file_validator import validate_uploaded_file
 
-    # Validate file type
-    file_extension = file.filename.split(".")[-1].lower() if "." in file.filename else ""
-    if file_extension not in settings.allowed_file_types:
+    # Validate file type (extension, MIME type, and magic bytes)
+    is_valid, error_message, file_extension = await validate_uploaded_file(
+        file,
+        allowed_extensions=set(settings.allowed_file_types),
+        validate_mime=True,
+        validate_magic=True,
+    )
+
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type '{file_extension}' not supported. Allowed types: {', '.join(settings.allowed_file_types)}",
+            detail=error_message,
         )
 
     # Check file size (read first to get actual size)
@@ -77,8 +80,8 @@ async def upload_document(
             detail=f"Failed to save file: {str(e)}",
         )
 
-    # Extract file type
-    file_type = file.filename.split(".")[-1] if "." in file.filename else "txt"
+    # Use validated file extension (already extracted securely)
+    file_type = file_extension
 
     # Extract text content
     try:

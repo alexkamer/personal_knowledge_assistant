@@ -246,6 +246,16 @@ CRITICAL: Users want answers, not explanations of how you're thinking. Be natura
             logger.error(f"Failed to list models: {e}")
             return []
 
+    async def list_models(self) -> List[str]:
+        """
+        List available Ollama model names.
+
+        Returns:
+            List of model names
+        """
+        models = await self.list_available_models()
+        return [m.get("name", "") for m in models]
+
     async def check_model_available(self, model: str) -> bool:
         """
         Check if a specific model is available.

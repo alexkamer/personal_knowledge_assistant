@@ -23,13 +23,15 @@ def upgrade() -> None:
     # Change default_source_types from ARRAY to JSON for SQLite compatibility
     # PostgreSQL: ARRAY and JSON both work
     # SQLite: Only JSON works (ARRAY not supported)
+
+    # Use array_to_json() to properly convert ARRAY to JSON
     op.alter_column(
         'research_projects',
         'default_source_types',
         type_=sa.JSON(),
         existing_type=sa.ARRAY(sa.String()),
         existing_nullable=True,
-        postgresql_using='default_source_types::json'
+        postgresql_using='array_to_json(default_source_types)'
     )
 
 

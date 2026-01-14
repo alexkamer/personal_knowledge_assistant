@@ -25,13 +25,31 @@ class EmbeddingService:
         self._initialize_model()
 
     def _initialize_model(self):
-        """Load the sentence-transformers model."""
+        """Load the sentence-transformers model and validate dimensions."""
         try:
             logger.info(f"Loading embedding model: {self.model_name}")
             self.model = SentenceTransformer(self.model_name)
+
+            # Validate embedding dimensions match configuration
+            actual_dimension = self.model.get_sentence_embedding_dimension()
+            expected_dimension = settings.embedding_dimension
+
+            if actual_dimension != expected_dimension:
+                error_msg = (
+                    f"Embedding dimension mismatch! "
+                    f"Model '{self.model_name}' produces {actual_dimension}-dimensional embeddings, "
+                    f"but EMBEDDING_DIMENSION is configured as {expected_dimension}. "
+                    f"Please update EMBEDDING_DIMENSION={actual_dimension} in your .env file."
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
             logger.info(
-                f"Embedding model loaded successfully. Dimension: {self.model.get_sentence_embedding_dimension()}"
+                f"Embedding model loaded successfully. Dimension: {actual_dimension} (validated)"
             )
+        except ValueError:
+            # Re-raise dimension mismatch errors without wrapping
+            raise
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
             raise

@@ -2,9 +2,10 @@
 Application configuration using pydantic-settings.
 """
 
+import secrets
 from typing import List
 
-from pydantic import PostgresDsn, field_validator
+from pydantic import PostgresDsn, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -89,8 +90,38 @@ class Settings(BaseSettings):
     archive_fallback_to_local: bool = True  # If external drive unavailable, save locally
 
     # Security (for future authentication)
-    secret_key: str = "dev-secret-key-change-in-production"
+    secret_key: str | None = None  # MUST be set via SECRET_KEY env var in production
     access_token_expire_minutes: int = 30
+
+    @model_validator(mode="after")
+    def validate_secret_key(self) -> "Settings":
+        """
+        Validate secret key configuration.
+
+        - Production: MUST be explicitly set via environment variable
+        - Development: Auto-generate if not set (for convenience)
+        """
+        # Treat empty string as None
+        if not self.secret_key:
+            if self.environment == "production":
+                raise ValueError(
+                    "SECRET_KEY environment variable must be set in production. "
+                    "Generate a secure key with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+                )
+
+            # Development mode: auto-generate a random key for convenience
+            self.secret_key = secrets.token_urlsafe(32)
+            print(f"⚠️  WARNING: Using auto-generated SECRET_KEY in {self.environment} mode")
+            print(f"   Set SECRET_KEY in .env for consistent sessions")
+
+        # Validate key strength (minimum 32 characters)
+        if len(self.secret_key) < 32:
+            raise ValueError(
+                f"SECRET_KEY must be at least 32 characters long (current: {len(self.secret_key)}). "
+                "Generate a secure key with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
+
+        return self
 
 
 # Global settings instance

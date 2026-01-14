@@ -45,6 +45,11 @@ class VectorService:
                 metadatas=[metadata],
             )
             logger.debug(f"Added embedding for chunk {chunk_id}")
+
+            # Invalidate BM25 index since we added a new chunk
+            from app.services.hybrid_search_service import get_hybrid_search_service
+
+            get_hybrid_search_service().invalidate_index()
         except Exception as e:
             logger.error(f"Failed to add embedding for chunk {chunk_id}: {e}")
             raise
@@ -79,6 +84,11 @@ class VectorService:
                 metadatas=metadatas,
             )
             logger.info(f"Added {len(chunk_ids)} embeddings to vector database")
+
+            # Invalidate BM25 index since we added new chunks
+            from app.services.hybrid_search_service import get_hybrid_search_service
+
+            get_hybrid_search_service().invalidate_index()
         except Exception as e:
             logger.error(f"Failed to add batch embeddings: {e}")
             raise
@@ -173,6 +183,11 @@ class VectorService:
                 }
             )
             logger.info(f"Deleted chunks for {source_type} {source_id}")
+
+            # Invalidate BM25 index since we deleted chunks
+            from app.services.hybrid_search_service import get_hybrid_search_service
+
+            get_hybrid_search_service().invalidate_index()
         except Exception as e:
             logger.error(f"Failed to delete chunks for {source_type} {source_id}: {e}")
             raise
@@ -187,6 +202,11 @@ class VectorService:
         try:
             self.collection.delete(ids=[chunk_id])
             logger.debug(f"Deleted chunk {chunk_id}")
+
+            # Invalidate BM25 index since we deleted a chunk
+            from app.services.hybrid_search_service import get_hybrid_search_service
+
+            get_hybrid_search_service().invalidate_index()
         except Exception as e:
             logger.error(f"Failed to delete chunk {chunk_id}: {e}")
             raise

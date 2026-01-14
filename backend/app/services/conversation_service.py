@@ -8,6 +8,7 @@ from typing import Optional
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.conversation import Conversation, Message
 from app.schemas.conversation import ConversationCreate, ConversationUpdate
@@ -205,6 +206,7 @@ class ConversationService:
         result = await db.execute(
             select(Message)
             .where(Message.conversation_id == conversation_id)
+            .options(selectinload(Message.feedback))
             .order_by(Message.created_at)
         )
         return list(result.scalars().all())
