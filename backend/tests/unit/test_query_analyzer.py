@@ -55,9 +55,9 @@ class TestQueryAnalyzer:
         result = analyzer.analyze(query)
 
         assert result["query_type"] == QueryType.COMPARATIVE
-        # Comparative queries should get more chunks
-        assert result["retrieval_params"]["top_k"] == 5
-        assert result["retrieval_params"]["max_final_chunks"] == 5
+        # Comparative queries should get more chunks (3 base + 1 for complexity)
+        assert result["retrieval_params"]["top_k"] == 4  # Was 5, reduced to 3, but +1 for complex query
+        assert result["retrieval_params"]["max_final_chunks"] == 4
 
     def test_analyze_procedural_query(self):
         """Test analyzing a procedural query."""
@@ -68,7 +68,7 @@ class TestQueryAnalyzer:
 
         assert result["query_type"] == QueryType.PROCEDURAL
         # Procedural queries need more detail
-        assert result["retrieval_params"]["top_k"] == 4
+        assert result["retrieval_params"]["top_k"] == 3  # Reduced from 4 for quality over quantity
 
     def test_analyze_exploratory_query(self):
         """Test analyzing an exploratory query."""
@@ -200,7 +200,7 @@ class TestQueryAnalyzer:
         assert "initial_k" in params
         assert "top_k" in params
         assert "max_final_chunks" in params
-        assert params["initial_k"] == 10  # Always 10 for re-ranking
+        assert params["initial_k"] == 6  # Reduced from 10 for quality over quantity
 
     def test_retrieval_params_comparative(self):
         """Test retrieval params for comparative queries."""
@@ -210,8 +210,8 @@ class TestQueryAnalyzer:
         result = analyzer.analyze(query)
 
         params = result["retrieval_params"]
-        assert params["top_k"] == 5
-        assert params["max_final_chunks"] == 5
+        assert params["top_k"] == 3  # Reduced from 5 for quality over quantity
+        assert params["max_final_chunks"] == 3
 
     def test_retrieval_params_complex_adjustment(self):
         """Test that complex queries get more chunks."""
