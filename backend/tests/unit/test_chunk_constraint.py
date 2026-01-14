@@ -42,6 +42,7 @@ async def test_chunk_cannot_have_multiple_sources(test_db):
         file_path="/tmp/test.pdf",
         file_type="pdf",
         file_size=100,
+        content="Test content",  # Required field
     )
     test_db.add(test_note)
     test_db.add(test_document)

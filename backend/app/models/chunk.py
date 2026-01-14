@@ -5,7 +5,7 @@ Chunk model for text chunks from notes and documents.
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, CheckConstraint, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -20,6 +20,14 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
     """
 
     __tablename__ = "chunks"
+    __table_args__ = (
+        CheckConstraint(
+            "(CASE WHEN note_id IS NOT NULL THEN 1 ELSE 0 END + "
+            "CASE WHEN document_id IS NOT NULL THEN 1 ELSE 0 END + "
+            "CASE WHEN youtube_video_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            name="chunk_has_one_source",
+        ),
+    )
 
     content: Mapped[str] = mapped_column(Text, nullable=False)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
