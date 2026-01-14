@@ -139,6 +139,7 @@ class TestHybridSearchService:
         mock_bm25 = Mock()
         mock_bm25.get_scores.return_value = [0.8, 0.3]
         service._bm25_index = mock_bm25
+        service._index_valid = True  # Mark index as valid
 
         results = service.bm25_search("Python")
 
@@ -165,6 +166,7 @@ class TestHybridSearchService:
         mock_bm25 = Mock()
         mock_bm25.get_scores.return_value = [0.9, 0.5, 0.3]
         service._bm25_index = mock_bm25
+        service._index_valid = True  # Mark index as valid
 
         results = service.bm25_search("test", top_k=2)
 
@@ -183,6 +185,7 @@ class TestHybridSearchService:
         mock_bm25 = Mock()
         mock_bm25.get_scores.return_value = [0.5]
         service._bm25_index = mock_bm25
+        service._index_valid = True  # Mark index as valid
 
         results = service.bm25_search("Hello World")
 
@@ -201,6 +204,7 @@ class TestHybridSearchService:
         mock_bm25 = Mock()
         mock_bm25.get_scores.return_value = [0.0]
         service._bm25_index = mock_bm25
+        service._index_valid = True  # Mark index as valid
 
         results = service.bm25_search("")
 
@@ -436,6 +440,7 @@ class TestHybridSearchService:
         mock_bm25 = Mock()
         mock_bm25.get_scores.return_value = [0.5]
         service._bm25_index = mock_bm25
+        service._index_valid = True  # Mark index as valid
 
         long_query = "word " * 100  # Very long query
         results = service.bm25_search(long_query)
