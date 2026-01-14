@@ -65,13 +65,18 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """
-    Initialize database: create all tables.
+    Initialize and validate database connection.
 
-    Note: In production, use Alembic migrations instead.
+    Tests connectivity and verifies the database is accessible.
+    Does NOT create tables - use Alembic migrations for schema changes.
     """
+    from sqlalchemy import text
+
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables created")
+        # Test connection with a simple query
+        result = await conn.execute(text("SELECT 1"))
+        result.scalar()
+    logger.info("Database connection pool initialized and verified")
 
 
 async def close_db() -> None:

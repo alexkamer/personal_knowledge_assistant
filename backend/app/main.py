@@ -55,7 +55,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Circuit breakers reset")
 
         # 2. Initialize and test database connection
-        from app.core.database import init_db, get_async_session
+        from app.core.database import init_db
 
         await init_db()
         logger.info("Database connection pool initialized and verified")
@@ -199,7 +199,7 @@ async def health_check() -> dict:
     Returns 200 if all critical services (DB, ChromaDB, embeddings) are available.
     Returns 503 if any critical service is down.
     """
-    from app.core.database import get_async_session
+    from app.core.database import AsyncSessionLocal
     from app.core.vector_db import get_chroma_client
     from app.services.embedding_service import get_embedding_service
     from app.services.llm_service import get_llm_service
@@ -214,7 +214,7 @@ async def health_check() -> dict:
 
     # 1. Check database
     try:
-        async with get_async_session() as session:
+        async with AsyncSessionLocal() as session:
             from sqlalchemy import text
 
             result = await session.execute(text("SELECT 1"))
