@@ -13,13 +13,12 @@ class TestWebSearchService:
     @patch('app.services.web_search_service.DDGS')
     def test_initialization(self, mock_ddgs):
         """Test service initialization."""
-        mock_instance = Mock()
-        mock_ddgs.return_value = mock_instance
-
         service = WebSearchService()
 
-        assert service.ddgs is not None
-        mock_ddgs.assert_called_once()
+        # Service should initialize without errors
+        assert service is not None
+        # DDGS is created on-demand, not during init
+        mock_ddgs.assert_not_called()
 
     @patch('app.services.web_search_service.DDGS')
     @pytest.mark.asyncio
@@ -66,8 +65,11 @@ class TestWebSearchService:
 
         assert len(results) == 3
         mock_instance.text.assert_called_once_with(
-            query="test query",
+            "test query",
             max_results=3,
+            region="wt-wt",
+            safesearch="moderate",
+            timelimit=None,
         )
 
     @patch('app.services.web_search_service.DDGS')
@@ -222,7 +224,7 @@ class TestWebSearchService:
         await service.search(special_query)
 
         call_args = mock_instance.text.call_args
-        assert call_args[1]["query"] == special_query
+        assert call_args[0][0] == special_query  # First positional arg is the query
 
     @patch('app.services.web_search_service.DDGS')
     @pytest.mark.asyncio
@@ -253,7 +255,13 @@ class TestWebSearchService:
         results = await service.search("test", max_results=0)
 
         # Should pass 0 to DDGS
-        mock_instance.text.assert_called_once_with(query="test", max_results=0)
+        mock_instance.text.assert_called_once_with(
+            "test",
+            max_results=0,
+            region="wt-wt",
+            safesearch="moderate",
+            timelimit=None,
+        )
         assert results == []
 
     @patch('app.services.web_search_service.DDGS')
@@ -304,9 +312,9 @@ class TestWebSearchService:
 
         # Should still work
         assert results == []
-        # Full query should be passed to DDGS
+        # Full query should be passed to DDGS as first positional arg
         call_args = mock_instance.text.call_args
-        assert call_args[1]["query"] == long_query
+        assert call_args[0][0] == long_query
 
     @patch('app.services.web_search_service.DDGS')
     @pytest.mark.asyncio
